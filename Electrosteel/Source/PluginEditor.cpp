@@ -13,44 +13,74 @@
 #include <iostream>
 //==============================================================================
 
-ESAudioProcessorEditor::ESAudioProcessorEditor (ESAudioProcessor& p) :
-AudioProcessorEditor (&p), processor (p),
+ESAudioProcessorEditor::ESAudioProcessorEditor (ESAudioProcessor& p, AudioProcessorValueTreeState& vts) :
+AudioProcessorEditor (&p),
+processor (p),
+valueTreeState(vts),
+keyboard(p.keyboardState, MidiKeyboardComponent::Orientation::horizontalKeyboard),
 constrain(new ComponentBoundsConstrainer()),
 resizer(new ResizableCornerComponent (this, constrain.get())),
 chooser("Select a .wav file to load...", {}, "*.wav")
 {
-    panel = Drawable::createFromImageData(BinaryData::panel_svg, BinaryData::panel_svgSize);
+    //    panel = Drawable::createFromImageData(BinaryData::panel_svg, BinaryData::panel_svgSize);
     
     setWantsKeyboardFocus(true);
+    
+    getTopLevelComponent()->addKeyListener(this);
     
     Typeface::Ptr tp = Typeface::createSystemTypefaceFor(BinaryData::EuphemiaCAS_ttf,
                                                          BinaryData::EuphemiaCAS_ttfSize);
     euphemia = Font(tp);
-    euphemia.setItalic(true);
+    //    euphemia.setItalic(true);
     
-    for (int i = 0; i < 0; i++) {
-        //        knobs.add(new DrawableImage());
-        dials.add(new Slider());
-        addAndMakeVisible(dials[i]);
-        //        addAndMakeVisible(knobs[i]);
-        dials[i]->setLookAndFeel(&laf);
-        dials[i]->setSliderStyle(Slider::RotaryVerticalDrag);
-        dials[i]->setTextBoxStyle(Slider::NoTextBox, false, 0, 0);
-        dials[i]->addListener(this);
-        dials[i]->setRange(0., 1.);
-        dials[i]->setOpaque(true);
+    for (int i = 0; i < NUM_CHANNELS; ++i)
+    {
+        channelSelection.add(new TextButton(String(i + 1)));
+        channelSelection[i]->setLookAndFeel(&laf);
+        channelSelection[i]->setConnectedEdges(Button::ConnectedOnLeft & Button::ConnectedOnRight);
+        channelSelection[i]->setRadioGroupId(1);
+        channelSelection[i]->setClickingTogglesState(true);
+        channelSelection[i]->addListener(this);
+        addAndMakeVisible(channelSelection[i]);
+        
+        pitchBendSliders.add(new Slider());
+        pitchBendSliders[i]->setLookAndFeel(&laf);
+        pitchBendSliders[i]->setRange(-24., 24.);
+        pitchBendSliders[i]->addListener(this);
+        addAndMakeVisible(pitchBendSliders[i]);
+        
+        sliderAttachments.add(new SliderAttachment(valueTreeState, "PitchBendCh" + String(i),
+                                                   *pitchBendSliders[i]));
+    }
+    channelSelection[0]->setButtonText("1 (Global)");
+    channelSelection[1]->setToggleState(true, sendNotification);
+    
+    keyboard.setAvailableRange(21, 108);
+    keyboard.setOctaveForMiddleC(4);
+    addAndMakeVisible(&keyboard);
+    
+    for (int i = 0; i < SubtractiveKnobParamNil; i++) {
+        stDials.add(new Slider());
+        stDials[i]->setLookAndFeel(&laf);
+        stDials[i]->setSliderStyle(Slider::RotaryVerticalDrag);
+        stDials[i]->setTextBoxStyle(Slider::NoTextBox, true, 0, 0);
+        stDials[i]->setRange(0., 1.);
+        stDials[i]->addListener(this);
+        addAndMakeVisible(stDials[i]);
         
         dialLabels.add(new Label());
+        dialLabels[i]->setText(String(cSubtractiveKnobParamNames[i]).replace("Subtractive", ""),
+                               dontSendNotification);
         //        dialLabels[i]->setMultiLine(true);
         //        dialLabels[i]->setReadOnly(true);
         dialLabels[i]->setFont(euphemia);
         //        dialLabels[i]->setInterceptsMouseClicks(false, false);
         dialLabels[i]->setJustificationType(Justification::centredTop);
-        //        dialLabels[i]->setBorder(BorderSize<int>(-3, 0, 0, 0));
         dialLabels[i]->setLookAndFeel(&laf);
         addAndMakeVisible(dialLabels[i]);
+        
+        sliderAttachments.add(new SliderAttachment(valueTreeState, cSubtractiveKnobParamNames[i], *stDials[i]));
     }
-    
     
     Path path;
     path.addEllipse(0, 0, 30, 30);
@@ -78,6 +108,8 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     addAndMakeVisible(*resizer);
     resizer->setAlwaysOnTop(true);
     
+    versionLabel.setJustificationType(Justification::topRight);
+    versionLabel.setBorderSize(BorderSize<int>(2));
     versionLabel.setText("v" + String(ProjectInfo::versionString), dontSendNotification);
     versionLabel.setColour(Label::ColourIds::textColourId, Colours::lightgrey);
     addAndMakeVisible(versionLabel);
@@ -87,9 +119,9 @@ chooser("Select a .wav file to load...", {}, "*.wav")
 
 ESAudioProcessorEditor::~ESAudioProcessorEditor()
 {
-    for (int i = 0; i < 0; i++)
+    for (int i = 0; i < SubtractiveKnobParamNil; i++)
     {
-        dials[i]->setLookAndFeel(nullptr);
+        stDials[i]->setLookAndFeel(nullptr);
         dialLabels[i]->setLookAndFeel(nullptr);
     }
 }
@@ -102,10 +134,10 @@ void ESAudioProcessorEditor::paint (Graphics& g)
     
     g.fillRect(0, 0, getWidth(), getHeight());
     
-    Rectangle<float> panelArea = getLocalBounds().toFloat();
-    panelArea.reduce(getWidth()*0.025f, getHeight()*0.01f);
-    panelArea.removeFromBottom(getHeight()*0.03f);
-    panel->drawWithin(g, panelArea, RectanglePlacement::centred, 1.0f);
+//    Rectangle<float> panelArea = getLocalBounds().toFloat();
+//    panelArea.reduce(getWidth()*0.025f, getHeight()*0.01f);
+//    panelArea.removeFromBottom(getHeight()*0.03f);
+//    panel->drawWithin(g, panelArea, RectanglePlacement::centred, 1.0f);
     
     g.fillRect(getWidth() * 0.25f, getHeight() * 0.25f, getWidth() * 0.6f, getHeight() * 0.5f);
     g.fillRect(getWidth() * 0.25f, getHeight() * 0.75f, getWidth() * 0.2f, getHeight() * 0.15f);
@@ -155,14 +187,34 @@ void ESAudioProcessorEditor::resized()
     //    lights[vocodec::ESLightOut2Meter]   ->setBounds(538*s, 503*s, smallLightSize);
     //    lights[vocodec::ESLightOut2Clip]    ->setBounds(558*s, 503*s, smallLightSize);
     //
-    //    dials[0]                        ->setBounds(85*s, 60*s, knobSize, knobSize);
-    //    dials[1]                        ->setBounds(175*s, 205*s, knobSize, knobSize);
-    //    dials[2]                        ->setBounds(385*s, 205*s, knobSize, knobSize);
-    //    dials[3]                        ->setBounds(250*s, 345*s, knobSize, knobSize);
-    //    dials[4]                        ->setBounds(445*s, 345*s, knobSize, knobSize);
-    //    dials[5]                        ->setBounds(175*s, 500*s, knobSize, knobSize);
-    //    dials[6]                        ->setBounds(380*s, 500*s, knobSize, knobSize);
-    //
+    
+    stDials[SubtractiveVolume]->setBounds(50*s, 50*s, knobSize, knobSize);
+    stDials[SubtractiveShape]->setBounds(100*s, 50*s, knobSize, knobSize);
+    stDials[SubtractiveDetune]->setBounds(150*s, 50*s, knobSize, knobSize);
+    stDials[SubtractiveAttack]->setBounds(200*s, 50*s, knobSize, knobSize);
+    stDials[SubtractiveDecay]->setBounds(250*s, 50*s, knobSize, knobSize);
+    stDials[SubtractiveSustain]->setBounds(300*s, 50*s, knobSize, knobSize);
+    stDials[SubtractiveRelease]->setBounds(350*s, 50*s, knobSize, knobSize);
+    stDials[SubtractiveLeak]->setBounds(400*s, 50*s, knobSize, knobSize);
+    stDials[SubtractiveFilterAmount]->setBounds(50*s, 150*s, knobSize, knobSize);
+    stDials[SubtractiveFilterCutoff]->setBounds(100*s, 150*s, knobSize, knobSize);
+    stDials[SubtractiveFilterKeyFollow]->setBounds(150*s, 150*s, knobSize, knobSize);
+    stDials[SubtractiveFilterQ]->setBounds(200*s, 150*s, knobSize, knobSize);
+    stDials[SubtractiveFilterAttack]->setBounds(250*s, 150*s, knobSize, knobSize);
+    stDials[SubtractiveFilterDecay]->setBounds(300*s, 150*s, knobSize, knobSize);
+    stDials[SubtractiveFilterSustain]->setBounds(350*s, 150*s, knobSize, knobSize);
+    stDials[SubtractiveFilterRelease]->setBounds(400*s, 150*s, knobSize, knobSize);
+    stDials[SubtractiveFilterLeak]->setBounds(450*s, 150*s, knobSize, knobSize);
+    
+    for (int i = 0; i < SubtractiveKnobParamNil; i++)
+    {
+        int c = i % 8;
+        int r = i / 8;
+        stDials[i]->setBounds(c*90*s + 45*s, r*100*s + 100*s, knobSize, knobSize);
+        
+        dialLabels[i]->setBounds(stDials[i]->getX() - knobSize*0.5f, stDials[i]->getY() + knobSize*1.1f,
+                                 labelWidth, labelHeight);
+    }
     //    dialLabels[0]                   ->setBounds(40*s, 110*s, 100*s, 50*s);
     //    dialLabels[1]                   ->setBounds(138*s, 270*s, labelWidth, labelHeight);
     //    dialLabels[2]                   ->setBounds(348*s, 270*s, labelWidth, labelHeight);
@@ -174,30 +226,110 @@ void ESAudioProcessorEditor::resized()
     for (auto label : dialLabels)
         label->setFont(euphemia.withHeight(height * 0.027f));
     
-    versionLabel.setBounds(0, height * 0.97f, width * 0.2f, height * 0.03f);
+    resizeChannelSelection();
+    
+    int w = width - channelSelection[15]->getRight();
+    for (int i = 0; i < NUM_CHANNELS; ++i)
+    {
+        pitchBendSliders[i]->setBounds(channelSelection[15]->getRight(), height * 0.81f, w, height * 0.06f);
+    }
+    
+    keyboard.setBounds(0, height * 0.87f, width, height * 0.13f);
+    keyboard.setKeyWidth(width / 52.0f);
+
+    versionLabel.setBounds(width*0.95, 0, width * 0.05f, height * 0.03f);
     versionLabel.setFont(euphemia.withHeight(height * 0.025f));
     
     float r = EDITOR_WIDTH / EDITOR_HEIGHT;
     constrain->setSizeLimits(200, 200/r, 800*r, 800);
-    resizer->setBounds(getWidth()-16, getHeight()-16, 16, 16);
+    resizer->setBounds(getWidth()-12, getHeight()-12, 12, 12);
+}
+
+void ESAudioProcessorEditor::resizeChannelSelection()
+{
+    int width = getWidth();
+    int height = getHeight();
+    for (int i = 0; i < NUM_CHANNELS; ++i)
+    {
+        float yf = 0.822f;
+        if (channelSelection[i]->getToggleState()) yf -= 0.005f;
+        float offset = width * 0.07f;
+        float w = width * 0.04f;
+        if (i == 0)
+        {
+            w += offset;
+            offset = 0.0f;
+        }
+        Rectangle<float> bounds ((width * 0.04f - 1.f) * i + offset, height * yf, w, height * 0.06f);
+        channelSelection[i]->setBounds(Rectangle<int>::leftTopRightBottom ((bounds.getX()),
+                                                                           (bounds.getY()),
+                                                                           (bounds.getRight()),
+                                                                           (bounds.getBottom())));
+    }
 }
 
 void ESAudioProcessorEditor::sliderValueChanged(Slider* slider)
 {
     if (slider == nullptr) return;
-    
-    
 }
 
-void ESAudioProcessorEditor::buttonClicked(Button*button)
-{
-}
-
-void ESAudioProcessorEditor::buttonStateChanged(Button *button)
+void ESAudioProcessorEditor::buttonClicked(Button* button)
 {
     if (button == nullptr) return;
     
+    resizeChannelSelection();
     
+    TextButton* tb = dynamic_cast<TextButton*>(button);
+    if (tb != nullptr)
+    {
+        int channel = channelSelection.indexOf(tb) + 1;
+        keyboard.setMidiChannel(channel);
+        keyboard.setAlpha(channel > 1 ? 1.0f : 0.5f);
+        keyboard.setInterceptsMouseClicks(channel > 1, channel > 1);
+        
+        for (int i = 0; i < NUM_CHANNELS; ++i)
+        {
+            pitchBendSliders[i]->setVisible(false);
+            if (i == channel) pitchBendSliders[i]->setVisible(true);
+        }
+    }
+}
+
+void ESAudioProcessorEditor::buttonStateChanged(Button* button)
+{
+    if (button == nullptr) return;
+}
+
+bool ESAudioProcessorEditor::keyPressed (const KeyPress &key, Component *originatingComponent)
+{
+    if (key.isKeyCode('0'))
+    {
+        channelSelection[9]->setToggleState(true, sendNotification);
+        return true;
+    }
+    else if (key.isKeyCode('1'))
+    {
+        if (channelSelection[0]->getToggleState())
+            channelSelection[10]->setToggleState(true, sendNotification);
+        else channelSelection[0]->setToggleState(true, sendNotification);
+        return true;
+    }
+    else
+    {
+        for (int i = 0; i < 8; ++i)
+        {
+            int d = 0;
+            if (KeyPress::isKeyCurrentlyDown('1')) d = 10;
+            if (key.isKeyCode('2' + i))
+            {
+                if (i + d >= 15) return false;
+                channelSelection[i + d + 1]->setToggleState(true, sendNotification);
+                return true;
+            }
+        }
+    }
+    
+    return false;
 }
 
 void ESAudioProcessorEditor::timerCallback()
@@ -213,7 +345,6 @@ void ESAudioProcessorEditor::loadWav()
         //        int idx = processor.vcd.wavetableSynthParams.loadIndex;
         
         auto result = chooser.getResult();
-        
         
         auto* reader = processor.formatManager.createReaderFor (result);
         
@@ -240,8 +371,9 @@ void ESAudioProcessorEditor::loadWav()
             
             processor.readerSource.reset(newSource.release());
             
-//            processor.wavetablePaths.set(idx, result.getFullPathName());
+            //            processor.wavetablePaths.set(idx, result.getFullPathName());
         }
     });
 }
+
 
