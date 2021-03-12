@@ -118,7 +118,7 @@ valueTreeState (*this, nullptr, juce::Identifier ("Parameters"), createParameter
     // Storing pointers to parameter values in structures that are faster to access than the APVTS
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
-        pitchBends.add(valueTreeState.getRawParameterValue("PitchBendCh" + String(i)));
+        pitchBends.add(valueTreeState.getRawParameterValue("PitchBendCh" + String(i+1)));
     }
     
     for (int i = 0; i < SubtractiveKnobParamNil; ++i)
@@ -138,8 +138,8 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
     
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
-        layout.add (std::make_unique<AudioParameterFloat> ("PitchBendCh" + String(i),
-                                                           "PitchBendCh" + String(i),
+        layout.add (std::make_unique<AudioParameterFloat> ("PitchBendCh" + String(i+1),
+                                                           "PitchBendCh" + String(i+1),
                                                            -24., 24., 0.));
     }
     
@@ -406,11 +406,13 @@ void ESAudioProcessor::handleMidiMessage(const MidiMessage& m)
 {
     if (m.isNoteOnOrOff())
     {
-        keyboardState.processNextMidiEvent(m);
+        if (m.getChannel() > 1) keyboardState.processNextMidiEvent(m);
     }
     else if (m.isPitchWheel())
     {
-        *pitchBends[m.getChannel()] = -24.0f + (m.getPitchWheelValue() * 48.0f) / 16383.0f;
+        // Parameters should be set with a 0. to 1. range,
+        float bend = m.getPitchWheelValue() / 16383.0f;
+        valueTreeState.getParameter("PitchBendCh" + String(m.getChannel()))->setValueNotifyingHost(bend);
     }
     else if (m.isController())
     {
@@ -424,7 +426,7 @@ void ESAudioProcessor::noteOn(int channel, int key, float velocity)
     if (!velocity) noteOff(channel, key, velocity);
     else
     {
-        int v = tSimplePoly_noteOn(&voice[i], key, velocity * 127.999f);
+        int v = tSimplePoly_noteOn(&voice[i], key, velocity * 127.f);
         
         if (v >= 0)
         {

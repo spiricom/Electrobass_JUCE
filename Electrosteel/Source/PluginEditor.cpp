@@ -49,7 +49,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
         pitchBendSliders[i]->addListener(this);
         addAndMakeVisible(pitchBendSliders[i]);
         
-        sliderAttachments.add(new SliderAttachment(valueTreeState, "PitchBendCh" + String(i),
+        sliderAttachments.add(new SliderAttachment(valueTreeState, "PitchBendCh" + String(i+1),
                                                    *pitchBendSliders[i]));
     }
     channelSelection[0]->setButtonText("1 (Global)");
@@ -290,7 +290,7 @@ void ESAudioProcessorEditor::buttonClicked(Button* button)
         for (int i = 0; i < NUM_CHANNELS; ++i)
         {
             pitchBendSliders[i]->setVisible(false);
-            if (i == channel) pitchBendSliders[i]->setVisible(true);
+            if (i+1 == channel) pitchBendSliders[i]->setVisible(true);
         }
     }
 }
