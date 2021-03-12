@@ -64,12 +64,12 @@ public:
     void handleMidiMessage(const MidiMessage& message);
     void noteOn(int channel, int key, float velocity);
     void noteOff(int channel, int key, float velocity);
-//    void pitchBend(int data);
+    void pitchBend(int channel, int data);
+    void ctrlInput(int channel, int ctrl, int value);
     void sustainOn();
     void sustainOff();
     void toggleBypass();
     void toggleSustain();
-    void ctrlInput(int ctrl, int value);
     
     //==============================================================================
     void getStateInformation (juce::MemoryBlock& destData) override;
@@ -107,14 +107,21 @@ private:
     tCycle pwmLFO1;
     tCycle pwmLFO2;
     
-    HashMap<String, std::atomic<float>*> params;
-    
     float freq[NUM_VOICES];
     float centsDeviation[12];
     int currentTuning;
     int keyCenter;
     
-    Array<std::atomic<float>*> pitchBends;
+    HashMap<String, std::atomic<float>*> params;
+    Array<std::atomic<float>*> pitchBendValues;
+    Array<std::atomic<float>*> ccValues;
+    
+    struct CCMapping
+    {
+        int behavior = 0;
+        float outMin = 0.0f;
+        float outMax = 1.0f;
+    };
     
     float synthDetune[NUM_VOICES * NUM_OSC_PER_VOICE];
     

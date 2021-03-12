@@ -12,6 +12,8 @@
 
 #define NUM_CHANNELS 16
 
+#define NUM_GLOBAL_CC 5
+
 #define NUM_VOICES 15
 #define NUM_OSC_PER_VOICE 3
 #define INV_NUM_OSC_PER_VOICE 0.333333f

@@ -115,10 +115,15 @@ valueTreeState (*this, nullptr, juce::Identifier ("Parameters"), createParameter
     tCycle_setFreq(&pwmLFO2, 0.7211f);
     leaf.clearOnAllocation = 0;
     
+    for (int i = 0; i < NUM_GLOBAL_CC; ++i)
+    {
+        ccValues.add(valueTreeState.getRawParameterValue("CC" + String(i+1)));
+    }
+    
     // Storing pointers to parameter values in structures that are faster to access than the APVTS
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
-        pitchBends.add(valueTreeState.getRawParameterValue("PitchBendCh" + String(i+1)));
+        pitchBendValues.add(valueTreeState.getRawParameterValue("PitchBendCh" + String(i+1)));
     }
     
     for (int i = 0; i < SubtractiveKnobParamNil; ++i)
@@ -135,6 +140,14 @@ ESAudioProcessor::~ESAudioProcessor()
 AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterLayout()
 {
     AudioProcessorValueTreeState::ParameterLayout layout;
+    
+    layout.add (std::make_unique<AudioParameterFloat> ("CC1", "CC1 (Volume)", 0., 1., 1.));
+    for (int i = 1; i < NUM_GLOBAL_CC; ++i)
+    {
+        layout.add (std::make_unique<AudioParameterFloat> ("CC" + String(i+1),
+                                                           "CC" + String(i+1),
+                                                           0., 1., 0.));
+    }
     
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
@@ -376,7 +389,7 @@ float ESAudioProcessor::processTick()
 
     sample *= INV_NUM_OSC_PER_VOICE * volume;
     sample = tanhf(sample);
-    return sample;
+    return sample * *ccValues[0];
 }
 
 //==============================================================================
@@ -404,19 +417,18 @@ void ESAudioProcessor::handleNoteOff(MidiKeyboardState*, int midiChannel, int mi
 //==============================================================================
 void ESAudioProcessor::handleMidiMessage(const MidiMessage& m)
 {
+    int channel = m.getChannel();
     if (m.isNoteOnOrOff())
     {
-        if (m.getChannel() > 1) keyboardState.processNextMidiEvent(m);
+        if (channel > 1) keyboardState.processNextMidiEvent(m);
     }
     else if (m.isPitchWheel())
     {
-        // Parameters should be set with a 0. to 1. range,
-        float bend = m.getPitchWheelValue() / 16383.0f;
-        valueTreeState.getParameter("PitchBendCh" + String(m.getChannel()))->setValueNotifyingHost(bend);
+        pitchBend(channel, m.getPitchWheelValue());
     }
     else if (m.isController())
     {
-        
+        ctrlInput(channel, m.getControllerNumber(), m.getControllerValue());
     }
 }
 
@@ -459,13 +471,26 @@ void ESAudioProcessor::noteOff(int channel, int key, float velocity)
     {
         //        setLED_2(vcd, 0);
     }
-    
 }
 
-//void ESAudioProcessor::pitchBend(int data)
-//{
-//    pitchBendValue = (data - 8192) * 0.000244140625f;
-//}
+void ESAudioProcessor::pitchBend(int channel, int data)
+{
+    // Parameters need to be set with a 0. to 1. range, but will use their set range when accessed
+    float bend = data / 16383.f;
+    valueTreeState.getParameter("PitchBendCh" + String(channel))->setValueNotifyingHost(bend);
+}
+
+void ESAudioProcessor::ctrlInput(int channel, int ctrl, int value)
+{
+    float v = value / 127.f;
+    if (channel == 1)
+    {
+        if (1 <= ctrl && ctrl <= 5)
+        {
+            valueTreeState.getParameter("CC" + String(ctrl))->setValueNotifyingHost(v);
+        }
+    }
+}
 
 void ESAudioProcessor::sustainOff()
 {
@@ -483,11 +508,6 @@ void ESAudioProcessor::toggleBypass()
 }
 
 void ESAudioProcessor::toggleSustain()
-{
-    
-}
-
-void ESAudioProcessor::ctrlInput(int ctrl, int value)
 {
     
 }
@@ -542,7 +562,7 @@ juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 //==============================================================================
 void ESAudioProcessor::calcVoiceFreq(int v)
 {
-    float pitchBend = *pitchBends[0] + *pitchBends[v+1];
+    float pitchBend = *pitchBendValues[0] + *pitchBendValues[v+1];
     float tempNote = (float)tSimplePoly_getPitch(&voice[v], 0) + pitchBend;
     float tempPitchClass = ((((int)tempNote) - keyCenter) % 12 );
     float tunedNote = tempNote + centsDeviation[(int)tempPitchClass];

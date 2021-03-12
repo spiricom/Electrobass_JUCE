@@ -57,8 +57,11 @@ private:
     AudioProcessorValueTreeState& valueTreeState;
     
     OwnedArray<Slider> stDials;
-    OwnedArray<ESButton> buttons;
-    OwnedArray<ESLight> lights;
+    OwnedArray<Label> stDialLabels;
+    OwnedArray<Slider> ccDials;
+    OwnedArray<Label> ccDialLabels;
+//    OwnedArray<ESButton> buttons;
+//    OwnedArray<ESLight> lights;
     
     OwnedArray<Slider> pitchBendSliders;
     
@@ -69,8 +72,7 @@ private:
     std::unique_ptr<ComponentBoundsConstrainer> constrain;
     std::unique_ptr<ResizableCornerComponent> resizer;
     std::unique_ptr<Drawable> panel;
-    
-    OwnedArray<Label> dialLabels;
+
     OwnedArray<SliderAttachment> sliderAttachments;
     
     Label versionLabel;
