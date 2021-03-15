@@ -54,7 +54,7 @@ private:
     
     ESAudioProcessor& processor;
     
-    AudioProcessorValueTreeState& valueTreeState;
+    AudioProcessorValueTreeState& vts;
     
     OwnedArray<Slider> stDials;
     OwnedArray<Label> stDialLabels;

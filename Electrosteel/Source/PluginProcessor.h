@@ -12,6 +12,7 @@
 
 #include <JuceHeader.h>
 #include "Constants.h"
+#include "Synths.h"
 
 class StandalonePluginHolder;
 
@@ -27,6 +28,9 @@ public:
     ~ESAudioProcessor() override;
     
     //==============================================================================
+    AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
+    
+    //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
     
@@ -35,8 +39,7 @@ public:
 #endif
     
     void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
-    float processTick();
-    
+ 
     //==============================================================================
     juce::AudioProcessorEditor* createEditor() override;
     bool hasEditor() const override;
@@ -74,10 +77,8 @@ public:
     //==============================================================================
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
-    
+
     //==============================================================================
-    void calcVoiceFreq(int voice);
-    
     float editorScale = 1.0f;
     
     MidiKeyboardState keyboardState;
@@ -88,48 +89,10 @@ public:
     
 private:
     
-    AudioProcessorValueTreeState valueTreeState;
-    
-    AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
-    
-    char small_memory[1];
-    LEAF leaf;
-    
-    tSimplePoly voice[NUM_VOICES];
-    
-    tSawtooth osc[NUM_VOICES * NUM_OSC_PER_VOICE];
-    tRosenbergGlottalPulse glottal[NUM_VOICES * NUM_OSC_PER_VOICE];
-    
-    tEfficientSVF synthLP[NUM_VOICES];
-    uint16_t filtFreqs[NUM_VOICES];
-    tADSRT polyEnvs[NUM_VOICES];
-    tADSRT polyFiltEnvs[NUM_VOICES];
-    tCycle pwmLFO1;
-    tCycle pwmLFO2;
-    
-    float freq[NUM_VOICES];
-    float centsDeviation[12];
-    int currentTuning;
-    int keyCenter;
-    
-    HashMap<String, std::atomic<float>*> params;
-    Array<std::atomic<float>*> pitchBendValues;
-    Array<std::atomic<float>*> ccValues;
-    
-    struct CCMapping
-    {
-        int behavior = 0;
-        float outMin = 0.0f;
-        float outMax = 1.0f;
-    };
-    
-    float synthDetune[NUM_VOICES * NUM_OSC_PER_VOICE];
-    
-    float expBuffer[EXP_BUFFER_SIZE];
-    float expBufferSizeMinusOne;
-    
-    float decayExpBuffer[DECAY_EXP_BUFFER_SIZE];
-    float decayExpBufferSizeMinusOne;
+    AudioProcessorValueTreeState vts;
+            
+    SharedSynthResources shared;
+    SubtractiveSynth subSynth;
     
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ESAudioProcessor)

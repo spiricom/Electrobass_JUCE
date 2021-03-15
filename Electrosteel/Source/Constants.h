@@ -30,7 +30,7 @@ typedef enum _SubtractiveKnobParam
 {
     SubtractiveVolume = 0,
     SubtractiveShape,
-    SubtractiveDetune,
+    SubtractiveDetuneAmount,
     SubtractiveAttack,
     SubtractiveDecay,
     SubtractiveSustain,
@@ -51,7 +51,7 @@ typedef enum _SubtractiveKnobParam
 static const std::vector<std::string> cSubtractiveKnobParamNames = {
     "SubtractiveVolume",
     "SubtractiveShape",
-    "SubtractiveDetune",
+    "SubtractiveDetuneAmount",
     "SubtractiveAttack",
     "SubtractiveDecay",
     "SubtractiveSustain",
@@ -71,7 +71,7 @@ static const std::vector<std::string> cSubtractiveKnobParamNames = {
 static const std::vector<std::vector<float>> cSubtractiveKnobParamInitValues = {
     { 0.0f, 1.0f, 0.5f },   //SubtractiveVolume
     { 0.0f, 1.0f, 0.06f },  //SubtractiveShape
-    { 0.0f, 1.0f, 0.0f },   //SubtractiveDetune
+    { 0.0f, 1.0f, 0.0f },   //SubtractiveDetuneAmount
     { 0.0f, 1.0f, 0.0f },   //SubtractiveAttack
     { 0.0f, 1.0f, 0.06f },  //SubtractiveDecay
     { 0.0f, 1.0f, 0.9f },   //SubtractiveSustain

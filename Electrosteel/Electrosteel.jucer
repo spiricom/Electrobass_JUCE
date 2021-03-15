@@ -17,19 +17,21 @@
               file="Source/Resources/snyderphonics-whitelogo.svg"/>
       </GROUP>
       <FILE id="r0cRLa" name="Constants.h" compile="0" resource="0" file="Source/Constants.h"/>
-      <FILE id="tL2Sdi" name="PluginProcessor.cpp" compile="1" resource="0"
-            file="Source/PluginProcessor.cpp"/>
       <FILE id="BngWPn" name="PluginProcessor.h" compile="0" resource="0"
             file="Source/PluginProcessor.h"/>
+      <FILE id="tL2Sdi" name="PluginProcessor.cpp" compile="1" resource="0"
+            file="Source/PluginProcessor.cpp"/>
+      <FILE id="AALJ5R" name="PluginEditor.h" compile="0" resource="0" file="Source/PluginEditor.h"/>
       <FILE id="Fh069E" name="PluginEditor.cpp" compile="1" resource="0"
             file="Source/PluginEditor.cpp"/>
-      <FILE id="AALJ5R" name="PluginEditor.h" compile="0" resource="0" file="Source/PluginEditor.h"/>
+      <FILE id="fg7mgp" name="Synths.h" compile="0" resource="0" file="Source/Synths.h"/>
+      <FILE id="OSnSs0" name="Synths.cpp" compile="1" resource="0" file="Source/Synths.cpp"/>
+      <FILE id="DXzM9o" name="ESComponents.h" compile="0" resource="0" file="Source/ESComponents.h"/>
       <FILE id="UeMlIm" name="ESComponents.cpp" compile="1" resource="0"
             file="Source/ESComponents.cpp"/>
-      <FILE id="DXzM9o" name="ESComponents.h" compile="0" resource="0" file="Source/ESComponents.h"/>
+      <FILE id="Sx7wsj" name="ESStandalone.h" compile="0" resource="0" file="Source/ESStandalone.h"/>
       <FILE id="chMv6B" name="ESStandalone.cpp" compile="1" resource="0"
             file="Source/ESStandalone.cpp"/>
-      <FILE id="Sx7wsj" name="ESStandalone.h" compile="0" resource="0" file="Source/ESStandalone.h"/>
     </GROUP>
   </MAINGROUP>
   <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1" JUCE_VST3_CAN_REPLACE_VST2="0"/>

@@ -16,7 +16,7 @@
 ESAudioProcessorEditor::ESAudioProcessorEditor (ESAudioProcessor& p, AudioProcessorValueTreeState& vts) :
 AudioProcessorEditor (&p),
 processor (p),
-valueTreeState(vts),
+vts(vts),
 keyboard(p.keyboardState, MidiKeyboardComponent::Orientation::horizontalKeyboard),
 constrain(new ComponentBoundsConstrainer()),
 resizer(new ResizableCornerComponent (this, constrain.get())),
@@ -53,7 +53,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
         ccDialLabels[i]->setLookAndFeel(&laf);
         addAndMakeVisible(ccDialLabels[i]);
         
-        sliderAttachments.add(new SliderAttachment(valueTreeState, "CC" + String(i+1), *ccDials[i]));
+        sliderAttachments.add(new SliderAttachment(vts, "CC" + String(i+1), *ccDials[i]));
     }
     ccDialLabels[0]->setText("CC1 (Volume)", dontSendNotification);
     
@@ -73,7 +73,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
         pitchBendSliders[i]->addListener(this);
         addAndMakeVisible(pitchBendSliders[i]);
         
-        sliderAttachments.add(new SliderAttachment(valueTreeState, "PitchBendCh" + String(i+1),
+        sliderAttachments.add(new SliderAttachment(vts, "PitchBendCh" + String(i+1),
                                                    *pitchBendSliders[i]));
     }
     channelSelection[0]->setButtonText("1 (Global)");
@@ -103,7 +103,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
         stDialLabels[i]->setLookAndFeel(&laf);
         addAndMakeVisible(stDialLabels[i]);
         
-        sliderAttachments.add(new SliderAttachment(valueTreeState, cSubtractiveKnobParamNames[i], *stDials[i]));
+        sliderAttachments.add(new SliderAttachment(vts, cSubtractiveKnobParamNames[i], *stDials[i]));
     }
     
     Path path;
