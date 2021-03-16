@@ -90,9 +90,9 @@ public:
 private:
     
     AudioProcessorValueTreeState vts;
-            
     SharedSynthResources shared;
     SubtractiveSynth subSynth;
+    WavetableSynth tableSynth;
     
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ESAudioProcessor)

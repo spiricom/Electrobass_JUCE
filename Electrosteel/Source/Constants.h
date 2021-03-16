@@ -21,10 +21,7 @@
 #define EXP_BUFFER_SIZE 128
 #define DECAY_EXP_BUFFER_SIZE 512
 
-typedef enum _ParameterGroup
-{
-    GroupSubtractiveKnobs = 0
-} ParameterGroup;
+//==============================================================================
 
 typedef enum _SubtractiveKnobParam
 {
@@ -86,4 +83,65 @@ static const std::vector<std::vector<float>> cSubtractiveKnobParamInitValues = {
     { 0.0f, 1.0f, 0.9f },   //SubtractiveFilterSustain
     { 0.0f, 1.0f, 0.1f },   //SubtractiveFilterRelease
     { 0.0f, 1.0f, 0.1f }    //SubtractiveFilterLeak
+};
+
+//==============================================================================
+
+typedef enum _WavetableKnobParam
+{
+    WavetableVolume = 0,
+    WavetablePhase,
+    WavetableAttack,
+    WavetableDecay,
+    WavetableSustain,
+    WavetableRelease,
+    WavetableLeak,
+    WavetableFilterAmount,
+    WavetableFilterCutoff,
+    WavetableFilterKeyFollow,
+    WavetableFilterQ,
+    WavetableFilterAttack,
+    WavetableFilterDecay,
+    WavetableFilterSustain,
+    WavetableFilterRelease,
+    WavetableFilterLeak,
+    WavetableKnobParamNil
+} WavetableKnobParam;
+
+static const std::vector<std::string> cWavetableKnobParamNames = {
+    "WavetableVolume",
+    "WavetablePhase",
+    "WavetableAttack",
+    "WavetableDecay",
+    "WavetableSustain",
+    "WavetableRelease",
+    "WavetableLeak",
+    "WavetableFilterAmount",
+    "WavetableFilterCutoff",
+    "WavetableFilterKeyFollow",
+    "WavetableFilterQ",
+    "WavetableFilterAttack",
+    "WavetableFilterDecay",
+    "WavetableFilterSustain",
+    "WavetableFilterRelease",
+    "WavetableFilterLeak",
+};
+
+static const std::vector<std::vector<float>> cWavetableKnobParamInitValues = {
+    { 0.0f, 1.0f, 0.5f },   //WavetableVolume
+    { 0.0f, 1.0f, 0.0f },   //WavetablePhase
+    { 0.0f, 1.0f, 0.0f },   //WavetableAttack
+    { 0.0f, 1.0f, 0.06f },  //WavetableDecay
+    { 0.0f, 1.0f, 0.9f },   //WavetableSustain
+    { 0.0f, 1.0f, 0.1f },   //WavetableRelease
+    { 0.0f, 1.0f, 0.1f },   //WavetableLeak
+    { 0.0f, 1.0f, 0.0f },   //WavetableFilterAmount
+    { 0.0f, 1.0f, 0.5f },   //WavetableFilterCutoff
+    { 0.0f, 1.0f, 0.2f },   //WavetableFilterKeyFollow
+    { 0.0f, 1.0f, 0.0f },   //WavetableFilterQ
+    { 0.0f, 1.0f, 0.0f },   //WavetableFilterAttack
+    { 0.0f, 1.0f, 0.06f },  //WavetableFilterDecay
+    { 0.0f, 1.0f, 0.9f },   //WavetableFilterSustain
+    { 0.0f, 1.0f, 0.1f },   //WavetableFilterRelease
+    { 0.0f, 1.0f, 0.1f }    //WavetableFilterLeak
 };

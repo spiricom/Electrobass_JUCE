@@ -15,6 +15,29 @@
 
 class ESAudioProcessor;
 
+class SmoothedParameter
+{
+public:
+    //==============================================================================
+    SmoothedParameter() = default;
+    SmoothedParameter(std::atomic<float>* p)
+    {
+        parameter = p;
+    }
+    ~SmoothedParameter() {};
+    
+    operator float()
+    {
+        smoothed.setTargetValue(*parameter);
+        return smoothed.getNextValue();
+    }
+    
+private:
+    
+    SmoothedValue<float, ValueSmoothingTypes::Linear> smoothed;
+    std::atomic<float>* parameter;
+};
+
 class SharedSynthResources
 {
 public:
@@ -29,12 +52,17 @@ public:
     ESAudioProcessor& processor;
     AudioProcessorValueTreeState& vts;
     
-    Array<std::atomic<float>*> pitchBendValues;
-    Array<std::atomic<float>*> ccValues;
+    Array<SmoothedParameter> pitchBendValues;
+    Array<SmoothedParameter> ccValues;
     
     LEAF leaf;
     char dummy_memory[1];
     tSimplePoly voice[NUM_VOICES];
+    
+    tADSRT polyEnvs[NUM_VOICES];
+    tEfficientSVF synthLP[NUM_VOICES];
+    uint16_t filtFreqs[NUM_VOICES];
+    tADSRT polyFiltEnvs[NUM_VOICES];
     
     float freq[NUM_VOICES];
     float centsDeviation[12];
@@ -52,6 +80,9 @@ public:
     //==============================================================================
     void calcVoiceFreq(int voice);
 };
+
+//==============================================================================
+//==============================================================================
 
 class SubtractiveSynth
 {
@@ -77,15 +108,44 @@ private:
     AudioProcessorValueTreeState& vts;
     SharedSynthResources& shared;
     
-    Array<std::atomic<float>*> params;
+    Array<SmoothedParameter> params;
     
     tSawtooth osc[NUM_VOICES * NUM_OSC_PER_VOICE];
     tRosenbergGlottalPulse glottal[NUM_VOICES * NUM_OSC_PER_VOICE];
-    
-    tEfficientSVF synthLP[NUM_VOICES];
-    uint16_t filtFreqs[NUM_VOICES];
-    tADSRT polyEnvs[NUM_VOICES];
-    tADSRT polyFiltEnvs[NUM_VOICES];
     tCycle pwmLFO1;
     tCycle pwmLFO2;
+};
+
+//==============================================================================
+//==============================================================================
+
+class WavetableSynth
+{
+public:
+    //==============================================================================
+    WavetableSynth(ESAudioProcessor&, AudioProcessorValueTreeState&, SharedSynthResources&);
+    ~WavetableSynth();
+    
+    //==============================================================================
+    void prepareToPlay (double sampleRate, int samplesPerBlock);
+    
+    //==============================================================================
+    void frame();
+    float tick();
+    
+    //==============================================================================
+    void noteOn(int voice, float velocity);
+    void noteOff(int voice, float velocity);
+    
+private:
+    
+    ESAudioProcessor& processor;
+    AudioProcessorValueTreeState& vts;
+    SharedSynthResources& shared;
+    
+    Array<SmoothedParameter> params;
+    
+    AudioBuffer<float> wavetable;
+    
+    tWaveSynth waveSynth;
 };

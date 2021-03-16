@@ -359,7 +359,6 @@ void ESAudioProcessorEditor::loadWav()
     chooser.launchAsync (FileBrowserComponent::openMode | FileBrowserComponent::canSelectFiles,
                          [this] (const FileChooser& chooser)
                          {
-        //        int idx = processor.vcd.wavetableSynthParams.loadIndex;
         
         auto result = chooser.getResult();
         
@@ -374,21 +373,11 @@ void ESAudioProcessorEditor::loadWav()
             
             reader->read(&buffer, 0, buffer.getNumSamples(), 0, true, true);
             
-            //                if (processor.vcd.loadedTableSizes[idx] > 0)
-            //                {
-            //                    mpool_free((char*)processor.vcd.loadedTables[idx], processor.vcd.largePool);
-            //                }
-            //                processor.vcd.loadedTables[idx] =
-            //                (float*) mpool_alloc(sizeof(float) * buffer.getNumSamples(), processor.vcd.largePool);
-            //                processor.vcd.loadedTableSizes[idx] = buffer.getNumSamples();
-            //                for (int i = 0; i < processor.vcd.loadedTableSizes[idx]; ++i)
-            //                {
-            //                    processor.vcd.loadedTables[idx][i] = buffer.getSample(0, i);
-            //                }
+//            processor.tableSynth.setWavetable(buffer)
             
             processor.readerSource.reset(newSource.release());
             
-            //            processor.wavetablePaths.set(idx, result.getFullPathName());
+            processor.wavetablePaths.set(0, result.getFullPathName());
         }
     });
 }

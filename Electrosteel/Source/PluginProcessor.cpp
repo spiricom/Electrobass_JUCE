@@ -27,7 +27,8 @@ ESAudioProcessor::ESAudioProcessor()
 ,
 vts (*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout()),
 shared(*this, vts),
-subSynth(*this, vts, shared)
+subSynth(*this, vts, shared),
+tableSynth(*this, vts, shared)
 {
     keyboardState.addListener(this);
 }
@@ -63,6 +64,16 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
         float def = cSubtractiveKnobParamInitValues[i][2];
         layout.add (std::make_unique<AudioParameterFloat> (cSubtractiveKnobParamNames[i],
                                                            cSubtractiveKnobParamNames[i],
+                                                           min, max, def));
+    }
+    
+    for (int i = 0; i < WavetableKnobParamNil; ++i)
+    {
+        float min = cWavetableKnobParamInitValues[i][0];
+        float max = cWavetableKnobParamInitValues[i][1];
+        float def = cWavetableKnobParamInitValues[i][2];
+        layout.add (std::make_unique<AudioParameterFloat> (cWavetableKnobParamNames[i],
+                                                           cWavetableKnobParamNames[i],
                                                            min, max, def));
     }
     

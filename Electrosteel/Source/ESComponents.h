@@ -230,8 +230,8 @@ public:
         g.fillEllipse(rx, ry, rw, rw);
         
         Path pointer;
-        auto pointerLength = fmax(radius * 0.4f, 3.0f);
-        auto pointerThickness = pointerLength * 0.33f;
+        auto pointerLength = fmax(radius * 0.6f, 4.0f);
+        auto pointerThickness = pointerLength * 0.25f;
         pointer.addRectangle(-pointerThickness * 0.5f, -radius, pointerThickness, pointerLength);
         pointer.applyTransform(AffineTransform::rotation(angle).translated(centreX, centreY));
         g.setColour(Colours::black);
