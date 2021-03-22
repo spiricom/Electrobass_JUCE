@@ -12,13 +12,14 @@
 
 #include <JuceHeader.h>
 #include "Constants.h"
-#include "Synths.h"
+#include "Utilities.h"
+#include "Oscillators.h"
+#include "Filters.h"
+#include "Envelopes.h"
 
 class StandalonePluginHolder;
 
 //==============================================================================
-/**
-*/
 class ESAudioProcessor : public AudioProcessor,
                          public MidiKeyboardStateListener
 {
@@ -87,12 +88,28 @@ public:
     juce::AudioFormatManager formatManager;
     std::unique_ptr<juce::AudioFormatReaderSource> readerSource;
     
+    LEAF leaf;
+    float voiceNote[NUM_VOICES];
+    float voiceFreq[NUM_VOICES];
+    
+    OwnedArray<SawPulseOscillator> sposc;
+    OwnedArray<LowpassFilter> lp;
+    OwnedArray<Envelope> env;
+    
 private:
     
     AudioProcessorValueTreeState vts;
-    SharedSynthResources shared;
-    SubtractiveSynth subSynth;
-    WavetableSynth tableSynth;
+    
+    Array<SmoothedParameter> pitchBendValues;
+    Array<SmoothedParameter> ccValues;
+
+    
+    char dummy_memory[1];
+    tSimplePoly voice[NUM_VOICES];
+    
+    float centsDeviation[12];
+    int currentTuning;
+    int keyCenter;
     
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ESAudioProcessor)

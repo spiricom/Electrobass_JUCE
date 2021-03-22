@@ -25,12 +25,41 @@ ESAudioProcessor::ESAudioProcessor()
                   )
 #endif
 ,
-vts (*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout()),
-shared(*this, vts),
-subSynth(*this, vts, shared),
-tableSynth(*this, vts, shared)
+vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
 {
     keyboardState.addListener(this);
+    
+    LEAF_init(&leaf, 44100.0f, dummy_memory, 1, []() {return (float)rand() / RAND_MAX; });
+    
+    leaf.clearOnAllocation = 1;
+    
+    for (int i = 0; i < NUM_VOICES; i++)
+    {
+        tSimplePoly_init(&voice[i], 1, &leaf);
+        voiceFreq[i] = 220.0f;
+    }
+
+    leaf.clearOnAllocation = 0;
+    
+    for (int i = 0; i < 1; ++i)
+    {
+        String s (i+1);
+        sposc.add(std::make_unique<SawPulseOscillator>("SawPulse" + s, *this, vts, cSawPulseParams));
+        lp.add(std::make_unique<LowpassFilter>("Lowpass" + s, *this, vts, cLowpassParams));
+        env.add(std::make_unique<Envelope>("Envelope" + s, *this, vts, cEnvelopeParams));
+    }
+    
+    for (int i = 0; i < NUM_GLOBAL_CC; ++i)
+    {
+        SmoothedParameter p (vts.getRawParameterValue("CC" + String(i+1)));
+        ccValues.add(p);
+    }
+    
+    for (int i = 0; i < NUM_CHANNELS; ++i)
+    {
+        SmoothedParameter p (vts.getRawParameterValue("PitchBendCh" + String(i+1)));
+        pitchBendValues.add(p);
+    }
 }
 
 ESAudioProcessor::~ESAudioProcessor()
@@ -42,8 +71,9 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
 {
     AudioProcessorValueTreeState::ParameterLayout layout;
     
-    layout.add (std::make_unique<AudioParameterFloat> ("CC1", "CC1 (Volume)", 0., 1., 1.));
-    for (int i = 1; i < NUM_GLOBAL_CC; ++i)
+    //==============================================================================
+    // Top level parameters
+    for (int i = 0; i < NUM_GLOBAL_CC; ++i)
     {
         layout.add (std::make_unique<AudioParameterFloat> ("CC" + String(i+1),
                                                            "CC" + String(i+1),
@@ -56,28 +86,263 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
                                                            "PitchBendCh" + String(i+1),
                                                            -24., 24., 0.));
     }
+    //==============================================================================
     
-    for (int i = 0; i < SubtractiveKnobParamNil; ++i)
+    for (int i = 0; i < cSawPulseParams.size(); ++i)
     {
-        float min = cSubtractiveKnobParamInitValues[i][0];
-        float max = cSubtractiveKnobParamInitValues[i][1];
-        float def = cSubtractiveKnobParamInitValues[i][2];
-        layout.add (std::make_unique<AudioParameterFloat> (cSubtractiveKnobParamNames[i],
-                                                           cSubtractiveKnobParamNames[i],
-                                                           min, max, def));
+        float min = vSawPulseInit[i][0];
+        float max = vSawPulseInit[i][1];
+        float def = vSawPulseInit[i][2];
+        for (int j = 0; j < 1 /* NUM SPOSC */; ++j)
+        {
+            String n = "SawPulse" + String(j+1) + cSawPulseParams[i];
+            layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
+        }
     }
     
-    for (int i = 0; i < WavetableKnobParamNil; ++i)
+    for (int i = 0; i < cLowpassParams.size(); ++i)
     {
-        float min = cWavetableKnobParamInitValues[i][0];
-        float max = cWavetableKnobParamInitValues[i][1];
-        float def = cWavetableKnobParamInitValues[i][2];
-        layout.add (std::make_unique<AudioParameterFloat> (cWavetableKnobParamNames[i],
-                                                           cWavetableKnobParamNames[i],
-                                                           min, max, def));
+        float min = vLowpassInit[i][0];
+        float max = vLowpassInit[i][1];
+        float def = vLowpassInit[i][2];
+        for (int j = 0; j < 1 /* NUM LP */; ++j)
+        {
+            String n = "Lowpass" + String(j+1) + cLowpassParams[i];
+            layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
+        }
     }
+    
+    for (int i = 0; i < cEnvelopeParams.size(); ++i)
+    {
+        float min = vEnvelopeInit[i][0];
+        float max = vEnvelopeInit[i][1];
+        float def = vEnvelopeInit[i][2];
+        for (int j = 0; j < 1 /* NUM ENV */; ++j)
+        {
+            String n = "Envelope" + String(j+1) + cEnvelopeParams[i];
+            layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
+        }
+    }
+//
+//    for (int i = 0; i < SubtractiveKnobParamNil; ++i)
+//    {
+//        float min = cSubtractiveKnobParamInitValues[i][0];
+//        float max = cSubtractiveKnobParamInitValues[i][1];
+//        float def = cSubtractiveKnobParamInitValues[i][2];
+//        layout.add (std::make_unique<AudioParameterFloat> (cSubtractiveKnobParamNames[i],
+//                                                           cSubtractiveKnobParamNames[i],
+//                                                           min, max, def));
+//    }
+//
+//    for (int i = 0; i < WavetableKnobParamNil; ++i)
+//    {
+//        float min = cWavetableKnobParamInitValues[i][0];
+//        float max = cWavetableKnobParamInitValues[i][1];
+//        float def = cWavetableKnobParamInitValues[i][2];
+//        layout.add (std::make_unique<AudioParameterFloat> (cWavetableKnobParamNames[i],
+//                                                           cWavetableKnobParamNames[i],
+//                                                           min, max, def));
+//    }
     
     return layout;
+}
+
+//==============================================================================
+void ESAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
+{
+    LEAF_setSampleRate(&leaf, sampleRate);
+}
+
+void ESAudioProcessor::releaseResources()
+{
+    // When playback stops, you can use this as an opportunity to free up any
+    // spare memory, etc.
+}
+
+#ifndef JucePlugin_PreferredChannelConfigurations
+bool ESAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
+{
+#if JucePlugin_IsMidiEffect
+    juce::ignoreUnused (layouts);
+    return true;
+#else
+    // This is the place where you check if the layout is supported.
+    // In this template code we only support mono or stereo.
+    // Some plugin hosts, such as certain GarageBand versions, will only
+    // load plugins that support stereo bus layouts.
+    if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
+        && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
+        return false;
+    
+    // This checks if the input layout matches the output layout
+#if ! JucePlugin_IsSynth
+    if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
+        return false;
+#endif
+    
+    return true;
+#endif
+}
+#endif
+
+void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& midiMessages)
+{
+    juce::ScopedNoDenormals noDenormals;
+    auto totalNumInputChannels  = getTotalNumInputChannels();
+    auto totalNumOutputChannels = getTotalNumOutputChannels();
+    
+    for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
+    buffer.clear (i, 0, buffer.getNumSamples());
+    
+    MidiMessage m;
+    for (MidiMessageMetadata metadata : midiMessages) {
+        m = metadata.getMessage();
+        handleMidiMessage(m);
+    }
+    
+    for (int i = 0; i < buffer.getNumSamples(); i++)
+    {
+        float sample = 0.f;
+        env[0]->tick();
+        for (int v = 0; v < NUM_VOICES; ++v)
+        {
+            float pitchBend = pitchBendValues[0] + pitchBendValues[v+1];
+            float tempNote = (float)tSimplePoly_getPitch(&voice[v], 0) + pitchBend;
+            float tempPitchClass = ((((int)tempNote) - keyCenter) % 12 );
+            float tunedNote = tempNote + centsDeviation[(int)tempPitchClass];
+            voiceNote[v] = tunedNote;
+            voiceFreq[v] = LEAF_midiToFrequency(tunedNote);
+            
+            float voiceSample = 0.f;
+            voiceSample = sposc[0]->tick(v);
+            voiceSample = lp[0]->tick(v, voiceSample);
+            voiceSample *= *env[0]->getValue(v);
+            sample += voiceSample;
+        }
+        
+        for (int channel = 0; channel < totalNumOutputChannels; ++channel)
+        {
+            buffer.setSample(channel, i, sample);
+        }
+    }
+}
+
+//==============================================================================
+bool ESAudioProcessor::hasEditor() const
+{
+    return true; // (change this to false if you choose to not supply an editor)
+}
+
+juce::AudioProcessorEditor* ESAudioProcessor::createEditor()
+{
+    return new ESAudioProcessorEditor (*this, vts);
+}
+
+//==============================================================================
+void ESAudioProcessor::handleNoteOn(MidiKeyboardState*, int midiChannel, int midiNoteNumber, float velocity)
+{
+    if (midiChannel > 1) noteOn(midiChannel, midiNoteNumber, velocity);
+}
+
+void ESAudioProcessor::handleNoteOff(MidiKeyboardState*, int midiChannel, int midiNoteNumber, float velocity)
+{
+    if (midiChannel > 1) noteOff(midiChannel, midiNoteNumber, velocity);
+}
+
+//==============================================================================
+void ESAudioProcessor::handleMidiMessage(const MidiMessage& m)
+{
+    int channel = m.getChannel();
+    if (m.isNoteOnOrOff())
+    {
+        if (channel > 1) keyboardState.processNextMidiEvent(m);
+    }
+    else if (m.isPitchWheel())
+    {
+        pitchBend(channel, m.getPitchWheelValue());
+    }
+    else if (m.isController())
+    {
+        ctrlInput(channel, m.getControllerNumber(), m.getControllerValue());
+    }
+}
+
+void ESAudioProcessor::noteOn(int channel, int key, float velocity)
+{
+    int i = channel-2;
+    if (!velocity) noteOff(channel, key, velocity);
+    else
+    {
+        int v = tSimplePoly_noteOn(&voice[i], key, velocity * 127.f);
+        
+        if (v >= 0)
+        {
+            env[0]->noteOn(i, velocity);
+        }
+    }
+    
+    if (tSimplePoly_getNumActiveVoices(&voice[i]) >= 1)
+    {
+        //        setLED_2(vcd, 0);
+    }
+}
+
+void ESAudioProcessor::noteOff(int channel, int key, float velocity)
+{
+    int i = channel-2;
+    
+    // if we're monophonic, we need to allow fast voice stealing and returning
+    // to previous stolen notes without regard for the release envelopes
+    int v = tSimplePoly_noteOff(&voice[i], key);
+    
+    if (v >= 0)
+    {
+        env[0]->noteOff(i, velocity);
+    }
+    
+    if (tSimplePoly_getNumActiveVoices(&voice[i]) < 1)
+    {
+        //        setLED_2(vcd, 0);
+    }
+}
+
+void ESAudioProcessor::pitchBend(int channel, int data)
+{
+    // Parameters need to be set with a 0. to 1. range, but will use their set range when accessed
+    float bend = data / 16383.f;
+    vts.getParameter("PitchBendCh" + String(channel))->setValueNotifyingHost(bend);
+}
+
+void ESAudioProcessor::ctrlInput(int channel, int ctrl, int value)
+{
+    float v = value / 127.f;
+    if (channel == 1)
+    {
+        if (1 <= ctrl && ctrl <= 5)
+        {
+            vts.getParameter("CC" + String(ctrl))->setValueNotifyingHost(v);
+        }
+    }
+}
+
+void ESAudioProcessor::sustainOff()
+{
+    
+}
+
+void ESAudioProcessor::sustainOn()
+{
+    
+}
+
+void ESAudioProcessor::toggleBypass()
+{
+    
+}
+
+void ESAudioProcessor::toggleSustain()
+{
+    
 }
 
 //==============================================================================
@@ -140,191 +405,6 @@ const juce::String ESAudioProcessor::getProgramName (int index)
 
 void ESAudioProcessor::changeProgramName (int index, const juce::String& newName)
 {
-}
-
-//==============================================================================
-void ESAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
-{
-    shared.prepareToPlay(sampleRate, samplesPerBlock);
-    subSynth.prepareToPlay(sampleRate, samplesPerBlock);
-}
-
-void ESAudioProcessor::releaseResources()
-{
-    // When playback stops, you can use this as an opportunity to free up any
-    // spare memory, etc.
-}
-
-#ifndef JucePlugin_PreferredChannelConfigurations
-bool ESAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
-{
-#if JucePlugin_IsMidiEffect
-    juce::ignoreUnused (layouts);
-    return true;
-#else
-    // This is the place where you check if the layout is supported.
-    // In this template code we only support mono or stereo.
-    // Some plugin hosts, such as certain GarageBand versions, will only
-    // load plugins that support stereo bus layouts.
-    if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
-        && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
-        return false;
-    
-    // This checks if the input layout matches the output layout
-#if ! JucePlugin_IsSynth
-    if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
-        return false;
-#endif
-    
-    return true;
-#endif
-}
-#endif
-
-void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& midiMessages)
-{
-    juce::ScopedNoDenormals noDenormals;
-    auto totalNumInputChannels  = getTotalNumInputChannels();
-    auto totalNumOutputChannels = getTotalNumOutputChannels();
-    
-    for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
-    buffer.clear (i, 0, buffer.getNumSamples());
-    
-    MidiMessage m;
-    for (MidiMessageMetadata metadata : midiMessages) {
-        m = metadata.getMessage();
-        handleMidiMessage(m);
-    }
-    
-    subSynth.frame();
-    
-    for (int i = 0; i < buffer.getNumSamples(); i++)
-    {
-        float sample = subSynth.tick();
-        
-        for (int channel = 0; channel < totalNumOutputChannels; ++channel)
-        {
-            buffer.setSample(channel, i, sample);
-        }
-    }
-}
-
-//==============================================================================
-bool ESAudioProcessor::hasEditor() const
-{
-    return true; // (change this to false if you choose to not supply an editor)
-}
-
-juce::AudioProcessorEditor* ESAudioProcessor::createEditor()
-{
-    return new ESAudioProcessorEditor (*this, vts);
-}
-
-//==============================================================================
-void ESAudioProcessor::handleNoteOn(MidiKeyboardState*, int midiChannel, int midiNoteNumber, float velocity)
-{
-    if (midiChannel > 1) noteOn(midiChannel, midiNoteNumber, velocity);
-}
-
-void ESAudioProcessor::handleNoteOff(MidiKeyboardState*, int midiChannel, int midiNoteNumber, float velocity)
-{
-    if (midiChannel > 1) noteOff(midiChannel, midiNoteNumber, velocity);
-}
-
-//==============================================================================
-void ESAudioProcessor::handleMidiMessage(const MidiMessage& m)
-{
-    int channel = m.getChannel();
-    if (m.isNoteOnOrOff())
-    {
-        if (channel > 1) keyboardState.processNextMidiEvent(m);
-    }
-    else if (m.isPitchWheel())
-    {
-        pitchBend(channel, m.getPitchWheelValue());
-    }
-    else if (m.isController())
-    {
-        ctrlInput(channel, m.getControllerNumber(), m.getControllerValue());
-    }
-}
-
-void ESAudioProcessor::noteOn(int channel, int key, float velocity)
-{
-    int i = channel-2;
-    if (!velocity) noteOff(channel, key, velocity);
-    else
-    {
-        int v = tSimplePoly_noteOn(&shared.voice[i], key, velocity * 127.f);
-        
-        if (v >= 0)
-        {
-            subSynth.noteOn(i, velocity);
-        }
-    }
-    
-    if (tSimplePoly_getNumActiveVoices(&shared.voice[i]) >= 1)
-    {
-        //        setLED_2(vcd, 0);
-    }
-}
-
-void ESAudioProcessor::noteOff(int channel, int key, float velocity)
-{
-    int i = channel-2;
-    
-    // if we're monophonic, we need to allow fast voice stealing and returning
-    // to previous stolen notes without regard for the release envelopes
-    int v = tSimplePoly_noteOff(&shared.voice[i], key);
-    
-    if (v >= 0)
-    {
-        subSynth.noteOff(i, velocity);
-    }
-    
-    if (tSimplePoly_getNumActiveVoices(&shared.voice[i]) < 1)
-    {
-        //        setLED_2(vcd, 0);
-    }
-}
-
-void ESAudioProcessor::pitchBend(int channel, int data)
-{
-    // Parameters need to be set with a 0. to 1. range, but will use their set range when accessed
-    float bend = data / 16383.f;
-    vts.getParameter("PitchBendCh" + String(channel))->setValueNotifyingHost(bend);
-}
-
-void ESAudioProcessor::ctrlInput(int channel, int ctrl, int value)
-{
-    float v = value / 127.f;
-    if (channel == 1)
-    {
-        if (1 <= ctrl && ctrl <= 5)
-        {
-            vts.getParameter("CC" + String(ctrl))->setValueNotifyingHost(v);
-        }
-    }
-}
-
-void ESAudioProcessor::sustainOff()
-{
-    
-}
-
-void ESAudioProcessor::sustainOn()
-{
-    
-}
-
-void ESAudioProcessor::toggleBypass()
-{
-    
-}
-
-void ESAudioProcessor::toggleSustain()
-{
-    
 }
 
 //==============================================================================

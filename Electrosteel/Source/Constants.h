@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include <JuceHeader.h>
+
 #define NUM_CHANNELS 16
 
 #define NUM_GLOBAL_CC 5
@@ -44,6 +46,74 @@ typedef enum _SubtractiveKnobParam
     SubtractiveFilterLeak,
     SubtractiveKnobParamNil
 } SubtractiveKnobParam;
+
+//==============================================================================
+
+typedef enum _SawPulseParam
+{
+    SawPulseTranspose = 0,
+    SawPulseShape,
+    SawPulseDetune,
+    SawPulseVolume
+} SawPulseParam;
+static const StringArray cSawPulseParams = {
+    "Transpose",
+    "Shape",
+    "Detune",
+    "Volume"
+};
+static const std::vector<std::vector<float>> vSawPulseInit = {
+    { -24.0f, 24.0f, 0.0f },  //Transpose
+    { 0.0f, 1.0f, 0.06f },  //Shape
+    { 0.0f, 1.0f, 0.0f },   //Detune
+    { 0.0f, 1.0f, 0.5f },   //Volume
+};
+
+//==============================================================================
+
+typedef enum _LowpassParam
+{
+    LowpassCutoff = 0,
+    LowpassKeyFollow,
+    LowpassResonance
+} LowpassParam;
+static const StringArray cLowpassParams = {
+    "Cutoff",
+    "KeyFollow",
+    "Resonance"
+};
+static const std::vector<std::vector<float>> vLowpassInit = {
+    { 0.0f, 4000.f, 2000.f },   //Cutoff
+    { 0.0f, 1.f, 0.5f },   //KeyFollow
+    { 0.1f, 2.f, 0.4f },   //Resonance
+};
+
+//==============================================================================
+
+typedef enum _EnvelopeParam
+{
+    EnvelopeAttack = 0,
+    EnvelopeDecay,
+    EnvelopeSustain,
+    EnvelopeRelease,
+    EnvelopeLeak
+} EnvelopeParam;
+static const StringArray cEnvelopeParams = {
+    "Attack",
+    "Decay",
+    "Sustain",
+    "Release",
+    "Leak"
+};
+static const std::vector<std::vector<float>> vEnvelopeInit = {
+    { 0.0f, 1.0f, 0.0f },   //Attack
+    { 0.0f, 1.0f, 0.06f },  //Decay
+    { 0.0f, 1.0f, 0.9f },   //Sustain
+    { 0.0f, 1.0f, 0.1f },   //Release
+    { 0.0f, 1.0f, 0.1f },   //Leak
+};
+
+//==============================================================================s
 
 static const std::vector<std::string> cSubtractiveKnobParamNames = {
     "SubtractiveVolume",
@@ -145,3 +215,6 @@ static const std::vector<std::vector<float>> cWavetableKnobParamInitValues = {
     { 0.0f, 1.0f, 0.1f },   //WavetableFilterRelease
     { 0.0f, 1.0f, 0.1f }    //WavetableFilterLeak
 };
+
+static const float value0 = 0.0f;
+static const float value1 = 1.0f;

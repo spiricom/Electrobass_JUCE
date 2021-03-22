@@ -17,6 +17,8 @@
 #define EDITOR_WIDTH 800.0f
 #define EDITOR_HEIGHT 600.0f
 
+class ESModule;
+
 //==============================================================================
 /**
 */
@@ -50,30 +52,23 @@ public:
     void loadWav();
     void chooseFile(const FileChooser& chooser);
     
+    ESAudioProcessor& processor;
+    AudioProcessorValueTreeState& vts;
+    OwnedArray<SliderAttachment> sliderAttachments;
+    
 private:
     
-    ESAudioProcessor& processor;
-    
-    AudioProcessorValueTreeState& vts;
-    
-    OwnedArray<Slider> stDials;
-    OwnedArray<Label> stDialLabels;
-    OwnedArray<Slider> ccDials;
-    OwnedArray<Label> ccDialLabels;
-//    OwnedArray<ESButton> buttons;
-//    OwnedArray<ESLight> lights;
-    
+    OwnedArray<ESDial> ccDials;
     OwnedArray<Slider> pitchBendSliders;
     
     MidiKeyboardComponent keyboard;
-    
     OwnedArray<TextButton> channelSelection;
     
+    OwnedArray<ESModule> modules;
+
     std::unique_ptr<ComponentBoundsConstrainer> constrain;
     std::unique_ptr<ResizableCornerComponent> resizer;
     std::unique_ptr<Drawable> panel;
-
-    OwnedArray<SliderAttachment> sliderAttachments;
     
     Label versionLabel;
     Font euphemia;
@@ -81,4 +76,24 @@ private:
     ESLookAndFeel laf;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ESAudioProcessorEditor)
+};
+
+//==============================================================================
+
+class ESModule : public Component
+{
+public:
+    
+    ESModule(AudioComponent&, ESAudioProcessorEditor&);
+    ~ESModule() override;
+    
+    void setBounds (float x, float y, float w, float h);
+    void setBounds (Rectangle<float> newBounds);
+    
+private:
+    
+    AudioComponent& ac;
+    OwnedArray<ESDial> dials;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ESModule)
 };

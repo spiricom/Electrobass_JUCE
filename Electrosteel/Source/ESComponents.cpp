@@ -10,6 +10,76 @@
 
 #include "ESComponents.h"
 
+ESDial::ESDial(const String& t) :
+label(t, t)
+{
+    setInterceptsMouseClicks(false, true);
+    
+    slider.setLookAndFeel(&laf);
+    slider.setSliderStyle(Slider::RotaryVerticalDrag);
+    slider.setTextBoxStyle(Slider::TextBoxBelow, false, 4, 4);
+    slider.setRange(0., 1.);
+    addAndMakeVisible(&slider);
+    
+    label.setJustificationType(Justification::centredTop);
+    label.setLookAndFeel(&laf);
+    addAndMakeVisible(&label);
+}
+
+ESDial::~ESDial()
+{
+    slider.setLookAndFeel(nullptr);
+    label.setLookAndFeel(nullptr);
+}
+
+void ESDial::setBounds (float x, float y, float w, float h)
+{
+    Rectangle<float> newBounds (x, y, w, h);
+    setBounds(newBounds);
+}
+
+void ESDial::setBounds (Rectangle<float> newBounds)
+{
+    Component::setBounds(newBounds.toNearestInt());
+}
+
+void ESDial::setSliderBounds (float x, float y, float w, float h)
+{
+    Rectangle<float> newBounds (x, y, w, h);
+    setSliderBounds(newBounds);
+}
+
+void ESDial::setSliderBounds (Rectangle<float> newBounds)
+{
+    slider.setBounds(newBounds.toNearestInt());
+    slider.setTextBoxStyle(Slider::TextBoxBelow, false, newBounds.getWidth(),
+                           newBounds.getHeight() - newBounds.getWidth());
+}
+
+void ESDial::setLabelBounds (float x, float y, float w, float h)
+{
+    Rectangle<float> newBounds (x, y, w, h);
+    setLabelBounds(newBounds);
+}
+
+void ESDial::setLabelBounds (Rectangle<float> newBounds)
+{
+    label.setBounds(newBounds.toNearestInt());
+}
+
+void ESDial::setText (const String& newText, NotificationType notification)
+{
+    label.setText(newText, notification);
+}
+
+void ESDial::setFont (const Font& newFont)
+{
+    label.setFont(newFont);
+}
+
+//==============================================================================
+//==============================================================================
+
 ESButton::ESButton (const String& t, Colour n, Colour o, Colour d)
 : Button (t),
 normalColour   (n), overColour   (o), downColour   (d),
@@ -129,7 +199,8 @@ void ESButton::paintButton (Graphics& g, bool shouldDrawButtonAsHighlighted, boo
     }
 }
 
-
+//==============================================================================
+//==============================================================================
 
 ESLight::ESLight(const String& name, Colour normalColour, Colour onColour) :
 Component(name),

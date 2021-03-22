@@ -35,27 +35,11 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     
     for (int i = 0; i < NUM_GLOBAL_CC; ++i)
     {
-        ccDials.add(new Slider());
-        ccDials[i]->setLookAndFeel(&laf);
-        ccDials[i]->setSliderStyle(Slider::RotaryVerticalDrag);
-        ccDials[i]->setTextBoxStyle(Slider::NoTextBox, true, 0, 0);
-        ccDials[i]->setRange(0., 1.);
+        ccDials.add(new ESDial("CC" + String(i+1)));
         ccDials[i]->addListener(this);
         addAndMakeVisible(ccDials[i]);
-        
-        ccDialLabels.add(new Label());
-        ccDialLabels[i]->setText("CC" + String(i+1), dontSendNotification);
-        //        dialLabels[i]->setMultiLine(true);
-        //        dialLabels[i]->setReadOnly(true);
-        ccDialLabels[i]->setFont(euphemia);
-        //        dialLabels[i]->setInterceptsMouseClicks(false, false);
-        ccDialLabels[i]->setJustificationType(Justification::centredTop);
-        ccDialLabels[i]->setLookAndFeel(&laf);
-        addAndMakeVisible(ccDialLabels[i]);
-        
-        sliderAttachments.add(new SliderAttachment(vts, "CC" + String(i+1), *ccDials[i]));
+        sliderAttachments.add(new SliderAttachment(vts, "CC" + String(i+1), ccDials[i]->getSlider()));
     }
-    ccDialLabels[0]->setText("CC1 (Volume)", dontSendNotification);
     
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
@@ -83,47 +67,17 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     keyboard.setOctaveForMiddleC(4);
     addAndMakeVisible(&keyboard);
     
-    for (int i = 0; i < SubtractiveKnobParamNil; i++) {
-        stDials.add(new Slider());
-        stDials[i]->setLookAndFeel(&laf);
-        stDials[i]->setSliderStyle(Slider::RotaryVerticalDrag);
-        stDials[i]->setTextBoxStyle(Slider::NoTextBox, true, 0, 0);
-        stDials[i]->setRange(0., 1.);
-        stDials[i]->addListener(this);
-        addAndMakeVisible(stDials[i]);
-        
-        stDialLabels.add(new Label());
-        stDialLabels[i]->setText(String(cSubtractiveKnobParamNames[i]).replace("Subtractive", ""),
-                               dontSendNotification);
-        //        dialLabels[i]->setMultiLine(true);
-        //        dialLabels[i]->setReadOnly(true);
-        stDialLabels[i]->setFont(euphemia);
-        //        dialLabels[i]->setInterceptsMouseClicks(false, false);
-        stDialLabels[i]->setJustificationType(Justification::centredTop);
-        stDialLabels[i]->setLookAndFeel(&laf);
-        addAndMakeVisible(stDialLabels[i]);
-        
-        sliderAttachments.add(new SliderAttachment(vts, cSubtractiveKnobParamNames[i], *stDials[i]));
-    }
+    //==============================================================================
     
-    Path path;
-    path.addEllipse(0, 0, 30, 30);
+    modules.add(new ESModule(*processor.sposc[0], *this));
+    modules.add(new ESModule(*processor.lp[0], *this));
+    modules.add(new ESModule(*processor.env[0], *this));
     
-//    for (int i = 0; i < 0; i++)
-//    {
-//        buttons.add(new ESButton("", Colours::white, Colours::grey.brighter(), Colours::darkgrey));
-//        buttons[i]->setShape(path, true, true, true);
-//        addAndMakeVisible(buttons[i]);
-//        buttons[i]->addListener(this);
-//        buttons[i]->setOpaque(true);
-//    }
-//
-//    for (int i = 0; i < 0; i++)
-//    {
-//        lights.add(new ESLight("", Colours::grey, Colours::red));
-//        addAndMakeVisible(lights[i]);
-//        lights[i]->setOpaque(true);
-//    }
+    addAndMakeVisible(modules[0]);
+    addAndMakeVisible(modules[1]);
+    addAndMakeVisible(modules[2]);
+    
+    //==============================================================================
     
     setSize(EDITOR_WIDTH * processor.editorScale, EDITOR_HEIGHT * processor.editorScale);
     
@@ -146,18 +100,11 @@ ESAudioProcessorEditor::~ESAudioProcessorEditor()
     for (int i = 0; i < NUM_GLOBAL_CC; ++i)
     {
         ccDials[i]->setLookAndFeel(nullptr);
-        ccDialLabels[i]->setLookAndFeel(nullptr);
     }
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
         channelSelection[i]->setLookAndFeel(nullptr);
         pitchBendSliders[i]->setLookAndFeel(nullptr);
-
-    }
-    for (int i = 0; i < SubtractiveKnobParamNil; i++)
-    {
-        stDials[i]->setLookAndFeel(nullptr);
-        stDialLabels[i]->setLookAndFeel(nullptr);
     }
 }
 
@@ -222,26 +169,22 @@ void ESAudioProcessorEditor::resized()
     //    lights[vocodec::ESLightOut2Meter]   ->setBounds(538*s, 503*s, smallLightSize);
     //    lights[vocodec::ESLightOut2Clip]    ->setBounds(558*s, 503*s, smallLightSize);
     
-    for (int i = 0; i < SubtractiveKnobParamNil; i++)
-    {
-        int c = i % 8;
-        int r = i / 8;
-        stDials[i]->setBounds(c*90*s + 45*s, r*100*s + 100*s, knobSize, knobSize);
-        stDialLabels[i]->setBounds(stDials[i]->getX() + knobSize*0.5f - labelWidth*0.5f,
-                                   stDials[i]->getY() + knobSize*1.1f,
-                                   labelWidth, labelHeight);
-    }
-    
     for (int i = 0; i < NUM_GLOBAL_CC; ++i)
     {
-        ccDials[i]->setBounds(300*s + 90*i, 380*s, knobSize, knobSize);
-        ccDialLabels[i]->setBounds(ccDials[i]->getX() + knobSize*0.5f - labelWidth*0.5f,
-                                   ccDials[i]->getY() + knobSize*1.1f,
+        ccDials[i]->setBounds(0, 0, width, height);
+        ccDials[i]->setSliderBounds(300*s + 90*s*i, 380*s, knobSize, knobSize * 1.35f);
+        ccDials[i]->setLabelBounds(ccDials[i]->getSlider().getX() + knobSize*0.5f - labelWidth*0.5f,
+                                   ccDials[i]->getSlider().getY() + knobSize*1.325f,
                                    labelWidth, labelHeight);
     }
     
-    for (auto label : stDialLabels)
-        label->setFont(euphemia.withHeight(height * 0.027f));
+    modules[0]->setBounds(0, 20*s, 500*s, 120*s);
+    modules[1]->setBounds(0, 140*s, 500*s, 120*s);
+    modules[2]->setBounds(0, 260*s, 500*s, 120*s);
+    
+//    
+//    for (auto label : stDialLabels)
+//        label->setFont(euphemia.withHeight(height * 0.027f));
     
     resizeChannelSelection();
     
@@ -382,4 +325,52 @@ void ESAudioProcessorEditor::loadWav()
     });
 }
 
+
+//==============================================================================
+//==============================================================================
+
+ESModule::ESModule(AudioComponent& ac, ESAudioProcessorEditor& editor) :
+ac(ac)
+{
+    setInterceptsMouseClicks(false, true);
+    
+    for (int i = 0; i < ac.paramNames.size(); i++)
+    {
+        dials.add(new ESDial(ac.paramNames[i]));
+        dials[i]->addListener(&editor);
+        addAndMakeVisible(dials[i]);
+        editor.sliderAttachments.add(new SliderAttachment(editor.vts, ac.name + ac.paramNames[i], dials[i]->getSlider()));
+    }
+}
+
+ESModule::~ESModule()
+{
+    
+}
+
+void ESModule::setBounds (float x, float y, float w, float h)
+{
+    Rectangle<float> newBounds (x, y, w, h);
+    setBounds(newBounds);
+}
+
+void ESModule::setBounds (Rectangle<float> newBounds)
+{
+    Component::setBounds(newBounds.toNearestInt());
+    float x = newBounds.getX();
+    float w = newBounds.getWidth() / 5.f;
+    float dialWidth = w * 0.6f;
+    
+    float labelWidth = w * 0.9f;
+    float labelHeight = dialWidth * 0.35;
+    
+    for (int i = 0; i < ac.paramNames.size(); ++i)
+    {
+        dials[i]->setBounds(newBounds.withPosition(0, 0));
+        dials[i]->setSliderBounds(x + w*i + w*0.2f, 0, dialWidth, dialWidth * 1.35f);
+        dials[i]->setLabelBounds(dials[i]->getSlider().getX() + dialWidth*0.5f - labelWidth*0.5f,
+                                 dials[i]->getSlider().getY() + dialWidth*1.325f,
+                                 labelWidth, labelHeight);
+    }
+}
 
