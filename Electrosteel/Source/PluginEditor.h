@@ -14,8 +14,8 @@
 #include "PluginProcessor.h"
 #include "ESComponents.h"
 
-#define EDITOR_WIDTH 800.0f
-#define EDITOR_HEIGHT 600.0f
+#define EDITOR_WIDTH 900.0f
+#define EDITOR_HEIGHT 700.0f
 
 class ESModule;
 
@@ -54,10 +54,10 @@ public:
     
     ESAudioProcessor& processor;
     AudioProcessorValueTreeState& vts;
-    OwnedArray<SliderAttachment> sliderAttachments;
     
 private:
     
+    std::unique_ptr<ESDial> masterDial;
     OwnedArray<ESDial> ccDials;
     OwnedArray<Slider> pitchBendSliders;
     
@@ -69,6 +69,8 @@ private:
     std::unique_ptr<ComponentBoundsConstrainer> constrain;
     std::unique_ptr<ResizableCornerComponent> resizer;
     std::unique_ptr<Drawable> panel;
+    
+    OwnedArray<SliderAttachment> sliderAttachments;
     
     Label versionLabel;
     Font euphemia;
@@ -84,7 +86,7 @@ class ESModule : public Component
 {
 public:
     
-    ESModule(AudioComponent&, ESAudioProcessorEditor&);
+    ESModule(AudioProcessorValueTreeState&, AudioComponent&);
     ~ESModule() override;
     
     void setBounds (float x, float y, float w, float h);
@@ -92,8 +94,11 @@ public:
     
 private:
     
+    AudioProcessorValueTreeState& vts;
     AudioComponent& ac;
     OwnedArray<ESDial> dials;
+    
+    OwnedArray<SliderAttachment> sliderAttachments;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ESModule)
 };

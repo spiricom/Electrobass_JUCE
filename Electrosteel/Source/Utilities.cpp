@@ -18,10 +18,12 @@ vts(vts),
 name(n),
 paramNames(s)
 {
-    for (int i = 0; i < paramNames.size(); ++i)
+    for (int v = 0; v < NUM_VOICES; ++v)
     {
-        SmoothedParameter p (vts.getRawParameterValue(name + paramNames[i]));
-        params.add(p);
+        for (int i = 0; i < paramNames.size(); ++i)
+        {
+            params[v].add(new SmoothedParameter(vts.getRawParameterValue(name + paramNames[i])));
+        }
     }
 }
 
@@ -31,4 +33,9 @@ AudioComponent::~AudioComponent()
 
 void AudioComponent::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
+}
+
+SmoothedParameter* AudioComponent::getParameter(int voice, int p)
+{
+    return params[voice][p];
 }

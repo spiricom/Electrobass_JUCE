@@ -52,21 +52,21 @@ void Envelope::prepareToPlay (double sampleRate, int samplesPerBlock)
 
 void Envelope::tick()
 {
-    float attack = params[EnvelopeAttack];
-    float decay = params[EnvelopeDecay];
-    float sustain = params[EnvelopeSustain];
-    float release = params[EnvelopeRelease];
-    float leak = params[EnvelopeLeak];
-    
-    for (int i = 0; i < NUM_VOICES; i++)
+    for (int v = 0; v < NUM_VOICES; v++)
     {
-        tADSRT_setAttack(&envs[i], expBuffer[(int)(attack * expBufferSizeMinusOne)] * 8192.0f);
-        tADSRT_setDecay(&envs[i], expBuffer[(int)(decay * expBufferSizeMinusOne)] * 8192.0f);
-        tADSRT_setSustain(&envs[i], sustain);
-        tADSRT_setRelease(&envs[i], expBuffer[(int)(release * expBufferSizeMinusOne)] * 8192.0f);
-        tADSRT_setLeakFactor(&envs[i], ((1.0f - leak) * 0.00005f) + 0.99995f);
+        float attack = *params[v][EnvelopeAttack];
+        float decay = *params[v][EnvelopeDecay];
+        float sustain = *params[v][EnvelopeSustain];
+        float release = *params[v][EnvelopeRelease];
+        float leak = *params[v][EnvelopeLeak];
         
-        value[i] = tADSRT_tick(&envs[i]);
+        tADSRT_setAttack(&envs[v], expBuffer[(int)(attack * expBufferSizeMinusOne)] * 8192.0f);
+        tADSRT_setDecay(&envs[v], expBuffer[(int)(decay * expBufferSizeMinusOne)] * 8192.0f);
+        tADSRT_setSustain(&envs[v], sustain);
+        tADSRT_setRelease(&envs[v], expBuffer[(int)(release * expBufferSizeMinusOne)] * 8192.0f);
+        tADSRT_setLeakFactor(&envs[v], ((1.0f - leak) * 0.00005f) + 0.99995f);
+        
+        value[v] = tADSRT_tick(&envs[v]);
     }
 }
 
@@ -80,7 +80,7 @@ void Envelope::noteOff(int voice, float velocity)
     tADSRT_off(&envs[voice]);
 }
 
-float* Envelope::getValue(int voice)
+float* Envelope::getValuePointer(int voice)
 {
     return &value[voice];
 }

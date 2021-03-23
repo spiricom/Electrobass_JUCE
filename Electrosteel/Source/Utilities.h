@@ -11,6 +11,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include "Constants.h"
 
 class ESAudioProcessor;
 
@@ -23,19 +24,39 @@ public:
     SmoothedParameter(std::atomic<float>* p)
     {
         parameter = p;
+        mHook = &value1;
+        aHook = &value0;
+        addMin = 0.0f;
+        addMax = 1.0f;
     }
     ~SmoothedParameter() {};
     
     operator float()
     {
-        smoothed.setTargetValue(*parameter);
+        float target = (*parameter * *mHook) + (*aHook * (addMax - addMin) + addMin);
+        smoothed.setTargetValue(target);
         return smoothed.getNextValue();
+    }
+    
+    void setMultiplyHook(float* hook)
+    {
+        mHook = hook;
+    }
+    
+    void setAddHook(float* hook, float min, float max)
+    {
+        aHook = hook;
+        addMin = min;
+        addMax = max;
     }
     
 private:
     
     SmoothedValue<float, ValueSmoothingTypes::Linear> smoothed;
     std::atomic<float>* parameter;
+    const float* mHook;
+    const float* aHook;
+    float addMin, addMax;
 };
 
 //==============================================================================
@@ -50,10 +71,13 @@ public:
     
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock);
+    
+    //==============================================================================
+    SmoothedParameter* getParameter(int i, int voice);
         
     ESAudioProcessor& processor;
     AudioProcessorValueTreeState& vts;
-    Array<SmoothedParameter> params;
+    OwnedArray<SmoothedParameter> params[NUM_VOICES];
     String name;
     StringArray paramNames;
     

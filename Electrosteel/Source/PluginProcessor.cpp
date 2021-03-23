@@ -41,12 +41,25 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
 
     leaf.clearOnAllocation = 0;
     
-    for (int i = 0; i < 1; ++i)
+    for (int i = 0; i < 2; ++i)
     {
         String s (i+1);
         sposc.add(std::make_unique<SawPulseOscillator>("SawPulse" + s, *this, vts, cSawPulseParams));
         lp.add(std::make_unique<LowpassFilter>("Lowpass" + s, *this, vts, cLowpassParams));
         env.add(std::make_unique<Envelope>("Envelope" + s, *this, vts, cEnvelopeParams));
+    }
+    
+    masterVolume = SmoothedParameter(vts.getRawParameterValue("Master"));
+    
+    // Make a SmoothedParameter for each voice from the single AudioParameter
+    // to allow for env mapping
+    for (int i = 0; i < NUM_VOICES; ++i)
+    {
+        SmoothedParameter p (vts.getRawParameterValue("Amp"));
+        p.setMultiplyHook(env[0]->getValuePointer(i));
+        voiceAmp.add(p);
+        
+        lp[0]->getParameter(i, LowpassCutoff)->setAddHook(env[1]->getValuePointer(i), 0.f, 4096.f);
     }
     
     for (int i = 0; i < NUM_GLOBAL_CC; ++i)
@@ -73,6 +86,12 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
     
     //==============================================================================
     // Top level parameters
+    layout.add (std::make_unique<AudioParameterFloat> ("Master", "Master",
+                                                       0., 2., 1.));
+    
+    layout.add (std::make_unique<AudioParameterFloat> ("Amp", "Amp",
+                                                       0., 2., 1.));
+    
     for (int i = 0; i < NUM_GLOBAL_CC; ++i)
     {
         layout.add (std::make_unique<AudioParameterFloat> ("CC" + String(i+1),
@@ -93,7 +112,7 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
         float min = vSawPulseInit[i][0];
         float max = vSawPulseInit[i][1];
         float def = vSawPulseInit[i][2];
-        for (int j = 0; j < 1 /* NUM SPOSC */; ++j)
+        for (int j = 0; j < 2 /* NUM SPOSC */; ++j)
         {
             String n = "SawPulse" + String(j+1) + cSawPulseParams[i];
             layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
@@ -105,7 +124,7 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
         float min = vLowpassInit[i][0];
         float max = vLowpassInit[i][1];
         float def = vLowpassInit[i][2];
-        for (int j = 0; j < 1 /* NUM LP */; ++j)
+        for (int j = 0; j < 2 /* NUM LP */; ++j)
         {
             String n = "Lowpass" + String(j+1) + cLowpassParams[i];
             layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
@@ -117,32 +136,12 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
         float min = vEnvelopeInit[i][0];
         float max = vEnvelopeInit[i][1];
         float def = vEnvelopeInit[i][2];
-        for (int j = 0; j < 1 /* NUM ENV */; ++j)
+        for (int j = 0; j < 2 /* NUM ENV */; ++j)
         {
             String n = "Envelope" + String(j+1) + cEnvelopeParams[i];
             layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
         }
     }
-//
-//    for (int i = 0; i < SubtractiveKnobParamNil; ++i)
-//    {
-//        float min = cSubtractiveKnobParamInitValues[i][0];
-//        float max = cSubtractiveKnobParamInitValues[i][1];
-//        float def = cSubtractiveKnobParamInitValues[i][2];
-//        layout.add (std::make_unique<AudioParameterFloat> (cSubtractiveKnobParamNames[i],
-//                                                           cSubtractiveKnobParamNames[i],
-//                                                           min, max, def));
-//    }
-//
-//    for (int i = 0; i < WavetableKnobParamNil; ++i)
-//    {
-//        float min = cWavetableKnobParamInitValues[i][0];
-//        float max = cWavetableKnobParamInitValues[i][1];
-//        float def = cWavetableKnobParamInitValues[i][2];
-//        layout.add (std::make_unique<AudioParameterFloat> (cWavetableKnobParamNames[i],
-//                                                           cWavetableKnobParamNames[i],
-//                                                           min, max, def));
-//    }
     
     return layout;
 }
@@ -203,7 +202,7 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
     for (int i = 0; i < buffer.getNumSamples(); i++)
     {
         float sample = 0.f;
-        env[0]->tick();
+        for (auto e : env) e->tick();
         for (int v = 0; v < NUM_VOICES; ++v)
         {
             float pitchBend = pitchBendValues[0] + pitchBendValues[v+1];
@@ -216,9 +215,11 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
             float voiceSample = 0.f;
             voiceSample = sposc[0]->tick(v);
             voiceSample = lp[0]->tick(v, voiceSample);
-            voiceSample *= *env[0]->getValue(v);
+            voiceSample *= voiceAmp[v];
             sample += voiceSample;
         }
+        
+        sample *= masterVolume;
         
         for (int channel = 0; channel < totalNumOutputChannels; ++channel)
         {
@@ -277,7 +278,7 @@ void ESAudioProcessor::noteOn(int channel, int key, float velocity)
         
         if (v >= 0)
         {
-            env[0]->noteOn(i, velocity);
+            for (auto e : env) e->noteOn(i, velocity);
         }
     }
     
@@ -297,8 +298,7 @@ void ESAudioProcessor::noteOff(int channel, int key, float velocity)
     
     if (v >= 0)
     {
-        env[0]->noteOff(i, velocity);
-    }
+        for (auto e : env) e->noteOff(i, velocity);    }
     
     if (tSimplePoly_getNumActiveVoices(&voice[i]) < 1)
     {

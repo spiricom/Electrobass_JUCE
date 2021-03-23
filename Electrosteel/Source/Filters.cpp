@@ -36,9 +36,9 @@ float LowpassFilter::tick(int v, float input)
 {
     float follow = processor.voiceNote[v] - 60.f;
     
-    float midiCutoff = LEAF_frequencyToMidi(params[LowpassCutoff]);
-    float keyFollow = params[LowpassKeyFollow];
-    float q = params[LowpassResonance];
+    float midiCutoff = LEAF_frequencyToMidi(*params[v][LowpassCutoff]);
+    float keyFollow = *params[v][LowpassKeyFollow];
+    float q = *params[v][LowpassResonance];
     
     float adjustedMidiCutoff = (midiCutoff * (1.f - keyFollow)) + ((midiCutoff + follow) * keyFollow);
     float cutoff = LEAF_midiToFrequency(adjustedMidiCutoff);

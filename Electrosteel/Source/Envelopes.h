@@ -29,7 +29,7 @@ public:
     void tick();
     void noteOn(int voice, float velocity);
     void noteOff(int voice, float velocity);
-    float* getValue(int voice);
+    float* getValuePointer(int voice);
     
 private:
     

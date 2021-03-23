@@ -100,9 +100,10 @@ private:
     
     AudioProcessorValueTreeState vts;
     
+    SmoothedParameter masterVolume;
+    Array<SmoothedParameter> voiceAmp;
     Array<SmoothedParameter> pitchBendValues;
     Array<SmoothedParameter> ccValues;
-
     
     char dummy_memory[1];
     tSimplePoly voice[NUM_VOICES];

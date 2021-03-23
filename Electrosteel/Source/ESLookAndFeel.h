@@ -192,7 +192,8 @@ public:
     
     void drawRotarySlider(Graphics& g, int x, int y, int width, int height, float sliderPos, const float rotaryStartAngle, const float rotaryEndAngle, Slider& slider) override
     {
-        g.setGradientFill(ColourGradient(Colour(25, 25, 25), juce::Point<float>(-slider.getX(),-slider.getY()), Colour(10, 10, 10), juce::Point<float>(-slider.getX(), slider.getParentHeight()-slider.getY()), false));
+        auto pos = slider.getTopLevelComponent()->getLocalPoint(&slider, Point<int>());
+        g.setGradientFill(ColourGradient(Colour(25, 25, 25), juce::Point<float>(-pos.getX(),-pos.getY()), Colour(10, 10, 10), juce::Point<float>(-pos.getX(),slider.getTopLevelComponent()->getHeight()-slider.getY()), false));
         g.fillRect(slider.getLocalBounds());
         
         auto radius = jmin(width / 2, height / 2) - width*0.15f;

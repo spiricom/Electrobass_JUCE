@@ -24,6 +24,7 @@ public:
     ~ESDial() override;
     
     void addListener (Slider::Listener* l) { slider.addListener(l); }
+    void removeListener (Slider::Listener* l) { slider.removeListener(l); }
     
     void setBounds (float x, float y, float w, float h);
     void setBounds (Rectangle<float> newBounds);

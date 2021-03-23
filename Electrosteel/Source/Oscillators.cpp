@@ -73,10 +73,10 @@ void SawPulseOscillator::prepareToPlay (double sampleRate, int samplesPerBlock)
 
 float SawPulseOscillator::tick(int v)
 {
-    float transpose = params[SawPulseTranspose];
-    float shape = params[SawPulseShape];
-    float detuneAmount = params[SawPulseDetune];
-    float volume = params[SawPulseVolume];
+    float transpose = *params[v][SawPulseTranspose];
+    float shape = *params[v][SawPulseShape];
+    float detuneAmount = *params[v][SawPulseDetune];
+    float volume = *params[v][SawPulseVolume];
     
 //    float tempLFO1 = (tCycle_tick(&pwmLFO1) * 0.25f) + 0.5f; // pulse length
 //    float tempLFO2 = ((tCycle_tick(&pwmLFO2) * 0.25f) + 0.5f) * tempLFO1; // open length
