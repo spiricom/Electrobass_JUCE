@@ -54,11 +54,11 @@ void Envelope::tick()
 {
     for (int v = 0; v < NUM_VOICES; v++)
     {
-        float attack = *params[v][EnvelopeAttack];
-        float decay = *params[v][EnvelopeDecay];
-        float sustain = *params[v][EnvelopeSustain];
-        float release = *params[v][EnvelopeRelease];
-        float leak = *params[v][EnvelopeLeak];
+        float attack = params[v][EnvelopeAttack]->tick();
+        float decay = params[v][EnvelopeDecay]->tick();
+        float sustain = params[v][EnvelopeSustain]->tick();
+        float release = params[v][EnvelopeRelease]->tick();
+        float leak = params[v][EnvelopeLeak]->tick();
         
         tADSRT_setAttack(&envs[v], expBuffer[(int)(attack * expBufferSizeMinusOne)] * 8192.0f);
         tADSRT_setDecay(&envs[v], expBuffer[(int)(decay * expBufferSizeMinusOne)] * 8192.0f);

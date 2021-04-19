@@ -31,11 +31,16 @@ public:
     }
     ~SmoothedParameter() {};
     
-    operator float()
+    float tick()
     {
         float target = (*parameter * *mHook) + (*aHook * (addMax - addMin) + addMin);
         smoothed.setTargetValue(target);
-        return smoothed.getNextValue();
+        return value = smoothed.getNextValue();
+    }
+    
+    float* getValuePointer()
+    {
+        return &value;
     }
     
     void setMultiplyHook(float* hook)
@@ -54,6 +59,7 @@ private:
     
     SmoothedValue<float, ValueSmoothingTypes::Linear> smoothed;
     std::atomic<float>* parameter;
+    float value;
     const float* mHook;
     const float* aHook;
     float addMin, addMax;

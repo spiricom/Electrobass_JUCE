@@ -263,3 +263,44 @@ void ESLight::paint (Graphics &g)
         g.fillEllipse(area);
     }
 }
+
+//==============================================================================
+//==============================================================================
+
+MappingSource::MappingSource(const String &name, float* source) :
+DrawableButton(name, ButtonStyle::ImageFitted),
+source(source)
+{
+    image = Drawable::createFromImageData(BinaryData::mappingsourceicon_svg, BinaryData::mappingsourceicon_svgSize);
+    setImages(image.get());
+}
+
+MappingSource::~MappingSource()
+{
+    source = nullptr;
+}
+
+float* MappingSource::getValuePointer()
+{
+    return source;
+}
+
+//==============================================================================
+//==============================================================================
+
+MappingTarget::MappingTarget(const String &name, SmoothedParameter& target) :
+DrawableButton(name, ButtonStyle::ImageFitted),
+target(target)
+{
+    image = Drawable::createFromImageData(BinaryData::mappingtargeticon_svg, BinaryData::mappingtargeticon_svgSize);
+    setImages(image.get());
+}
+
+MappingTarget::~MappingTarget()
+{
+}
+
+void MappingTarget::createMapping(MappingSource* source)
+{
+    target.setAddHook(source->getValuePointer(), 0.0f, 1.0f);
+}

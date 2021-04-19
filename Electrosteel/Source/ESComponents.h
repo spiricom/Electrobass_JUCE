@@ -132,3 +132,41 @@ private:
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ESLight)
 };
+
+//==============================================================================
+
+class MappingSource : public DrawableButton
+{
+public:
+    
+    MappingSource(const String &name, float* source);
+    ~MappingSource() override;
+    
+    float* getValuePointer();
+    
+private:
+    
+    std::unique_ptr<Drawable> image;
+    float* source;
+    
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MappingSource)
+};
+
+//==============================================================================
+
+class MappingTarget : public DrawableButton
+{
+public:
+    
+    MappingTarget(const String &name, SmoothedParameter& target);
+    ~MappingTarget() override;
+    
+    void createMapping(MappingSource* source);
+    
+private:
+    
+    std::unique_ptr<Drawable> image;
+    SmoothedParameter& target;
+    
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MappingTarget)
+};

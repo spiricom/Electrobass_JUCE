@@ -92,18 +92,19 @@ public:
     float voiceNote[NUM_VOICES];
     float voiceFreq[NUM_VOICES];
     
+    SmoothedParameter masterVolume;
+    
     OwnedArray<SawPulseOscillator> sposc;
     OwnedArray<LowpassFilter> lp;
     OwnedArray<Envelope> env;
     
+    OwnedArray<SmoothedParameter> voiceAmpParams;
+    OwnedArray<SmoothedParameter> pitchBendParams;
+    OwnedArray<SmoothedParameter> ccParams;
+    
 private:
     
     AudioProcessorValueTreeState vts;
-    
-    SmoothedParameter masterVolume;
-    Array<SmoothedParameter> voiceAmp;
-    Array<SmoothedParameter> pitchBendValues;
-    Array<SmoothedParameter> ccValues;
     
     char dummy_memory[1];
     tSimplePoly voice[NUM_VOICES];

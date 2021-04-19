@@ -49,30 +49,27 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
         env.add(std::make_unique<Envelope>("Envelope" + s, *this, vts, cEnvelopeParams));
     }
     
-    masterVolume = SmoothedParameter(vts.getRawParameterValue("Master"));
-    
     // Make a SmoothedParameter for each voice from the single AudioParameter
     // to allow for env mapping
     for (int i = 0; i < NUM_VOICES; ++i)
     {
-        SmoothedParameter p (vts.getRawParameterValue("Amp"));
-        p.setMultiplyHook(env[0]->getValuePointer(i));
-        voiceAmp.add(p);
-        
+        voiceAmpParams.add(new SmoothedParameter(vts.getRawParameterValue("Amp")));
+        voiceAmpParams.getLast()->setMultiplyHook(env[0]->getValuePointer(i));
         lp[0]->getParameter(i, LowpassCutoff)->setAddHook(env[1]->getValuePointer(i), 0.f, 4096.f);
     }
     
     for (int i = 0; i < NUM_GLOBAL_CC; ++i)
     {
-        SmoothedParameter p (vts.getRawParameterValue("CC" + String(i+1)));
-        ccValues.add(p);
+        ccParams.add(new SmoothedParameter(vts.getRawParameterValue("CC" + String(i+1))));
     }
     
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
-        SmoothedParameter p (vts.getRawParameterValue("PitchBendCh" + String(i+1)));
-        pitchBendValues.add(p);
+        pitchBendParams.add(new SmoothedParameter(vts.getRawParameterValue("PitchBendCh" +
+                                                                           String(i+1))));
     }
+    
+    masterVolume = SmoothedParameter(vts.getRawParameterValue("Master"));
 }
 
 ESAudioProcessor::~ESAudioProcessor()
@@ -201,11 +198,17 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
     
     for (int i = 0; i < buffer.getNumSamples(); i++)
     {
+        for (auto p : ccParams)
+        {
+            p->tick();
+        }
+        
         float sample = 0.f;
+        float globalPitchBend = pitchBendParams[0]->tick();
         for (auto e : env) e->tick();
         for (int v = 0; v < NUM_VOICES; ++v)
         {
-            float pitchBend = pitchBendValues[0] + pitchBendValues[v+1];
+            float pitchBend = globalPitchBend + pitchBendParams[v+1]->tick();
             float tempNote = (float)tSimplePoly_getPitch(&voice[v], 0) + pitchBend;
             float tempPitchClass = ((((int)tempNote) - keyCenter) % 12 );
             float tunedNote = tempNote + centsDeviation[(int)tempPitchClass];
@@ -215,11 +218,11 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
             float voiceSample = 0.f;
             voiceSample = sposc[0]->tick(v);
             voiceSample = lp[0]->tick(v, voiceSample);
-            voiceSample *= voiceAmp[v];
+            voiceSample *= voiceAmpParams[v]->tick();
             sample += voiceSample;
         }
         
-        sample *= masterVolume;
+        sample *= masterVolume.tick();
         
         for (int channel = 0; channel < totalNumOutputChannels; ++channel)
         {

@@ -43,6 +43,7 @@ public:
 	void buttonClicked(juce::Button* button) override;
 	void buttonStateChanged(Button *button) override;
     
+    void mouseDown (const MouseEvent &event) override;
     bool keyPressed (const KeyPress &key, Component *originatingComponent) override;
     
     void timerCallback() override;
@@ -51,6 +52,9 @@ public:
     
     void loadWav();
     void chooseFile(const FileChooser& chooser);
+    
+    void getAllChildren(Component* component, Array<Component*> &children);
+    Array<Component*> getAllChildren();
     
     ESAudioProcessor& processor;
     AudioProcessorValueTreeState& vts;
@@ -65,6 +69,10 @@ private:
     OwnedArray<TextButton> channelSelection;
     
     OwnedArray<ESModule> modules;
+    
+    OwnedArray<MappingSource> mappingSources;
+    MappingSource* currentMappingSource;
+    OwnedArray<MappingTarget> mappingTargets;
 
     std::unique_ptr<ComponentBoundsConstrainer> constrain;
     std::unique_ptr<ResizableCornerComponent> resizer;

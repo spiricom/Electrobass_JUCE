@@ -27,7 +27,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     setWantsKeyboardFocus(true);
     
     getTopLevelComponent()->addKeyListener(this);
-    
+        
     Typeface::Ptr tp = Typeface::createSystemTypefaceFor(BinaryData::EuphemiaCAS_ttf,
                                                          BinaryData::EuphemiaCAS_ttfSize);
     euphemia = Font(tp);
@@ -38,13 +38,23 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     addAndMakeVisible(masterDial.get());
     sliderAttachments.add(new SliderAttachment(vts, "Master", masterDial->getSlider()));
     
+    mappingTargets.add(new MappingTarget("Master", processor.masterVolume));
+    mappingTargets[0]->addListener(this);
+    addAndMakeVisible(mappingTargets[0]);
+    
     for (int i = 0; i < NUM_GLOBAL_CC; ++i)
     {
         ccDials.add(new ESDial("CC" + String(i+1)));
         ccDials[i]->addListener(this);
         addAndMakeVisible(ccDials[i]);
         sliderAttachments.add(new SliderAttachment(vts, "CC" + String(i+1), ccDials[i]->getSlider()));
+
+        mappingSources.add(new MappingSource("CC" + String(i+1),
+                                             processor.ccParams[i]->getValuePointer()));
+        mappingSources[i]->addListener(this);
+        addAndMakeVisible(mappingSources[i]);
     }
+    currentMappingSource = nullptr;
     
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
@@ -152,6 +162,8 @@ void ESAudioProcessorEditor::resized()
                                masterDial->getSlider().getY() + masterSize*1.325f,
                                labelWidth, labelHeight);
     
+    mappingTargets[0]->setBounds(550*s + masterSize, 20*s, 20*s, 20*s);
+    
     for (int i = 0; i < NUM_GLOBAL_CC; ++i)
     {
         ccDials[i]->setBounds(0, 0, width, height);
@@ -159,6 +171,8 @@ void ESAudioProcessorEditor::resized()
         ccDials[i]->setLabelBounds(ccDials[i]->getSlider().getX() + knobSize*0.5f - labelWidth*0.5f,
                                    ccDials[i]->getSlider().getY() + knobSize*1.325f,
                                    labelWidth, labelHeight);
+        
+        mappingSources[i]->setBounds(450*s + 90*s*i + knobSize, 460*s, 20*s, 20*s);
     }
     
     modules[0]->setBounds(0, 20*s, 500*s, 110*s);
@@ -223,25 +237,70 @@ void ESAudioProcessorEditor::buttonClicked(Button* button)
     
     resizeChannelSelection();
     
-    TextButton* tb = dynamic_cast<TextButton*>(button);
-    if (tb != nullptr)
+    if (TextButton* tb = dynamic_cast<TextButton*>(button))
     {
-        int channel = channelSelection.indexOf(tb) + 1;
-        keyboard.setMidiChannel(channel);
-        keyboard.setAlpha(channel > 1 ? 1.0f : 0.5f);
-        keyboard.setInterceptsMouseClicks(channel > 1, channel > 1);
-        
-        for (int i = 0; i < NUM_CHANNELS; ++i)
+        if (channelSelection.contains(tb))
         {
-            pitchBendSliders[i]->setVisible(false);
-            if (i+1 == channel) pitchBendSliders[i]->setVisible(true);
+            int channel = channelSelection.indexOf(tb) + 1;
+            keyboard.setMidiChannel(channel);
+            keyboard.setAlpha(channel > 1 ? 1.0f : 0.5f);
+            keyboard.setInterceptsMouseClicks(channel > 1, channel > 1);
+            
+            for (int i = 0; i < NUM_CHANNELS; ++i)
+            {
+                pitchBendSliders[i]->setVisible(false);
+                if (i+1 == channel) pitchBendSliders[i]->setVisible(true);
+            }
         }
     }
+    
+    if (MappingSource* ms = dynamic_cast<MappingSource*>(button))
+    {
+        setMouseCursor(MouseCursor::CrosshairCursor);
+        for (auto c : getAllChildren())
+        {
+            c->setMouseCursor(MouseCursor::CrosshairCursor);
+        }
+        if (currentMappingSource == ms) currentMappingSource = nullptr;
+        else currentMappingSource = ms;
+    }
+    
+    if (MappingTarget* mt = dynamic_cast<MappingTarget*>(button))
+    {
+        setMouseCursor(MouseCursor::NormalCursor);
+        for (auto c : getAllChildren())
+        {
+            c->setMouseCursor(MouseCursor::NormalCursor);
+        }
+        if (currentMappingSource != nullptr)
+        {
+            mt->createMapping(currentMappingSource);
+            currentMappingSource = nullptr;
+        }
+    }
+    
 }
 
 void ESAudioProcessorEditor::buttonStateChanged(Button* button)
 {
     if (button == nullptr) return;
+}
+
+void ESAudioProcessorEditor::mouseDown (const MouseEvent &event)
+{
+    if (event.mods.isRightButtonDown() ||
+        event.mods.isCtrlDown() ||
+        event.mods.isCommandDown() ||
+        event.mods.isAltDown() ||
+        event.mods.isShiftDown())
+    {
+        setMouseCursor(MouseCursor::NormalCursor);
+        for (auto c : getAllChildren())
+        {
+            c->setMouseCursor(MouseCursor::NormalCursor);
+        }
+        currentMappingSource = nullptr;
+    }
 }
 
 bool ESAudioProcessorEditor::keyPressed (const KeyPress &key, Component *originatingComponent)
@@ -309,6 +368,21 @@ void ESAudioProcessorEditor::loadWav()
     });
 }
 
+void ESAudioProcessorEditor::getAllChildren(Component* component, Array<Component*> &children)
+{
+    for (auto c : component->getChildren())
+    {
+        children.add(c);
+        getAllChildren(c, children);
+    }
+}
+
+Array<Component*> ESAudioProcessorEditor::getAllChildren()
+{
+    Array<Component*> children;
+    getAllChildren(this, children);
+    return children;
+}
 
 //==============================================================================
 //==============================================================================
@@ -358,4 +432,3 @@ void ESModule::setBounds (Rectangle<float> newBounds)
                                  labelWidth, labelHeight);
     }
 }
-
