@@ -16,6 +16,47 @@
 class ESAudioProcessor;
 
 //==============================================================================
+typedef enum HookOperation
+{
+    HookAdd = 0,
+    HookMultiply,
+    HookNil
+} HookOperation;
+
+class ParameterHook
+{
+public:
+    //==============================================================================
+    ParameterHook(float* hook, float min, float max, HookOperation op) :
+    hook(hook),
+    min(min),
+    max(max),
+    operation(op)
+    {
+        
+    }
+    ~ParameterHook() {};
+    //==============================================================================
+    float apply(float input)
+    {
+        float hookValue = (*hook * (max - min) + min);
+        if (operation == HookAdd)
+        {
+            return input + hookValue;
+        }
+        if (operation == HookMultiply)
+        {
+            return input * hookValue;
+        }
+        return input;
+    }
+
+    float* hook;
+    float min, max;
+    HookOperation operation;
+};
+
+//==============================================================================
 class SmoothedParameter
 {
 public:
@@ -24,16 +65,16 @@ public:
     SmoothedParameter(std::atomic<float>* p)
     {
         parameter = p;
-        mHook = &value1;
-        aHook = &value0;
-        addMin = 0.0f;
-        addMax = 1.0f;
     }
     ~SmoothedParameter() {};
-    
+    //==============================================================================
     float tick()
     {
-        float target = (*parameter * *mHook) + (*aHook * (addMax - addMin) + addMin);
+        float target = *parameter;
+        for (auto hook : hooks)
+        {
+            target = hook.apply(target);
+        }
         smoothed.setTargetValue(target);
         return value = smoothed.getNextValue();
     }
@@ -43,16 +84,14 @@ public:
         return &value;
     }
     
-    void setMultiplyHook(float* hook)
+    void addHook(float* hook, float min, float max, HookOperation op)
     {
-        mHook = hook;
+        hooks.add(ParameterHook(hook, min, max, op));
     }
     
-    void setAddHook(float* hook, float min, float max)
+    void moveHook(int index, int newIndex)
     {
-        aHook = hook;
-        addMin = min;
-        addMax = max;
+        hooks.move(index, newIndex);
     }
     
 private:
@@ -60,9 +99,7 @@ private:
     SmoothedValue<float, ValueSmoothingTypes::Linear> smoothed;
     std::atomic<float>* parameter;
     float value;
-    const float* mHook;
-    const float* aHook;
-    float addMin, addMax;
+    Array<ParameterHook> hooks;
 };
 
 //==============================================================================

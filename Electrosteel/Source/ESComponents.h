@@ -135,6 +135,32 @@ private:
 
 //==============================================================================
 
+class MappingMenu : public TabbedComponent,
+                    public Button::Listener
+{
+public:
+    
+    MappingMenu();
+    ~MappingMenu() override;
+    
+    void setBounds (float x, float y, float w, float h);
+    void setBounds (Rectangle<float> newBounds);
+    
+    void buttonClicked(Button* button) override;
+    
+private:
+
+    std::unique_ptr<Drawable> image;
+    DrawableButton closeButton;
+    ArrowButton moveLeftButton;
+    ArrowButton moveRightButton;
+    DrawableRectangle background;
+    
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MappingMenu)
+};
+
+//==============================================================================
+
 class MappingSource : public DrawableButton
 {
 public:
@@ -161,12 +187,39 @@ public:
     MappingTarget(const String &name, SmoothedParameter& target);
     ~MappingTarget() override;
     
+    void setBounds (float x, float y, float w, float h);
+    void setBounds (Rectangle<float> newBounds);
+    
+    void viewMappings();
     void createMapping(MappingSource* source);
+    
+    SmoothedParameter& getParameter();
     
 private:
     
     std::unique_ptr<Drawable> image;
     SmoothedParameter& target;
     
+    MappingMenu mappings;
+    
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MappingTarget)
+};
+
+//==============================================================================
+
+class MappingEditor : public Component
+{
+public:
+    
+    MappingEditor(MappingSource &source, MappingTarget &target);
+    ~MappingEditor() override;
+    
+    void resized() override;
+    
+private:
+    
+    MappingSource& source;
+    MappingTarget& target;
+    
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MappingEditor)
 };

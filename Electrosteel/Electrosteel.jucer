@@ -9,6 +9,7 @@
   <MAINGROUP id="zr98AB" name="Electrosteel">
     <GROUP id="{B8EA8B88-4125-0A91-2EA2-1CD3B3374012}" name="Source">
       <GROUP id="{0009C3F0-8120-7949-3FFD-6710367E3C60}" name="Resources">
+        <FILE id="MGN2Fd" name="closeicon.svg" compile="0" resource="1" file="Source/Resources/closeicon.svg"/>
         <FILE id="eL4fMO" name="EuphemiaCAS.ttf" compile="0" resource="1" file="Source/Resources/EuphemiaCAS.ttf"/>
         <FILE id="A54vnI" name="gear.svg" compile="0" resource="1" file="Source/Resources/gear.svg"/>
         <FILE id="ZyB4m0" name="logo_large.svg" compile="0" resource="1" file="Source/Resources/logo_large.svg"/>

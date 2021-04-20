@@ -54,8 +54,8 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
     for (int i = 0; i < NUM_VOICES; ++i)
     {
         voiceAmpParams.add(new SmoothedParameter(vts.getRawParameterValue("Amp")));
-        voiceAmpParams.getLast()->setMultiplyHook(env[0]->getValuePointer(i));
-        lp[0]->getParameter(i, LowpassCutoff)->setAddHook(env[1]->getValuePointer(i), 0.f, 4096.f);
+        voiceAmpParams.getLast()->addHook(env[0]->getValuePointer(i), 0.0, 1.0, HookMultiply);
+        lp[0]->getParameter(i, LowpassCutoff)->addHook(env[1]->getValuePointer(i), 0.f, 4096.f, HookAdd);
     }
     
     for (int i = 0; i < NUM_GLOBAL_CC; ++i)

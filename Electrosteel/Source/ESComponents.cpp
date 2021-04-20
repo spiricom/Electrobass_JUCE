@@ -267,11 +267,76 @@ void ESLight::paint (Graphics &g)
 //==============================================================================
 //==============================================================================
 
+MappingMenu::MappingMenu() :
+TabbedComponent(TabbedButtonBar::Orientation::TabsAtTop),
+closeButton("Close", DrawableButton::ButtonStyle::ImageFitted),
+moveLeftButton("Move Left", 0.5f, Colours::gold),
+moveRightButton("Move Right", 0.0f, Colours::gold)
+{
+    image = Drawable::createFromImageData(BinaryData::closeicon_svg, BinaryData::closeicon_svgSize);
+    closeButton.setImages(image.get());
+    closeButton.setEdgeIndent(0);
+    closeButton.setAlwaysOnTop(true);
+    closeButton.addListener(this);
+    addAndMakeVisible(&closeButton);
+
+    moveLeftButton.setAlwaysOnTop(true);
+    moveLeftButton.addListener(this);
+    addAndMakeVisible(&moveLeftButton);
+    
+    moveRightButton.setAlwaysOnTop(true);
+    moveRightButton.addListener(this);
+    addAndMakeVisible(&moveRightButton);
+    
+    addAndMakeVisible(&background);
+}
+
+MappingMenu::~MappingMenu()
+{
+    
+}
+
+void MappingMenu::setBounds (float x, float y, float w, float h)
+{
+    Rectangle<float> newBounds (x, y, w, h);
+    setBounds(newBounds);
+}
+
+void MappingMenu::setBounds (Rectangle<float> newBounds)
+{
+    TabbedComponent::setBounds(newBounds.toNearestInt());
+    
+    float w = getWidth();
+    float m = w * 0.01f;
+    float y = m + getTabBarDepth();
+    float s = w * 0.035f;
+    closeButton.setBounds(w - (m + s), y, s, s);
+    
+    moveLeftButton.setBounds(m, y, s, s);
+    moveRightButton.setBounds(m + s * 1.5f, y, s, s);
+    
+    background.setBounds(getLocalBounds());
+    background.setRectangle(getLocalBounds().toFloat());
+    background.toBack();
+}
+
+void MappingMenu::buttonClicked(Button* button)
+{
+    if (DrawableButton* ms = dynamic_cast<DrawableButton*>(button))
+    {
+        getParentComponent()->removeChildComponent(this);
+    }
+}
+
+//==============================================================================
+//==============================================================================
+
 MappingSource::MappingSource(const String &name, float* source) :
 DrawableButton(name, ButtonStyle::ImageFitted),
 source(source)
 {
-    image = Drawable::createFromImageData(BinaryData::mappingsourceicon_svg, BinaryData::mappingsourceicon_svgSize);
+    image = Drawable::createFromImageData(BinaryData::mappingsourceicon_svg,
+                                          BinaryData::mappingsourceicon_svgSize);
     setImages(image.get());
 }
 
@@ -292,7 +357,8 @@ MappingTarget::MappingTarget(const String &name, SmoothedParameter& target) :
 DrawableButton(name, ButtonStyle::ImageFitted),
 target(target)
 {
-    image = Drawable::createFromImageData(BinaryData::mappingtargeticon_svg, BinaryData::mappingtargeticon_svgSize);
+    image = Drawable::createFromImageData(BinaryData::mappingtargeticon_svg,
+                                          BinaryData::mappingtargeticon_svgSize);
     setImages(image.get());
 }
 
@@ -300,7 +366,55 @@ MappingTarget::~MappingTarget()
 {
 }
 
+void MappingTarget::setBounds (float x, float y, float w, float h)
+{
+    Rectangle<float> newBounds (x, y, w, h);
+    setBounds(newBounds);
+}
+
+void MappingTarget::setBounds (Rectangle<float> newBounds)
+{
+    DrawableButton::setBounds(newBounds.toNearestInt());
+    Component* parent = getParentComponent();
+    mappings.setBounds(parent->getLocalBounds()
+                       .reduced(parent->getWidth() * 0.0f, parent->getHeight() * 0.0f)
+                       .toFloat());
+}
+
+void MappingTarget::viewMappings()
+{
+    if (mappings.getNumTabs() > 0) getParentComponent()->addAndMakeVisible(&mappings);
+}
+
 void MappingTarget::createMapping(MappingSource* source)
 {
-    target.setAddHook(source->getValuePointer(), 0.0f, 1.0f);
+    if (source == nullptr) return;
+    
+    target.addHook(source->getValuePointer(), 0.0f, 1.0f, HookAdd);
+    mappings.addTab(source->getName(), Colours::black, new MappingEditor(*source, *this), true);
+}
+
+SmoothedParameter& MappingTarget::getParameter()
+{
+    return target;
+}
+
+//==============================================================================
+//==============================================================================
+
+MappingEditor::MappingEditor(MappingSource &source, MappingTarget &target) :
+source(source),
+target(target)
+{
+    
+}
+
+MappingEditor::~MappingEditor()
+{
+    
+}
+
+void MappingEditor::resized()
+{
+    
 }

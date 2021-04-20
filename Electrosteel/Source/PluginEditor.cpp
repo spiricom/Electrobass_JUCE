@@ -129,6 +129,8 @@ ESAudioProcessorEditor::~ESAudioProcessorEditor()
 //==============================================================================
 void ESAudioProcessorEditor::paint (Graphics& g)
 {
+    float s = processor.editorScale;
+    
     // (Our component is opaque, so we must completely fill the background with a solid colour)
     g.setGradientFill(ColourGradient(Colour(25, 25, 25), juce::Point<float>(0,0), Colour(10, 10, 10), juce::Point<float>(0, getHeight()), false));
     
@@ -141,6 +143,13 @@ void ESAudioProcessorEditor::paint (Graphics& g)
     
     g.fillRect(getWidth() * 0.25f, getHeight() * 0.25f, getWidth() * 0.6f, getHeight() * 0.5f);
     g.fillRect(getWidth() * 0.25f, getHeight() * 0.75f, getWidth() * 0.2f, getHeight() * 0.15f);
+    
+//    if (currentMappingSource != nullptr)
+//    {
+//        g.setColour(Colours::gold);
+//        g.drawLine(getMouseXYRelative().getX(), getMouseXYRelative().getY(),
+//                   currentMappingSource->getX() + 10*s, currentMappingSource->getY() + 10*s);
+//    }
 }
 
 void ESAudioProcessorEditor::resized()
@@ -277,6 +286,7 @@ void ESAudioProcessorEditor::buttonClicked(Button* button)
             mt->createMapping(currentMappingSource);
             currentMappingSource = nullptr;
         }
+        mt->viewMappings();
     }
     
 }
@@ -337,7 +347,7 @@ bool ESAudioProcessorEditor::keyPressed (const KeyPress &key, Component *origina
 
 void ESAudioProcessorEditor::timerCallback()
 {
-    
+
 }
 
 void ESAudioProcessorEditor::loadWav()
