@@ -283,7 +283,7 @@ void ESAudioProcessorEditor::buttonClicked(Button* button)
         }
         if (currentMappingSource != nullptr)
         {
-            mt->createMapping(currentMappingSource);
+            mt->createMapping(currentMappingSource, true);
             currentMappingSource = nullptr;
         }
         mt->viewMappings();

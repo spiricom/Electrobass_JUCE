@@ -62,15 +62,16 @@ class SmoothedParameter
 public:
     //==============================================================================
     SmoothedParameter() = default;
-    SmoothedParameter(std::atomic<float>* p)
+    SmoothedParameter(AudioProcessorValueTreeState& vts, String paramId)
     {
-        parameter = p;
+        raw = vts.getRawParameterValue(paramId);
+        parameter = vts.getParameter(paramId);
     }
     ~SmoothedParameter() {};
     //==============================================================================
     float tick()
     {
-        float target = *parameter;
+        float target = *raw;
         for (auto hook : hooks)
         {
             target = hook.apply(target);
@@ -84,9 +85,10 @@ public:
         return &value;
     }
     
-    void addHook(float* hook, float min, float max, HookOperation op)
+    ParameterHook& addHook(float* hook, float min, float max, HookOperation op)
     {
         hooks.add(ParameterHook(hook, min, max, op));
+        return hooks.getReference(hooks.size()-1);
     }
     
     void moveHook(int index, int newIndex)
@@ -94,10 +96,14 @@ public:
         hooks.move(index, newIndex);
     }
     
+    float getStart() { return parameter->getNormalisableRange().start; }
+    float getEnd() { return parameter->getNormalisableRange().end; }
+    
 private:
     
     SmoothedValue<float, ValueSmoothingTypes::Linear> smoothed;
-    std::atomic<float>* parameter;
+    std::atomic<float>* raw;
+    RangedAudioParameter* parameter;
     float value;
     Array<ParameterHook> hooks;
 };

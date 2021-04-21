@@ -10,6 +10,30 @@
 
 #include "ESComponents.h"
 
+double AdaptiveSlider::getValueFromText (const String& text)
+{
+    auto t = text.trimStart();
+    
+    if (t.endsWith (getTextValueSuffix()))
+        t = t.substring (0, t.length() - getTextValueSuffix().length());
+    
+    if (valueFromTextFunction != nullptr)
+        return valueFromTextFunction (t);
+    
+    while (t.startsWithChar ('+'))
+        t = t.substring (1).trimStart();
+    
+    double value = t.initialSectionContainingOnly ("0123456789.,-")
+    .getDoubleValue();
+    
+    if (value < getMinimum()) setRange(value, getMaximum());
+    else if (value > getMaximum()) setRange(getMinimum(), value);
+    return value;
+}
+
+//==============================================================================
+//==============================================================================
+
 ESDial::ESDial(const String& t) :
 label(t, t)
 {
@@ -268,11 +292,14 @@ void ESLight::paint (Graphics &g)
 //==============================================================================
 
 MappingMenu::MappingMenu() :
-TabbedComponent(TabbedButtonBar::Orientation::TabsAtTop),
+menu(TabbedButtonBar::Orientation::TabsAtTop),
 closeButton("Close", DrawableButton::ButtonStyle::ImageFitted),
 moveLeftButton("Move Left", 0.5f, Colours::gold),
 moveRightButton("Move Right", 0.0f, Colours::gold)
 {
+    menu.setColour(TabbedComponent::outlineColourId, Colours::darkgrey);
+    addAndMakeVisible(&menu);
+    
     image = Drawable::createFromImageData(BinaryData::closeicon_svg, BinaryData::closeicon_svgSize);
     closeButton.setImages(image.get());
     closeButton.setEdgeIndent(0);
@@ -288,6 +315,8 @@ moveRightButton("Move Right", 0.0f, Colours::gold)
     moveRightButton.addListener(this);
     addAndMakeVisible(&moveRightButton);
     
+    outline.setFill(Colours::darkgrey);
+    addAndMakeVisible(&outline);
     addAndMakeVisible(&background);
 }
 
@@ -304,27 +333,49 @@ void MappingMenu::setBounds (float x, float y, float w, float h)
 
 void MappingMenu::setBounds (Rectangle<float> newBounds)
 {
-    TabbedComponent::setBounds(newBounds.toNearestInt());
+    Component::setBounds(newBounds.toNearestInt());
+    Rectangle<int> mainArea = getLocalBounds();
+    menu.setBounds(mainArea);
     
-    float w = getWidth();
+    float w = mainArea.getWidth();
     float m = w * 0.01f;
-    float y = m + getTabBarDepth();
+    float x = mainArea.getX();
+    float y = mainArea.getY() + m + menu.getTabBarDepth();
     float s = w * 0.035f;
-    closeButton.setBounds(w - (m + s), y, s, s);
+    closeButton.setBounds(x + w - (m + s), y, s, s);
     
-    moveLeftButton.setBounds(m, y, s, s);
-    moveRightButton.setBounds(m + s * 1.5f, y, s, s);
+    moveLeftButton.setBounds(x + m, y, s, s);
+    moveRightButton.setBounds(x + m + s * 1.5f, y, s, s);
     
-    background.setBounds(getLocalBounds());
-    background.setRectangle(getLocalBounds().toFloat());
+    background.setBounds(getLocalBounds().reduced(1));
+    background.setRectangle(getLocalBounds().reduced(1).toFloat());
     background.toBack();
+    outline.setBounds(getLocalBounds());
+    outline.setRectangle(getLocalBounds().toFloat());
+    outline.toBack();
 }
 
 void MappingMenu::buttonClicked(Button* button)
 {
-    if (DrawableButton* ms = dynamic_cast<DrawableButton*>(button))
+    if (DrawableButton* db = dynamic_cast<DrawableButton*>(button))
     {
         getParentComponent()->removeChildComponent(this);
+    }
+    if (ArrowButton* ab = dynamic_cast<ArrowButton*>(button))
+    {
+        int i = menu.getCurrentTabIndex();
+        int n = i;
+        MappingEditor* mapping = dynamic_cast<MappingEditor*>(menu.getTabContentComponent(i));
+        if (ab == &moveLeftButton)
+        {
+            n = (i-1) % menu.getNumTabs();
+        }
+        else if (ab == &moveRightButton)
+        {
+            n = (i+1) % menu.getNumTabs();
+        }
+        mapping->getTarget().getParameter().moveHook(i, n);
+        menu.moveTab(i, n);
     }
 }
 
@@ -377,21 +428,27 @@ void MappingTarget::setBounds (Rectangle<float> newBounds)
     DrawableButton::setBounds(newBounds.toNearestInt());
     Component* parent = getParentComponent();
     mappings.setBounds(parent->getLocalBounds()
-                       .reduced(parent->getWidth() * 0.0f, parent->getHeight() * 0.0f)
+                       .reduced(parent->getWidth() * 0.2f, parent->getHeight() * 0.2f)
+                       .translated(0, -parent->getHeight() * 0.1f)
                        .toFloat());
 }
 
-void MappingTarget::viewMappings()
+void MappingTarget::viewMappings(int index)
 {
-    if (mappings.getNumTabs() > 0) getParentComponent()->addAndMakeVisible(&mappings);
+    if (mappings.menu.getNumTabs() > 0)
+    {
+        if (index >= 0) mappings.menu.setCurrentTabIndex(index);
+        getParentComponent()->addAndMakeVisible(&mappings);
+    }
 }
 
-void MappingTarget::createMapping(MappingSource* source)
+void MappingTarget::createMapping(MappingSource* source, bool updateCurrentTab)
 {
     if (source == nullptr) return;
     
-    target.addHook(source->getValuePointer(), 0.0f, 1.0f, HookAdd);
-    mappings.addTab(source->getName(), Colours::black, new MappingEditor(*source, *this), true);
+    ParameterHook& hook = target.addHook(source->getValuePointer(), 0.0f, 1.0f, HookAdd);
+    mappings.menu.addTab(source->getName(), Colours::black, new MappingEditor(*source, *this, hook), true);
+    if (updateCurrentTab) mappings.menu.setCurrentTabIndex(mappings.menu.getNumTabs() - 1);
 }
 
 SmoothedParameter& MappingTarget::getParameter()
@@ -402,19 +459,114 @@ SmoothedParameter& MappingTarget::getParameter()
 //==============================================================================
 //==============================================================================
 
-MappingEditor::MappingEditor(MappingSource &source, MappingTarget &target) :
+MappingEditor::MappingEditor(MappingSource &source, MappingTarget &target, ParameterHook &hook) :
 source(source),
-target(target)
+target(target),
+hook(hook),
+deleteButton("Delete Mapping", DrawableButton::ImageFitted)
 {
+    float r = (target.getParameter().getEnd() - target.getParameter().getStart()) * 0.5f;
     
+    operationSelect.setJustificationType(Justification::centred);
+    operationSelect.addItem("Add", HookAdd+1);
+    operationSelect.addItem("Multiply", HookMultiply+1);
+    operationSelect.setSelectedItemIndex(0);
+    operationSelect.addListener(this);
+    addAndMakeVisible(&operationSelect);
+    
+    startSlider.setName("Start");
+    startSlider.setSliderStyle(Slider::LinearBar);
+    startSlider.setRange(-r, r);
+    startSlider.setValue(hook.min);
+    startSlider.setDoubleClickReturnValue(true, 0.0f);
+    startSlider.addListener(this);
+    addAndMakeVisible(&startSlider);
+    
+    endSlider.setName("End");
+    endSlider.setSliderStyle(Slider::LinearBar);
+    endSlider.setRange(-r, r);
+    endSlider.setValue(hook.max);
+    endSlider.setDoubleClickReturnValue(true, 0.0f);
+    endSlider.addListener(this);
+    addAndMakeVisible(&endSlider);
+    
+    startLabel.setText("min", dontSendNotification);
+    startLabel.setBorderSize(BorderSize<int>(0));
+    startLabel.setJustificationType(Justification::centredLeft);
+    startLabel.setLookAndFeel(&laf);
+    addAndMakeVisible(&startLabel);
+    
+    endLabel.setText("max", dontSendNotification);
+    endLabel.setBorderSize(BorderSize<int>(0));
+    endLabel.setJustificationType(Justification::centredLeft);
+    endLabel.setLookAndFeel(&laf);
+    addAndMakeVisible(&endLabel);
+    
+//    image = Drawable::createFromImageData(BinaryData::closeicon_svg, BinaryData::closeicon_svgSize);
+//    deleteButton.setImages(image.get());
+//    deleteButton.setEdgeIndent(0);
+//    deleteButton.setAlwaysOnTop(true);
+//    deleteButton.addListener(this);
+//    addAndMakeVisible(&deleteButton);
 }
 
 MappingEditor::~MappingEditor()
 {
-    
+    startLabel.setLookAndFeel(nullptr);
+    endLabel.setLookAndFeel(nullptr);
 }
 
 void MappingEditor::resized()
 {
+    Rectangle<int> area = getLocalBounds();
+    int w = getWidth();
+    int h = getHeight();
     
+    area.reduce(w*0.1f, h*0.1f);
+    area.removeFromTop(h*0.2f);
+    operationSelect.setBounds(area.removeFromTop(h*0.1f));
+    area.removeFromTop(h*0.1f);
+    Rectangle<int> startArea = area.removeFromTop(h*0.1f);
+    startLabel.setBounds(startArea.removeFromLeft(w*0.1f));
+    startSlider.setBounds(startArea);
+    area.removeFromTop(h*0.02f);
+    Rectangle<int> endArea = area.removeFromTop(h*0.1f);
+    endLabel.setBounds(endArea.removeFromLeft(w*0.1f));
+    endSlider.setBounds(endArea);
+}
+
+void MappingEditor::sliderValueChanged(Slider* slider)
+{
+    if (slider == &startSlider)
+    {
+        hook.min = startSlider.getValue();
+    }
+    else if (slider == &endSlider)
+    {
+        hook.max = endSlider.getValue();
+    }
+    slider->setSkewFactorFromMidPoint(0.0f);
+}
+
+void MappingEditor::buttonClicked(juce::Button* button)
+{
+    
+}
+
+void MappingEditor::comboBoxChanged (ComboBox *comboBox)
+{
+    if (comboBox == &operationSelect)
+    {
+        hook.operation = (HookOperation)(operationSelect.getSelectedId()-1);
+    }
+}
+
+MappingSource& MappingEditor::getSource()
+{
+    return source;
+}
+
+MappingTarget& MappingEditor::getTarget()
+{
+    return target;
 }

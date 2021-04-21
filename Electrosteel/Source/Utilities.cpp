@@ -22,7 +22,7 @@ paramNames(s)
     {
         for (int i = 0; i < paramNames.size(); ++i)
         {
-            params[v].add(new SmoothedParameter(vts.getRawParameterValue(name + paramNames[i])));
+            params[v].add(new SmoothedParameter(vts, name + paramNames[i]));
         }
     }
 }

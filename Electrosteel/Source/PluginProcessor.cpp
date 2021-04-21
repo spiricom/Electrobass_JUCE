@@ -53,23 +53,22 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
     // to allow for env mapping
     for (int i = 0; i < NUM_VOICES; ++i)
     {
-        voiceAmpParams.add(new SmoothedParameter(vts.getRawParameterValue("Amp")));
+        voiceAmpParams.add(new SmoothedParameter(vts, "Amp"));
         voiceAmpParams.getLast()->addHook(env[0]->getValuePointer(i), 0.0, 1.0, HookMultiply);
         lp[0]->getParameter(i, LowpassCutoff)->addHook(env[1]->getValuePointer(i), 0.f, 4096.f, HookAdd);
     }
     
     for (int i = 0; i < NUM_GLOBAL_CC; ++i)
     {
-        ccParams.add(new SmoothedParameter(vts.getRawParameterValue("CC" + String(i+1))));
+        ccParams.add(new SmoothedParameter(vts, "CC" + String(i+1)));
     }
     
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
-        pitchBendParams.add(new SmoothedParameter(vts.getRawParameterValue("PitchBendCh" +
-                                                                           String(i+1))));
+        pitchBendParams.add(new SmoothedParameter(vts, "PitchBendCh" + String(i+1)));
     }
     
-    masterVolume = SmoothedParameter(vts.getRawParameterValue("Master"));
+    masterVolume = SmoothedParameter(vts, "Master");
 }
 
 ESAudioProcessor::~ESAudioProcessor()

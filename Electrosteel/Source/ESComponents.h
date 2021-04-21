@@ -16,6 +16,16 @@
 
 //==============================================================================
 
+class AdaptiveSlider : public Slider
+{
+public:
+    using Slider::Slider;
+    
+    double getValueFromText (const String& text) override;
+};
+
+//==============================================================================
+
 class ESDial : public Component
 {
 public:
@@ -135,7 +145,7 @@ private:
 
 //==============================================================================
 
-class MappingMenu : public TabbedComponent,
+class MappingMenu : public Component,
                     public Button::Listener
 {
 public:
@@ -148,12 +158,15 @@ public:
     
     void buttonClicked(Button* button) override;
     
+    TabbedComponent menu;
+    
 private:
-
+    
     std::unique_ptr<Drawable> image;
     DrawableButton closeButton;
     ArrowButton moveLeftButton;
     ArrowButton moveRightButton;
+    DrawableRectangle outline;
     DrawableRectangle background;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MappingMenu)
@@ -190,8 +203,8 @@ public:
     void setBounds (float x, float y, float w, float h);
     void setBounds (Rectangle<float> newBounds);
     
-    void viewMappings();
-    void createMapping(MappingSource* source);
+    void viewMappings(int index = -1);
+    void createMapping(MappingSource* source, bool updateCurrentTab);
     
     SmoothedParameter& getParameter();
     
@@ -207,19 +220,39 @@ private:
 
 //==============================================================================
 
-class MappingEditor : public Component
+class MappingEditor : public Component,
+                      public Slider::Listener,
+                      public Button::Listener,
+                      public ComboBox::Listener
 {
 public:
     
-    MappingEditor(MappingSource &source, MappingTarget &target);
+    MappingEditor(MappingSource &source, MappingTarget &target, ParameterHook &hook);
     ~MappingEditor() override;
     
     void resized() override;
+    
+    void sliderValueChanged(Slider* slider) override;
+    void buttonClicked(Button* button) override;
+    void comboBoxChanged (ComboBox *comboBox) override;
+    
+    MappingSource& getSource();
+    MappingTarget& getTarget();
     
 private:
     
     MappingSource& source;
     MappingTarget& target;
+    ParameterHook& hook;
+    
+    ComboBox operationSelect;
+    AdaptiveSlider startSlider;
+    Label startLabel;
+    AdaptiveSlider endSlider;
+    Label endLabel;
+    DrawableButton deleteButton;
+    
+    ESLookAndFeel laf;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MappingEditor)
 };

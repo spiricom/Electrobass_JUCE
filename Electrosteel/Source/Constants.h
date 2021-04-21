@@ -11,6 +11,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include <float.h>
 
 #define NUM_CHANNELS 16
 
