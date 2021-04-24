@@ -18,12 +18,12 @@ AudioProcessorEditor (&p),
 processor (p),
 vts(vts),
 keyboard(p.keyboardState, MidiKeyboardComponent::Orientation::horizontalKeyboard),
+envs(TabbedButtonBar::TabsAtTop),
 constrain(new ComponentBoundsConstrainer()),
 resizer(new ResizableCornerComponent (this, constrain.get())),
 chooser("Select a .wav file to load...", {}, "*.wav")
 {
-    //    panel = Drawable::createFromImageData(BinaryData::panel_svg, BinaryData::panel_svgSize);
-    
+    //    panel = Drawable::createFromImageData(BinaryData::panel_svg, BinaryData::panel_svgSize);    
     setWantsKeyboardFocus(true);
     
     getTopLevelComponent()->addKeyListener(this);
@@ -33,26 +33,20 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     euphemia = Font(tp);
     //    euphemia.setItalic(true);
     
-    masterDial = std::make_unique<ESDial>("Master");
-    masterDial->addListener(this);
-    addAndMakeVisible(masterDial.get());
+    masterDial = std::make_unique<ESDial>(*this, "Master");
     sliderAttachments.add(new SliderAttachment(vts, "Master", masterDial->getSlider()));
+    addAndMakeVisible(masterDial.get());
     
-    mappingTargets.add(new MappingTarget("Master", processor.masterVolume));
-    mappingTargets[0]->addListener(this);
-    addAndMakeVisible(mappingTargets[0]);
+    ampDial = std::make_unique<ESDial>(*this, "Amp", processor.voiceAmpParams);
+    sliderAttachments.add(new SliderAttachment(vts, "Amp", ampDial->getSlider()));
+    addAndMakeVisible(ampDial.get());
     
     for (int i = 0; i < NUM_GLOBAL_CC; ++i)
     {
-        ccDials.add(new ESDial("CC" + String(i+1)));
-        ccDials[i]->addListener(this);
-        addAndMakeVisible(ccDials[i]);
+        ccDials.add(new ESDial(*this, "CC" + String(i+1), Colours::red,
+                               processor.ccParams[i]->getValuePointer(), 1));
         sliderAttachments.add(new SliderAttachment(vts, "CC" + String(i+1), ccDials[i]->getSlider()));
-
-        mappingSources.add(new MappingSource("CC" + String(i+1),
-                                             processor.ccParams[i]->getValuePointer()));
-        mappingSources[i]->addListener(this);
-        addAndMakeVisible(mappingSources[i]);
+        addAndMakeVisible(ccDials[i]);
     }
     currentMappingSource = nullptr;
     
@@ -84,15 +78,41 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     
     //==============================================================================
     
-    modules.add(new ESModule(vts, *processor.sposc[0]));
-    modules.add(new ESModule(vts, *processor.lp[0]));
-    modules.add(new ESModule(vts, *processor.env[0]));
-    modules.add(new ESModule(vts, *processor.env[1]));
+    modules.add(new ESModule(*this, vts, *processor.sposcs[0]));
+    modules.add(new ESModule(*this, vts, *processor.lps[0]));
+    
+    envs.setLookAndFeel(&laf);
+    for (int i = 0; i < NUM_ENVS; ++i)
+    {
+        String name = "Env" + String(i+1);
+        envs.addTab(" ", Colours::black,
+                    new ESModule(*this, vts, *processor.envs[i]), true);
+        envs.setColour(TabbedComponent::outlineColourId, Colours::darkgrey);
+        
+        TabbedButtonBar& bar = envs.getTabbedButtonBar();
+        bar.getTabButton(i)
+        ->setExtraComponent(new MappingSource(*this, name, processor.envs[i]->getValuePointer(),
+                                              NUM_VOICES, Colours::cyan),
+                            TabBarButton::ExtraComponentPlacement::afterText);
+        bar.setColour(TabbedButtonBar::tabOutlineColourId, Colours::darkgrey);
+        bar.setColour(TabbedButtonBar::frontOutlineColourId, Colours::darkgrey);
+        for (int i = 0; i < envs.getTabbedButtonBar().getNumTabs(); ++i)
+        {
+            bar.getTabButton(i)->setAlpha(i == 0 ? 1.0f : 0.7f);
+        }
+    }
+    addAndMakeVisible(&envs);
     
     addAndMakeVisible(modules[0]);
     addAndMakeVisible(modules[1]);
-    addAndMakeVisible(modules[2]);
-    addAndMakeVisible(modules[3]);
+    
+    MappingSource* env4 =
+    dynamic_cast<MappingSource*>(envs.getTabbedButtonBar().getTabButton(3)->getExtraComponent());
+    ampDial->getTarget(0)->setMapping(env4, 0.0f, 1.0f, HookAdd);
+    
+    MappingSource* env1 =
+    dynamic_cast<MappingSource*>(envs.getTabbedButtonBar().getTabButton(0)->getExtraComponent());
+    modules[1]->getDial(LowpassCutoff)->getTarget(0)->setMapping(env1, 0.0f, 5000.0f, HookAdd);
     
     //==============================================================================
     
@@ -109,21 +129,25 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     versionLabel.setColour(Label::ColourIds::textColourId, Colours::lightgrey);
     addAndMakeVisible(versionLabel);
     
+//    addAndMakeVisible(&container);
+
     startTimerHz(30);
 }
 
 ESAudioProcessorEditor::~ESAudioProcessorEditor()
 {
-    masterDial->setLookAndFeel(nullptr);
-    for (int i = 0; i < NUM_GLOBAL_CC; ++i)
-    {
-        ccDials[i]->setLookAndFeel(nullptr);
-    }
+//    masterDial->setLookAndFeel(nullptr);
+//    ampDial->setLookAndFeel(nullptr);
+//    for (int i = 0; i < NUM_GLOBAL_CC; ++i)
+//    {
+//        ccDials[i]->setLookAndFeel(nullptr);
+//    }
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
         channelSelection[i]->setLookAndFeel(nullptr);
         pitchBendSliders[i]->setLookAndFeel(nullptr);
     }
+    envs.setLookAndFeel(nullptr);
 }
 
 //==============================================================================
@@ -160,34 +184,24 @@ void ESAudioProcessorEditor::resized()
     float s = width / EDITOR_WIDTH;
     processor.editorScale = s;
     
-    const float knobSize = 57.0f*s;
-    const float labelWidth = 130.0f*s;
-    const float labelHeight = 20.0f*s;
+    const float knobSize = 50.0f*s;
     
     const float masterSize = knobSize * 1.5f;
-    masterDial->setBounds(0, 0, width, height);
-    masterDial->setSliderBounds(550*s, 20*s, masterSize, masterSize*1.35f);
-    masterDial->setLabelBounds(masterDial->getSlider().getX() + masterSize*0.5f - labelWidth*0.5f,
-                               masterDial->getSlider().getY() + masterSize*1.325f,
-                               labelWidth, labelHeight);
+    masterDial->setBounds(550*s, 20*s, masterSize, masterSize*1.5f);
     
-    mappingTargets[0]->setBounds(550*s + masterSize, 20*s, 20*s, 20*s);
+    ampDial->setBounds(450*s, 20*s, masterSize, masterSize*1.5f);
     
     for (int i = 0; i < NUM_GLOBAL_CC; ++i)
     {
-        ccDials[i]->setBounds(0, 0, width, height);
-        ccDials[i]->setSliderBounds(450*s + 90*s*i, 460*s, knobSize, knobSize * 1.35f);
-        ccDials[i]->setLabelBounds(ccDials[i]->getSlider().getX() + knobSize*0.5f - labelWidth*0.5f,
-                                   ccDials[i]->getSlider().getY() + knobSize*1.325f,
-                                   labelWidth, labelHeight);
-        
-        mappingSources[i]->setBounds(450*s + 90*s*i + knobSize, 460*s, 20*s, 20*s);
+//        ccDials[i]->setBounds(450*s + 90*s*i, 460*s, knobSize, knobSize*1.5f);
+        ccDials[i]->setBounds(6.0f*s + 56.0f*s*i, 500.0f*s, knobSize, knobSize*1.4f);
     }
     
-    modules[0]->setBounds(0, 20*s, 500*s, 110*s);
-    modules[1]->setBounds(0, 130*s, 500*s, 110*s);
-    modules[2]->setBounds(0, 240*s, 500*s, 110*s);
-    modules[3]->setBounds(0, 350*s, 500*s, 110*s);
+    modules[0]->setBounds(0, 20*s, 530*s, 110*s);
+    modules[1]->setBounds(0, 130*s, 530*s, 110*s);
+    envs.setBounds(350*s, 330*s, width - 350*s + 2, 160*s);
+    envs.setIndent(10*s);
+    envs.setTabBarDepth(25*s);
     
 //    
 //    for (auto label : stDialLabels)
@@ -210,6 +224,8 @@ void ESAudioProcessorEditor::resized()
     float r = EDITOR_WIDTH / EDITOR_HEIGHT;
     constrain->setSizeLimits(200, 200/r, 800*r, 800);
     resizer->setBounds(getWidth()-12, getHeight()-12, 12, 12);
+    
+//    container.setBounds(getLocalBounds());
 }
 
 void ESAudioProcessorEditor::resizeChannelSelection()
@@ -262,54 +278,36 @@ void ESAudioProcessorEditor::buttonClicked(Button* button)
             }
         }
     }
-    
-    if (MappingSource* ms = dynamic_cast<MappingSource*>(button))
-    {
-        setMouseCursor(MouseCursor::CrosshairCursor);
-        for (auto c : getAllChildren())
-        {
-            c->setMouseCursor(MouseCursor::CrosshairCursor);
-        }
-        if (currentMappingSource == ms) currentMappingSource = nullptr;
-        else currentMappingSource = ms;
-    }
-    
-    if (MappingTarget* mt = dynamic_cast<MappingTarget*>(button))
-    {
-        setMouseCursor(MouseCursor::NormalCursor);
-        for (auto c : getAllChildren())
-        {
-            c->setMouseCursor(MouseCursor::NormalCursor);
-        }
-        if (currentMappingSource != nullptr)
-        {
-            mt->createMapping(currentMappingSource, true);
-            currentMappingSource = nullptr;
-        }
-        mt->viewMappings();
-    }
-    
 }
 
 void ESAudioProcessorEditor::buttonStateChanged(Button* button)
 {
     if (button == nullptr) return;
+    
+    if (button->getState() == Button::ButtonState::buttonNormal)
+    {
+    }
+    else if (button->getState() == Button::ButtonState::buttonDown)
+    {
+    }
+    else if (button->getState() == Button::ButtonState::buttonOver)
+    {
+    }
 }
 
 void ESAudioProcessorEditor::mouseDown (const MouseEvent &event)
 {
-    if (event.mods.isRightButtonDown() ||
-        event.mods.isCtrlDown() ||
-        event.mods.isCommandDown() ||
-        event.mods.isAltDown() ||
-        event.mods.isShiftDown())
+    if (MappingSource* ms = dynamic_cast<MappingSource*>(event.originalComponent->getParentComponent()))
     {
-        setMouseCursor(MouseCursor::NormalCursor);
-        for (auto c : getAllChildren())
+        currentMappingSource = ms;
+        if (TabBarButton* tbb = dynamic_cast<TabBarButton*>(ms->getParentComponent()))
         {
-            c->setMouseCursor(MouseCursor::NormalCursor);
+            if (&ms->button != event.originalComponent)
+            {
+                tbb->triggerClick();
+            }
         }
-        currentMappingSource = nullptr;
+        startDragging(ms->getName(), ms);
     }
 }
 
@@ -397,7 +395,8 @@ Array<Component*> ESAudioProcessorEditor::getAllChildren()
 //==============================================================================
 //==============================================================================
 
-ESModule::ESModule(AudioProcessorValueTreeState& vts, AudioComponent& ac) :
+ESModule::ESModule(ESAudioProcessorEditor& editor, AudioProcessorValueTreeState& vts, AudioComponent& ac) :
+editor(editor),
 vts(vts),
 ac(ac)
 {
@@ -405,8 +404,7 @@ ac(ac)
     
     for (int i = 0; i < ac.paramNames.size(); i++)
     {
-        dials.add(new ESDial(ac.paramNames[i]));
-//        dials[i]->addListener(&editor);
+        dials.add(new ESDial(editor, ac.paramNames[i], ac.getParameter(i)));
         addAndMakeVisible(dials[i]);
         sliderAttachments.add(new SliderAttachment(vts, ac.name + ac.paramNames[i], dials[i]->getSlider()));
     }
@@ -415,6 +413,24 @@ ac(ac)
 ESModule::~ESModule()
 {
 
+}
+
+void ESModule::resized()
+{
+    Rectangle<int> area = getLocalBounds();
+    
+    float x = area.getX();
+    float w = area.getWidth() / 5.f;
+    float dialWidth = w * 0.6f;
+    
+    for (int i = 0; i < ac.paramNames.size(); ++i)
+    {
+        dials[i]->setBounds(x + w*i + w*0.2f, 0, dialWidth, dialWidth * 1.6f);
+//        dials[i]->setSliderBounds(x + w*i + w*0.2f, 0, dialWidth, dialWidth * 1.35f);
+//        dials[i]->setLabelBounds(dials[i]->getSlider().getX() + dialWidth*0.5f - labelWidth*0.5f,
+//                                 dials[i]->getSlider().getY() + dialWidth*1.325f,
+//                                 labelWidth, labelHeight);
+    }
 }
 
 void ESModule::setBounds (float x, float y, float w, float h)
@@ -426,19 +442,16 @@ void ESModule::setBounds (float x, float y, float w, float h)
 void ESModule::setBounds (Rectangle<float> newBounds)
 {
     Component::setBounds(newBounds.toNearestInt());
-    float x = newBounds.getX();
-    float w = newBounds.getWidth() / 5.f;
-    float dialWidth = w * 0.6f;
-    
-    float labelWidth = w * 0.9f;
-    float labelHeight = dialWidth * 0.35;
-    
-    for (int i = 0; i < ac.paramNames.size(); ++i)
-    {
-        dials[i]->setBounds(newBounds.withPosition(0, 0));
-        dials[i]->setSliderBounds(x + w*i + w*0.2f, 0, dialWidth, dialWidth * 1.35f);
-        dials[i]->setLabelBounds(dials[i]->getSlider().getX() + dialWidth*0.5f - labelWidth*0.5f,
-                                 dials[i]->getSlider().getY() + dialWidth*1.325f,
-                                 labelWidth, labelHeight);
-    }
+}
+
+ESDial* ESModule::getDial (int index)
+{
+    return dials[index];
+}
+
+ESDial* ESModule::getDial (String param)
+{
+    int i = ac.paramNames.indexOf(param);
+    if (i < 0) return nullptr;
+    return dials[i];
 }

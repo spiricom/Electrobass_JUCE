@@ -16,6 +16,16 @@ Envelope::Envelope(const String& n, ESAudioProcessor& p,
                    AudioProcessorValueTreeState& vts, StringArray s) :
 AudioComponent(n, p, vts, s)
 {
+    // Trying to make it as fast as possibel to access the SmoothedParameters
+    // so we'll put pointers to them in a plain array instead of the OwnedArrays
+    for (int i = 0; i < EnvelopeParamNil; ++i)
+    {
+        for (int v = 0; v < NUM_VOICES; ++v)
+        {
+            ref[i][v] = params[i]->getUnchecked(v);
+        }
+    }
+    
     //exponential buffer rising from 0 to 1
     LEAF_generate_exp(expBuffer, 1000.0f, -1.0f, 0.0f, -0.0008f, EXP_BUFFER_SIZE);
     
@@ -33,6 +43,7 @@ AudioComponent(n, p, vts, s)
                     expBuffer[(int)(0.1f * expBufferSizeMinusOne)] * 8192.0f,
                     decayExpBuffer, DECAY_EXP_BUFFER_SIZE, &processor.leaf);
         tADSRT_setLeakFactor(&envs[i], ((1.0f - 0.1f) * 0.00005f) + 0.99995f);
+        value[i] = 0.0f;
     }
 }
 
@@ -54,12 +65,12 @@ void Envelope::tick()
 {
     for (int v = 0; v < NUM_VOICES; v++)
     {
-        float attack = params[v][EnvelopeAttack]->tick();
-        float decay = params[v][EnvelopeDecay]->tick();
-        float sustain = params[v][EnvelopeSustain]->tick();
-        float release = params[v][EnvelopeRelease]->tick();
-        float leak = params[v][EnvelopeLeak]->tick();
-        
+        float attack = ref[EnvelopeAttack][v]->tick();
+        float decay = ref[EnvelopeDecay][v]->tick();
+        float sustain = ref[EnvelopeSustain][v]->tick();
+        float release = ref[EnvelopeRelease][v]->tick();
+        float leak = ref[EnvelopeLeak][v]->tick();
+
         tADSRT_setAttack(&envs[v], expBuffer[(int)(attack * expBufferSizeMinusOne)] * 8192.0f);
         tADSRT_setDecay(&envs[v], expBuffer[(int)(decay * expBufferSizeMinusOne)] * 8192.0f);
         tADSRT_setSustain(&envs[v], sustain);
@@ -80,7 +91,7 @@ void Envelope::noteOff(int voice, float velocity)
     tADSRT_off(&envs[voice]);
 }
 
-float* Envelope::getValuePointer(int voice)
+float* Envelope::getValuePointer()
 {
-    return &value[voice];
+    return value;
 }

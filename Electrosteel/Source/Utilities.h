@@ -27,33 +27,47 @@ class ParameterHook
 {
 public:
     //==============================================================================
+    ParameterHook() :
+    hook(&value0),
+    min(0.0f),
+    max(0.0f),
+    operation(HookAdd)
+    {
+    }
+    
     ParameterHook(float* hook, float min, float max, HookOperation op) :
     hook(hook),
     min(min),
     max(max),
     operation(op)
     {
-        
     }
+    
     ~ParameterHook() {};
     //==============================================================================
     float apply(float input)
     {
         float hookValue = (*hook * (max - min) + min);
-        if (operation == HookAdd)
-        {
+//        if (operation == HookAdd)
+//        {
             return input + hookValue;
-        }
-        if (operation == HookMultiply)
-        {
-            return input * hookValue;
-        }
-        return input;
+//        }
+//        if (operation == HookMultiply)
+//        {
+//            return input * hookValue;
+//        }
+//        return input;
+    }
+    
+    float getValue()
+    {
+        return (*hook * (max - min) + min);
     }
 
     float* hook;
     float min, max;
     HookOperation operation;
+    float value0 = 0.0f;
 };
 
 //==============================================================================
@@ -61,21 +75,14 @@ class SmoothedParameter
 {
 public:
     //==============================================================================
-    SmoothedParameter() = default;
-    SmoothedParameter(AudioProcessorValueTreeState& vts, String paramId)
-    {
-        raw = vts.getRawParameterValue(paramId);
-        parameter = vts.getParameter(paramId);
-    }
+//    SmoothedParameter() = default;
+    SmoothedParameter(ESAudioProcessor& processor, AudioProcessorValueTreeState& vts, String paramId);
     ~SmoothedParameter() {};
     //==============================================================================
     float tick()
     {
-        float target = *raw;
-        for (auto hook : hooks)
-        {
-            target = hook.apply(target);
-        }
+        float target = raw->load() +
+        hooks[0].getValue() + hooks[1].getValue() + hooks[2].getValue();
         smoothed.setTargetValue(target);
         return value = smoothed.getNextValue();
     }
@@ -85,27 +92,46 @@ public:
         return &value;
     }
     
-    ParameterHook& addHook(float* hook, float min, float max, HookOperation op)
+    void setHook(int index, float* hook, float min, float max, HookOperation op)
     {
-        hooks.add(ParameterHook(hook, min, max, op));
-        return hooks.getReference(hooks.size()-1);
+        hooks[index].hook = hook;
+        hooks[index].min = min;
+        hooks[index].max = max;
+        hooks[index].operation = op;
     }
     
-    void moveHook(int index, int newIndex)
+    void resetHook(int index)
     {
-        hooks.move(index, newIndex);
+        hooks[index].hook = &value0;
+        hooks[index].min = 0.0f;
+        hooks[index].max = 0.0f;
+        hooks[index].operation = HookAdd;
+    }
+    
+    void setRange(int index, float min, float max)
+    {
+        hooks[index].min = min;
+        hooks[index].max = max;
     }
     
     float getStart() { return parameter->getNormalisableRange().start; }
     float getEnd() { return parameter->getNormalisableRange().end; }
     
+    void setSampleRate(double sampleRate)
+    {
+        smoothed.reset(sampleRate, 0.010);
+    }
+    
 private:
+    
+    ESAudioProcessor& processor;
     
     SmoothedValue<float, ValueSmoothingTypes::Linear> smoothed;
     std::atomic<float>* raw;
     RangedAudioParameter* parameter;
-    float value;
-    Array<ParameterHook> hooks;
+    float value = 0.0f;
+    float value0 = 0.0f;
+    ParameterHook hooks[3];
 };
 
 //==============================================================================
@@ -122,11 +148,11 @@ public:
     void prepareToPlay (double sampleRate, int samplesPerBlock);
     
     //==============================================================================
-    SmoothedParameter* getParameter(int i, int voice);
+    OwnedArray<SmoothedParameter>& getParameter(int p);
         
     ESAudioProcessor& processor;
     AudioProcessorValueTreeState& vts;
-    OwnedArray<SmoothedParameter> params[NUM_VOICES];
+    OwnedArray<OwnedArray<SmoothedParameter>> params;
     String name;
     StringArray paramNames;
     

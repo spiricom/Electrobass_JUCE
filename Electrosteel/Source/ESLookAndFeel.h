@@ -65,9 +65,8 @@ public:
                                                              BinaryData::EuphemiaCAS_ttfSize);
         Font font (tp);
         font.setHeight(label.getHeight() * 0.8f);
+        font.setDefaultMinimumHorizontalScaleFactor(0.01f);
         return font;
-        
-        return label.getFont();
     }
     
     void drawButtonText (Graphics& g, TextButton& button,
@@ -102,8 +101,14 @@ public:
         if (slider.isBar())
         {
             g.setColour (slider.findColour (Slider::trackColourId));
-            g.fillRect (slider.isHorizontal() ? Rectangle<float> (static_cast<float> (x), (float) y + 0.5f, sliderPos - (float) x, (float) height - 1.0f)
-                        : Rectangle<float> ((float) x + 0.5f, sliderPos, (float) width - 1.0f, (float) y + ((float) height - sliderPos)));
+            g.fillRect (slider.isHorizontal() ?
+                        Rectangle<float> (static_cast<float> (x), (float) y + 0.5f,
+                                          sliderPos - (float) x, (float) height - 1.0f)
+                        : Rectangle<float> ((float) x + 0.5f, sliderPos, (float) width - 1.0f,
+                                            (float) y + ((float) height - sliderPos)));
+            g.setColour (slider.findColour (Slider::backgroundColourId));
+            g.fillRect (Rectangle<float> (static_cast<float> (x), (float) y + 0.5f,
+                                          (float) width, (float) height));
         }
         else
         {
@@ -192,10 +197,6 @@ public:
     
     void drawRotarySlider(Graphics& g, int x, int y, int width, int height, float sliderPos, const float rotaryStartAngle, const float rotaryEndAngle, Slider& slider) override
     {
-        auto pos = slider.getTopLevelComponent()->getLocalPoint(&slider, Point<int>());
-        g.setGradientFill(ColourGradient(Colour(25, 25, 25), juce::Point<float>(-pos.getX(),-pos.getY()), Colour(10, 10, 10), juce::Point<float>(-pos.getX(),slider.getTopLevelComponent()->getHeight()-slider.getY()), false));
-        g.fillRect(slider.getLocalBounds());
-        
         auto radius = jmin(width / 2, height / 2) - width*0.15f;
         auto centreX = x + width * 0.5f;
         auto centreY = y + height * 0.5f;
@@ -203,16 +204,14 @@ public:
         auto ry = centreY - radius;
         auto rw = radius * 2.0f;
         auto angle = rotaryStartAngle + sliderPos * (rotaryEndAngle - rotaryStartAngle);
-        Array<Colour> colours{ Colour(117, 117, 117), Colour(136, 136, 137), Colour(140, 139, 139), Colour(168, 167, 167), Colour(166, 163, 163), Colour(208, 208, 208), Colour(207, 207, 207) };
-        //auto colorOne = Colour(117, 117, 117);
         
-        float b = fmin(fmax(rw * 0.05f, 1.0f), 2.0f);
+        float b = rw * 0.05f;
         
-        Path arc;
-        arc.startNewSubPath(rx + rw*0.5f, ry + rw*0.5f);
-        arc.addArc(rx - b*4, ry - b*4, rw + b*8, rw + b*8, rotaryStartAngle, angle);
-        g.setColour(Colours::lightblue);
-        g.fillPath(arc);
+//        Path arc;
+//        arc.startNewSubPath(rx + rw*0.5f, ry + rw*0.5f);
+//        arc.addArc(rx - b*4, ry - b*4, rw + b*8, rw + b*8, rotaryStartAngle, angle);
+//        g.setColour(Colours::lightblue);
+//        g.fillPath(arc);
         
         Path lower;
         auto lowerLength = fmax(radius * 0.5f, 8.0f);
@@ -221,7 +220,7 @@ public:
         lower.applyTransform(AffineTransform::rotation(rotaryStartAngle).translated(centreX, centreY));
         g.setColour(Colours::lightgrey);
         g.fillPath(lower);
-        
+
         Path upper;
         auto upperLength = fmax(radius * 0.5f, 8.0f);
         auto upperThickness = upperLength * 0.125f;
@@ -329,5 +328,49 @@ public:
                 g.drawText (shortcutKeyText, r, Justification::centredLeft, true);
             }
         }
+    }
+    
+    int getTabButtonBestWidth(TabBarButton & button, int tabDepth) override
+    {
+        int n = button.getTabbedButtonBar().getNumTabs();
+        int w = button.getTabbedButtonBar().getWidth() / n;
+        int diff = button.getTabbedButtonBar().getWidth() - (w*n);
+        if (button.getIndex() == 0) w += diff + 1;
+        return w;
+    }
+    
+    Rectangle<int> getTabButtonExtraComponentBounds (const TabBarButton& button, Rectangle<int>& textArea, Component& comp) override
+    {
+        Rectangle<int> extraComp;
+        
+        auto orientation = button.getTabbedButtonBar().getOrientation();
+        auto depth = button.getHeight();
+        
+//        if (button.getExtraComponentPlacement() == TabBarButton::beforeText)
+//        {
+//            switch (orientation)
+//            {
+//                case TabbedButtonBar::TabsAtBottom:
+//                case TabbedButtonBar::TabsAtTop:     extraComp = textArea.removeFromLeft   (depth); break;
+//                case TabbedButtonBar::TabsAtLeft:    extraComp = textArea.removeFromBottom (depth); break;
+//                case TabbedButtonBar::TabsAtRight:   extraComp = textArea.removeFromTop    (depth); break;
+//                default:                             jassertfalse; break;
+//            }
+//        }
+//        else
+//        {
+//            switch (orientation)
+//            {
+//                case TabbedButtonBar::TabsAtBottom:
+//                case TabbedButtonBar::TabsAtTop:     extraComp = textArea.removeFromRight  (depth); break;
+//                case TabbedButtonBar::TabsAtLeft:    extraComp = textArea.removeFromTop    (depth); break;
+//                case TabbedButtonBar::TabsAtRight:   extraComp = textArea.removeFromBottom (depth); break;
+//                default:                             jassertfalse; break;
+//            }
+//        }
+//
+//        return extraComp;
+        
+        return textArea.reduced(depth*0.2f, depth*0.2f);
     }
 };

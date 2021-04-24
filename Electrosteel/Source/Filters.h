@@ -30,5 +30,7 @@ public:
     
 private:
     
+    SmoothedParameter* ref[LowpassParamNil][NUM_VOICES];
+    
     tEfficientSVF lowpass[NUM_VOICES];
 };

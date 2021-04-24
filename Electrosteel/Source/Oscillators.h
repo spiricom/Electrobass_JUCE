@@ -54,6 +54,8 @@ public:
     
 private:
     
+    SmoothedParameter* ref[SawPulseParamNil][NUM_VOICES];
+    
     tSawtooth saw[NUM_VOICES][NUM_OSC_PER_VOICE];
     tRosenbergGlottalPulse pulse[NUM_VOICES][NUM_OSC_PER_VOICE];
     

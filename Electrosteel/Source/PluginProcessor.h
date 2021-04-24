@@ -80,7 +80,7 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
 
     //==============================================================================
-    float editorScale = 1.0f;
+    float editorScale = 1.05f;
     
     MidiKeyboardState keyboardState;
     
@@ -92,15 +92,17 @@ public:
     float voiceNote[NUM_VOICES];
     float voiceFreq[NUM_VOICES];
     
-    SmoothedParameter masterVolume;
+    std::unique_ptr<SmoothedParameter> masterVolume;
     
-    OwnedArray<SawPulseOscillator> sposc;
-    OwnedArray<LowpassFilter> lp;
-    OwnedArray<Envelope> env;
+    OwnedArray<SawPulseOscillator> sposcs;
+    OwnedArray<LowpassFilter> lps;
+    OwnedArray<Envelope> envs;
     
     OwnedArray<SmoothedParameter> voiceAmpParams;
     OwnedArray<SmoothedParameter> pitchBendParams;
     OwnedArray<SmoothedParameter> ccParams;
+    
+    OwnedArray<SmoothedParameter> params;
     
 private:
     

@@ -30,7 +30,8 @@ class ESAudioProcessorEditor : public AudioProcessorEditor,
                                public Slider::Listener,
                                public Button::Listener,
                                public KeyListener,
-                               public Timer
+                               public Timer,
+                               public DragAndDropContainer
 {
 public:
     ESAudioProcessorEditor (ESAudioProcessor&, AudioProcessorValueTreeState& vts);
@@ -44,6 +45,7 @@ public:
 	void buttonStateChanged(Button *button) override;
     
     void mouseDown (const MouseEvent &event) override;
+    
     bool keyPressed (const KeyPress &key, Component *originatingComponent) override;
     
     void timerCallback() override;
@@ -62,6 +64,7 @@ public:
 private:
     
     std::unique_ptr<ESDial> masterDial;
+    std::unique_ptr<ESDial> ampDial;
     OwnedArray<ESDial> ccDials;
     OwnedArray<Slider> pitchBendSliders;
     
@@ -70,10 +73,10 @@ private:
     
     OwnedArray<ESModule> modules;
     
-    OwnedArray<MappingSource> mappingSources;
+    ESTabbedComponent envs;
+    
     MappingSource* currentMappingSource;
-    OwnedArray<MappingTarget> mappingTargets;
-
+    
     std::unique_ptr<ComponentBoundsConstrainer> constrain;
     std::unique_ptr<ResizableCornerComponent> resizer;
     std::unique_ptr<Drawable> panel;
@@ -94,14 +97,20 @@ class ESModule : public Component
 {
 public:
     
-    ESModule(AudioProcessorValueTreeState&, AudioComponent&);
+    ESModule(ESAudioProcessorEditor& editor, AudioProcessorValueTreeState&, AudioComponent&);
     ~ESModule() override;
+    
+    void resized() override;
     
     void setBounds (float x, float y, float w, float h);
     void setBounds (Rectangle<float> newBounds);
     
+    ESDial* getDial (int index);
+    ESDial* getDial (String param);
+    
 private:
     
+    ESAudioProcessorEditor& editor;
     AudioProcessorValueTreeState& vts;
     AudioComponent& ac;
     OwnedArray<ESDial> dials;

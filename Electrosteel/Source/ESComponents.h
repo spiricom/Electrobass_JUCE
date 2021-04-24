@@ -14,245 +14,183 @@
 #include "PluginProcessor.h"
 #include "ESLookAndFeel.h"
 
-//==============================================================================
-
-class AdaptiveSlider : public Slider
-{
-public:
-    using Slider::Slider;
-    
-    double getValueFromText (const String& text) override;
-};
+class ESAudioProcessorEditor;
 
 //==============================================================================
 
-class ESDial : public Component
+class MappingSource : public Component
 {
 public:
-    
-    ESDial(const String& t);
-    ~ESDial() override;
-    
-    void addListener (Slider::Listener* l) { slider.addListener(l); }
-    void removeListener (Slider::Listener* l) { slider.removeListener(l); }
-    
-    void setBounds (float x, float y, float w, float h);
-    void setBounds (Rectangle<float> newBounds);
-    
-    void setSliderBounds (float x, float y, float w, float h);
-    void setSliderBounds (Rectangle<float> newBounds);
-
-    void setLabelBounds (float x, float y, float w, float h);
-    void setLabelBounds (Rectangle<float> newBounds);
-    
-    void setText (const String& newText, NotificationType notification);
-    void setFont (const Font& newFont);
-    
-    Slider& getSlider() { return slider; }
-    
-private:
-
-    Slider slider;
-    Label label;
-    
-    ESLookAndFeel laf;
-    
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ESDial)
-};
-
-
-//==============================================================================
-// Copy of juce::ShapeButton in case we want to change/add things
-class ESButton : public Button
-{
-public:
-    
-    ESButton (const String& name,
-                   Colour normalColour,
-                   Colour overColour,
-                   Colour downColour);
-    
-    /** Destructor. */
-    ~ESButton() override;
-    
-    void setBounds (float x, float y, float w, float h);
-    void setBounds (Rectangle<float> newBounds);
-    
-    void setShape (const Path& newShape,
-                   bool resizeNowToFitThisShape,
-                   bool maintainShapeProportions,
-                   bool hasDropShadow);
-    
-    void setColours (Colour normalColour,
-                     Colour overColour,
-                     Colour downColour);
-    
-    
-    void setOnColours (Colour normalColourOn,
-                       Colour overColourOn,
-                       Colour downColourOn);
-    
-    void shouldUseOnColours (bool shouldUse);
-    
-    void setOutline (Colour outlineColour, float outlineStrokeWidth);
-    
-    void setBorderSize (BorderSize<int> border);
-    
-    void paintButton (Graphics&, bool, bool) override;
-    
-private:
-    
-    Colour normalColour,   overColour,   downColour,
-    normalColourOn, overColourOn, downColourOn, outlineColour;
-    bool useOnColours;
-    DropShadowEffect shadow;
-    Path shape;
-    BorderSize<int> border;
-    bool maintainShapeProportions;
-    float outlineWidth;
-    
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ESButton)
-};
-
-//==============================================================================
-class ESLight : public Component,
-public SettableTooltipClient
-{
-public:
-    
-    ESLight(const String& name,
-                 Colour normalColour,
-                 Colour onColour);
-    ~ESLight() override;
-    
-    void setBounds (float x, float y, float d);
-    void setBounds (Rectangle<float> newBounds);
-    
-    void setState (bool state);
-    void setBrightness (float newBrightness);
-    
-    void paint (Graphics &g) override;
-    
-private:
-    
-    Colour normalColour, onColour;
-    bool isOn;
-    float brightness;
-    float lightSize;
-    
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ESLight)
-};
-
-//==============================================================================
-
-class MappingMenu : public Component,
-                    public Button::Listener
-{
-public:
-    
-    MappingMenu();
-    ~MappingMenu() override;
-    
-    void setBounds (float x, float y, float w, float h);
-    void setBounds (Rectangle<float> newBounds);
-    
-    void buttonClicked(Button* button) override;
-    
-    TabbedComponent menu;
-    
-private:
-    
-    std::unique_ptr<Drawable> image;
-    DrawableButton closeButton;
-    ArrowButton moveLeftButton;
-    ArrowButton moveRightButton;
-    DrawableRectangle outline;
-    DrawableRectangle background;
-    
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MappingMenu)
-};
-
-//==============================================================================
-
-class MappingSource : public DrawableButton
-{
-public:
-    
-    MappingSource(const String &name, float* source);
+    MappingSource(ESAudioProcessorEditor& editor, const String &name, float* sources, int n, Colour colour);
     ~MappingSource() override;
     
+    Colour getColour() { return colour; }
+    
+    void resized() override;
+    
     float* getValuePointer();
+    int getNumSourcePointers();
+    
+    Label label;
+    DrawableButton button;
     
 private:
-    
+
     std::unique_ptr<Drawable> image;
     float* source;
+    int numSourcePointers;
+    
+    Colour colour;
+    
+    ESLookAndFeel laf;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MappingSource)
 };
 
 //==============================================================================
 
-class MappingTarget : public DrawableButton
+class MappingTarget : public Slider,
+                      public DragAndDropTarget
 {
 public:
     
-    MappingTarget(const String &name, SmoothedParameter& target);
+    MappingTarget(const String &name, OwnedArray<SmoothedParameter>& target, int index);
     ~MappingTarget() override;
     
-    void setBounds (float x, float y, float w, float h);
-    void setBounds (Rectangle<float> newBounds);
+    String getTextFromValue(double value) override { return text; }
+    Colour getColour() { return colour; }
     
-    void viewMappings(int index = -1);
-    void createMapping(MappingSource* source, bool updateCurrentTab);
+    bool isInterestedInDragSource(const SourceDetails &dragSourceDetails) override;
+    void itemDropped(const SourceDetails &dragSourceDetails) override;
     
-    SmoothedParameter& getParameter();
+    void resized() override;
+    
+    void mouseDown(const MouseEvent& event) override;
+    void mouseDrag(const MouseEvent& event) override;
+
+    void setText(String s);
+    void setTextColour(Colour colour);
+    
+    void setMapping(MappingSource* source, float start, float end, HookOperation op);
+    void removeMapping();
+    
+    void setMappingRange(float start, float end);
+    
+    static void menuCallback(int result, MappingTarget* target);
     
 private:
     
-    std::unique_ptr<Drawable> image;
-    SmoothedParameter& target;
+    String text;
+    OwnedArray<SmoothedParameter>& target;
+    int index;
+    bool sliderEnabled;
     
-    MappingMenu mappings;
+    Colour colour;
+    
+    ESLookAndFeel laf;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MappingTarget)
 };
 
 //==============================================================================
 
-class MappingEditor : public Component,
-                      public Slider::Listener,
-                      public Button::Listener,
-                      public ComboBox::Listener
+class ESDial : public Component,
+               public Slider::Listener
 {
 public:
     
-    MappingEditor(MappingSource &source, MappingTarget &target, ParameterHook &hook);
-    ~MappingEditor() override;
+    ESDial(ESAudioProcessorEditor& editor, const String& name);
+    ESDial(ESAudioProcessorEditor& editor, const String& name, Colour colour, float* source, int n);
+    ESDial(ESAudioProcessorEditor& editor, const String& name, OwnedArray<SmoothedParameter>& target);
+    ~ESDial() override;
     
+    void paint(Graphics& g) override;
     void resized() override;
     
-    void sliderValueChanged(Slider* slider) override;
-    void buttonClicked(Button* button) override;
-    void comboBoxChanged (ComboBox *comboBox) override;
+    void mouseDown(const MouseEvent& event) override;
     
-    MappingSource& getSource();
-    MappingTarget& getTarget();
+    void sliderValueChanged(Slider* slider) override;
+    
+    void setText (const String& newText, NotificationType notification);
+    void setFont (const Font& newFont);
+    
+    MappingTarget* getTarget(int index);
+    MappingSource* getSource();
+    
+    Slider& getSlider() { return slider; }
     
 private:
     
-    MappingSource& source;
-    MappingTarget& target;
-    ParameterHook& hook;
-    
-    ComboBox operationSelect;
-    AdaptiveSlider startSlider;
-    Label startLabel;
-    AdaptiveSlider endSlider;
-    Label endLabel;
-    DrawableButton deleteButton;
+    Slider slider;
+    OwnedArray<MappingTarget> t;
+    std::unique_ptr<MappingSource> s;
+    Label label;
     
     ESLookAndFeel laf;
     
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MappingEditor)
+    static const int numTargets = 3;
+    
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ESDial)
+};
+
+//==============================================================================
+
+class ConnectionsContainer : public Component,
+                             public Timer
+{
+public:
+    ConnectionsContainer()
+    {
+        cursor = Drawable::createFromImageData(BinaryData::mappingtargeticon_svg,
+                                               BinaryData::mappingtargeticon_svgSize);
+        addChildComponent(cursor.get());
+        
+        setInterceptsMouseClicks(false, false);
+        
+        startTimer(10);
+    }
+    ~ConnectionsContainer() override {};
+    
+    void paint(Graphics &g) override
+    {
+        Point<float> mousePos = getMouseXYRelative().toFloat();
+        cursor->drawWithin(g, Rectangle<float>(10.f, 10.f).withCentre(mousePos),
+                           RectanglePlacement::fillDestination, 1.0f);
+        if (incompleteConnection) connections.getLast()->setEnd(mousePos);
+        g.setColour(Colours::gold);
+        for (auto line : connections) g.drawLine(*line);
+    }
+    
+    void timerCallback() override
+    {
+        repaint();
+    }
+    
+    void startConnection(float x, float y)
+    {
+        connections.add(new Line<float>(x, y, x, y));
+        incompleteConnection = true;
+    }
+
+    std::unique_ptr<Drawable> cursor;
+    OwnedArray<Line<float>> connections;
+    
+private:
+
+    bool incompleteConnection;
+};
+
+class ESTabbedComponent : public TabbedComponent
+{
+public:
+    using TabbedComponent::TabbedComponent;
+    
+    void currentTabChanged (int newCurrentTabIndex, const String &newCurrentTabName) override
+    {
+        TabbedButtonBar& bar = getTabbedButtonBar();
+        for (int i = 0; i < bar.getNumTabs(); ++i)
+        {
+            bar.getTabButton(i)->setAlpha(i == getCurrentTabIndex() ? 1.0f : 0.7f);
+        }
+    }
 };

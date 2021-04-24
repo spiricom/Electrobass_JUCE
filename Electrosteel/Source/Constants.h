@@ -15,11 +15,13 @@
 
 #define NUM_CHANNELS 16
 
-#define NUM_GLOBAL_CC 5
+#define NUM_GLOBAL_CC 16
 
 #define NUM_VOICES 15
 #define NUM_OSC_PER_VOICE 3
 #define INV_NUM_OSC_PER_VOICE 0.333333f
+
+#define NUM_ENVS 4
 
 #define EXP_BUFFER_SIZE 128
 #define DECAY_EXP_BUFFER_SIZE 512
@@ -55,7 +57,8 @@ typedef enum _SawPulseParam
     SawPulseTranspose = 0,
     SawPulseShape,
     SawPulseDetune,
-    SawPulseVolume
+    SawPulseVolume,
+    SawPulseParamNil
 } SawPulseParam;
 static const StringArray cSawPulseParams = {
     "Transpose",
@@ -76,7 +79,8 @@ typedef enum _LowpassParam
 {
     LowpassCutoff = 0,
     LowpassKeyFollow,
-    LowpassResonance
+    LowpassResonance,
+    LowpassParamNil
 } LowpassParam;
 static const StringArray cLowpassParams = {
     "Cutoff",
@@ -84,7 +88,7 @@ static const StringArray cLowpassParams = {
     "Resonance"
 };
 static const std::vector<std::vector<float>> vLowpassInit = {
-    { 0.0f, 4000.f, 2000.f },   //Cutoff
+    { 0.0f, 10000.f, 2500.f },   //Cutoff
     { 0.0f, 1.f, 0.5f },   //KeyFollow
     { 0.1f, 2.f, 0.4f },   //Resonance
 };
@@ -97,7 +101,8 @@ typedef enum _EnvelopeParam
     EnvelopeDecay,
     EnvelopeSustain,
     EnvelopeRelease,
-    EnvelopeLeak
+    EnvelopeLeak,
+    EnvelopeParamNil
 } EnvelopeParam;
 static const StringArray cEnvelopeParams = {
     "Attack",
@@ -216,6 +221,3 @@ static const std::vector<std::vector<float>> cWavetableKnobParamInitValues = {
     { 0.0f, 1.0f, 0.1f },   //WavetableFilterRelease
     { 0.0f, 1.0f, 0.1f }    //WavetableFilterLeak
 };
-
-static const float value0 = 0.0f;
-static const float value1 = 1.0f;

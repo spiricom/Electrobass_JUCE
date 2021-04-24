@@ -29,6 +29,14 @@ SawPulseOscillator::SawPulseOscillator(const String& n, ESAudioProcessor& p,
                                        AudioProcessorValueTreeState& vts, StringArray s) :
 Oscillator(n, p, vts, s)
 {
+    for (int i = 0; i < SawPulseParamNil; ++i)
+    {
+        for (int v = 0; v < NUM_VOICES; ++v)
+        {
+            ref[i][v] = params[i]->getUnchecked(v);
+        }
+    }
+    
     for (int i = 0; i < NUM_VOICES; i++)
     {
         for (int j = 0; j < NUM_OSC_PER_VOICE; j++)
@@ -73,10 +81,10 @@ void SawPulseOscillator::prepareToPlay (double sampleRate, int samplesPerBlock)
 
 float SawPulseOscillator::tick(int v)
 {
-    float transpose = params[v][SawPulseTranspose]->tick();
-    float shape = params[v][SawPulseShape]->tick();
-    float detuneAmount = params[v][SawPulseDetune]->tick();
-    float volume = params[v][SawPulseVolume]->tick();
+    float transpose = ref[SawPulseTranspose][v]->tick();
+    float shape = ref[SawPulseShape][v]->tick();
+    float detuneAmount = ref[SawPulseDetune][v]->tick();
+    float volume = ref[SawPulseVolume][v]->tick();
     
 //    float tempLFO1 = (tCycle_tick(&pwmLFO1) * 0.25f) + 0.5f; // pulse length
 //    float tempLFO2 = ((tCycle_tick(&pwmLFO2) * 0.25f) + 0.5f) * tempLFO1; // open length
@@ -84,6 +92,7 @@ float SawPulseOscillator::tick(int v)
     for (int i = 0; i < NUM_OSC_PER_VOICE; i++)
     {
         float tempFreq = processor.voiceFreq[v] * (1.0f + (detune[v][i] * detuneAmount));
+        tempFreq = mtof((ftom(tempFreq) + transpose));
         tSawtooth_setFreq(&saw[v][i], tempFreq);
         tRosenbergGlottalPulse_setFreq(&pulse[v][i], tempFreq);
 //        tRosenbergGlottalPulse_setPulseLength(&glottal[v][i], tempLFO1);

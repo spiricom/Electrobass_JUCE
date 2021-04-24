@@ -16,6 +16,14 @@ LowpassFilter::LowpassFilter(const String& n, ESAudioProcessor& p,
                              AudioProcessorValueTreeState& vts, StringArray s) :
 AudioComponent(n, p, vts, s)
 {
+    for (int i = 0; i < LowpassParamNil; ++i)
+    {
+        for (int v = 0; v < NUM_VOICES; ++v)
+        {
+            ref[i][v] = params[i]->getUnchecked(v);
+        }
+    }
+    
     for (int i = 0; i < NUM_VOICES; i++)
     {
         tEfficientSVF_init(&lowpass[i], SVFTypeLowpass, 2000.f, 0.4f, &processor.leaf);
@@ -36,9 +44,9 @@ float LowpassFilter::tick(int v, float input)
 {
     float follow = processor.voiceNote[v] - 60.f;
     
-    float midiCutoff = LEAF_frequencyToMidi(params[v][LowpassCutoff]->tick());
-    float keyFollow = params[v][LowpassKeyFollow]->tick();
-    float q = params[v][LowpassResonance]->tick();
+    float midiCutoff = LEAF_frequencyToMidi(ref[LowpassCutoff][v]->tick());
+    float keyFollow = ref[LowpassKeyFollow][v]->tick();
+    float q = ref[LowpassResonance][v]->tick();
     
     float adjustedMidiCutoff = (midiCutoff * (1.f - keyFollow)) + ((midiCutoff + follow) * keyFollow);
     float cutoff = LEAF_midiToFrequency(adjustedMidiCutoff);

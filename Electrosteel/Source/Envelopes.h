@@ -29,10 +29,13 @@ public:
     void tick();
     void noteOn(int voice, float velocity);
     void noteOff(int voice, float velocity);
-    float* getValuePointer(int voice);
+
+    float* getValuePointer();
     
 private:
     
+    SmoothedParameter* ref[EnvelopeParamNil][NUM_VOICES];
+
     tADSRT envs[NUM_VOICES];
     float value[NUM_VOICES];
     

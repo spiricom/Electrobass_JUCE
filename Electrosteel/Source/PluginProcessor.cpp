@@ -41,38 +41,46 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
 
     leaf.clearOnAllocation = 0;
     
+    
     for (int i = 0; i < 2; ++i)
     {
         String s (i+1);
-        sposc.add(std::make_unique<SawPulseOscillator>("SawPulse" + s, *this, vts, cSawPulseParams));
-        lp.add(std::make_unique<LowpassFilter>("Lowpass" + s, *this, vts, cLowpassParams));
-        env.add(std::make_unique<Envelope>("Envelope" + s, *this, vts, cEnvelopeParams));
+        sposcs.add(std::make_unique<SawPulseOscillator>("SawPulse" + s, *this, vts, cSawPulseParams));
+        lps.add(std::make_unique<LowpassFilter>("Lowpass" + s, *this, vts, cLowpassParams));
+    }
+    
+    for (int i = 0; i < NUM_ENVS; ++i)
+    {
+        envs.add(std::make_unique<Envelope>("Envelope" + String(i+1), *this, vts, cEnvelopeParams));
     }
     
     // Make a SmoothedParameter for each voice from the single AudioParameter
     // to allow for env mapping
     for (int i = 0; i < NUM_VOICES; ++i)
     {
-        voiceAmpParams.add(new SmoothedParameter(vts, "Amp"));
-        voiceAmpParams.getLast()->addHook(env[0]->getValuePointer(i), 0.0, 1.0, HookMultiply);
-        lp[0]->getParameter(i, LowpassCutoff)->addHook(env[1]->getValuePointer(i), 0.f, 4096.f, HookAdd);
+        voiceAmpParams.add(new SmoothedParameter(*this, vts, "Amp"));
+        voiceAmpParams[i]->setHook(0, &(envs[3]->getValuePointer()[i]),
+                                   0.0, 1.0, HookAdd);
+        lps[0]->getParameter(LowpassCutoff)[i]->setHook(0, envs[0]->getValuePointer(),
+                                                        0.f, 5000.f, HookAdd);
     }
     
     for (int i = 0; i < NUM_GLOBAL_CC; ++i)
     {
-        ccParams.add(new SmoothedParameter(vts, "CC" + String(i+1)));
+        ccParams.add(new SmoothedParameter(*this, vts, "CC" + String(i+1)));
     }
     
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
-        pitchBendParams.add(new SmoothedParameter(vts, "PitchBendCh" + String(i+1)));
+        pitchBendParams.add(new SmoothedParameter(*this, vts, "PitchBendCh" + String(i+1)));
     }
     
-    masterVolume = SmoothedParameter(vts, "Master");
+    masterVolume = std::make_unique<SmoothedParameter>(*this, vts, "Master");
 }
 
 ESAudioProcessor::~ESAudioProcessor()
 {
+    params.clearQuick(false);
 }
 
 //==============================================================================
@@ -86,7 +94,7 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
                                                        0., 2., 1.));
     
     layout.add (std::make_unique<AudioParameterFloat> ("Amp", "Amp",
-                                                       0., 2., 1.));
+                                                       0., 2., 0.));
     
     for (int i = 0; i < NUM_GLOBAL_CC; ++i)
     {
@@ -132,7 +140,7 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
         float min = vEnvelopeInit[i][0];
         float max = vEnvelopeInit[i][1];
         float def = vEnvelopeInit[i][2];
-        for (int j = 0; j < 2 /* NUM ENV */; ++j)
+        for (int j = 0; j < NUM_ENVS; ++j)
         {
             String n = "Envelope" + String(j+1) + cEnvelopeParams[i];
             layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
@@ -146,6 +154,22 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
 void ESAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     LEAF_setSampleRate(&leaf, sampleRate);
+    for (auto param : params)
+    {
+        param->setSampleRate(sampleRate);
+    }
+    for (auto sposc : sposcs)
+    {
+        sposc->prepareToPlay(sampleRate, samplesPerBlock);
+    }
+    for (auto lp : lps)
+    {
+        lp->prepareToPlay(sampleRate, samplesPerBlock);
+    }
+    for (auto env : envs)
+    {
+        env->prepareToPlay(sampleRate, samplesPerBlock);
+    }
 }
 
 void ESAudioProcessor::releaseResources()
@@ -197,14 +221,17 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
     
     for (int i = 0; i < buffer.getNumSamples(); i++)
     {
-        for (auto p : ccParams)
+        for (int p = 0; p < NUM_GLOBAL_CC; ++p)
         {
-            p->tick();
+            ccParams[p]->tick();
         }
         
         float sample = 0.f;
         float globalPitchBend = pitchBendParams[0]->tick();
-        for (auto e : env) e->tick();
+        for (int i = 0; i < envs.size(); ++i)
+        {
+            envs[i]->tick();
+        }
         for (int v = 0; v < NUM_VOICES; ++v)
         {
             float pitchBend = globalPitchBend + pitchBendParams[v+1]->tick();
@@ -213,15 +240,16 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
             float tunedNote = tempNote + centsDeviation[(int)tempPitchClass];
             voiceNote[v] = tunedNote;
             voiceFreq[v] = LEAF_midiToFrequency(tunedNote);
+            if (voiceFreq[v] < 10.0f) voiceFreq[v] = 0.0f;
             
             float voiceSample = 0.f;
-            voiceSample = sposc[0]->tick(v);
-            voiceSample = lp[0]->tick(v, voiceSample);
+            voiceSample = sposcs[0]->tick(v);
+            voiceSample = lps[0]->tick(v, voiceSample);
             voiceSample *= voiceAmpParams[v]->tick();
             sample += voiceSample;
         }
         
-        sample *= masterVolume.tick();
+        sample *= masterVolume->tick();
         
         for (int channel = 0; channel < totalNumOutputChannels; ++channel)
         {
@@ -280,7 +308,7 @@ void ESAudioProcessor::noteOn(int channel, int key, float velocity)
         
         if (v >= 0)
         {
-            for (auto e : env) e->noteOn(i, velocity);
+            for (auto e : envs) e->noteOn(i, velocity);
         }
     }
     
@@ -300,7 +328,7 @@ void ESAudioProcessor::noteOff(int channel, int key, float velocity)
     
     if (v >= 0)
     {
-        for (auto e : env) e->noteOff(i, velocity);    }
+        for (auto e : envs) e->noteOff(i, velocity);    }
     
     if (tSimplePoly_getNumActiveVoices(&voice[i]) < 1)
     {
@@ -445,7 +473,7 @@ void ESAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
         if (xmlState->hasTagName (vts.state.getType()))
             vts.replaceState (juce::ValueTree::fromXml (*xmlState));
         
-        editorScale = xmlState->getDoubleAttribute("editorScale", 1.0);
+//        editorScale = xmlState->getDoubleAttribute("editorScale", 1.05);
     }
 }
 
