@@ -40,6 +40,7 @@ public:
     //==============================================================================
     void paint (Graphics&) override;
     void resized() override;
+    void resizedChannelSelection();
 	void sliderValueChanged(Slider* slider) override;
 	void buttonClicked(juce::Button* button) override;
 	void buttonStateChanged(Button *button) override;
@@ -49,8 +50,6 @@ public:
     bool keyPressed (const KeyPress &key, Component *originatingComponent) override;
     
     void timerCallback() override;
-    
-    void resizeChannelSelection();
     
     void loadWav();
     void chooseFile(const FileChooser& chooser);
@@ -63,19 +62,21 @@ public:
     
 private:
     
+    TabbedComponent tabs;
+    
+    Component tab1;
     std::unique_ptr<ESDial> masterDial;
     std::unique_ptr<ESDial> ampDial;
     OwnedArray<ESDial> ccDials;
     OwnedArray<Slider> pitchBendSliders;
-    
     MidiKeyboardComponent keyboard;
     OwnedArray<TextButton> channelSelection;
-    
     OwnedArray<ESModule> modules;
-    
     ESTabbedComponent envs;
-    
     MappingSource* currentMappingSource;
+    
+    Component tab2;
+    CopedentTable copedentTable;
     
     std::unique_ptr<ComponentBoundsConstrainer> constrain;
     std::unique_ptr<ResizableCornerComponent> resizer;

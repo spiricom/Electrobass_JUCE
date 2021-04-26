@@ -17,13 +17,13 @@ ESAudioProcessorEditor::ESAudioProcessorEditor (ESAudioProcessor& p, AudioProces
 AudioProcessorEditor (&p),
 processor (p),
 vts(vts),
+tabs(TabbedButtonBar::Orientation::TabsAtTop),
 keyboard(p.keyboardState, MidiKeyboardComponent::Orientation::horizontalKeyboard),
 envs(TabbedButtonBar::TabsAtTop),
 constrain(new ComponentBoundsConstrainer()),
 resizer(new ResizableCornerComponent (this, constrain.get())),
 chooser("Select a .wav file to load...", {}, "*.wav")
 {
-    //    panel = Drawable::createFromImageData(BinaryData::panel_svg, BinaryData::panel_svgSize);    
     setWantsKeyboardFocus(true);
     
     getTopLevelComponent()->addKeyListener(this);
@@ -31,22 +31,25 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     Typeface::Ptr tp = Typeface::createSystemTypefaceFor(BinaryData::EuphemiaCAS_ttf,
                                                          BinaryData::EuphemiaCAS_ttfSize);
     euphemia = Font(tp);
-    //    euphemia.setItalic(true);
+    
+    //==============================================================================
+    // TAB1 ========================================================================
+    addAndMakeVisible(tab1);
     
     masterDial = std::make_unique<ESDial>(*this, "Master");
     sliderAttachments.add(new SliderAttachment(vts, "Master", masterDial->getSlider()));
-    addAndMakeVisible(masterDial.get());
+    tab1.addAndMakeVisible(masterDial.get());
     
     ampDial = std::make_unique<ESDial>(*this, "Amp", processor.voiceAmpParams);
     sliderAttachments.add(new SliderAttachment(vts, "Amp", ampDial->getSlider()));
-    addAndMakeVisible(ampDial.get());
+    tab1.addAndMakeVisible(ampDial.get());
     
     for (int i = 0; i < NUM_GLOBAL_CC; ++i)
     {
         ccDials.add(new ESDial(*this, "CC" + String(i+1), Colours::red,
                                processor.ccParams[i]->getValuePointer(), 1));
         sliderAttachments.add(new SliderAttachment(vts, "CC" + String(i+1), ccDials[i]->getSlider()));
-        addAndMakeVisible(ccDials[i]);
+        tab1.addAndMakeVisible(ccDials[i]);
     }
     currentMappingSource = nullptr;
     
@@ -58,13 +61,13 @@ chooser("Select a .wav file to load...", {}, "*.wav")
         channelSelection[i]->setRadioGroupId(1);
         channelSelection[i]->setClickingTogglesState(true);
         channelSelection[i]->addListener(this);
-        addAndMakeVisible(channelSelection[i]);
+        tab1.addAndMakeVisible(channelSelection[i]);
         
         pitchBendSliders.add(new Slider());
         pitchBendSliders[i]->setLookAndFeel(&laf);
-        pitchBendSliders[i]->setRange(-24., 24.);
+        pitchBendSliders[i]->setTextValueSuffix(" m2");
         pitchBendSliders[i]->addListener(this);
-        addAndMakeVisible(pitchBendSliders[i]);
+        tab1.addAndMakeVisible(pitchBendSliders[i]);
         
         sliderAttachments.add(new SliderAttachment(vts, "PitchBendCh" + String(i+1),
                                                    *pitchBendSliders[i]));
@@ -74,9 +77,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     
     keyboard.setAvailableRange(21, 108);
     keyboard.setOctaveForMiddleC(4);
-    addAndMakeVisible(&keyboard);
-    
-    //==============================================================================
+    tab1.addAndMakeVisible(&keyboard);
     
     modules.add(new ESModule(*this, vts, *processor.sposcs[0]));
     modules.add(new ESModule(*this, vts, *processor.lps[0]));
@@ -101,10 +102,9 @@ chooser("Select a .wav file to load...", {}, "*.wav")
             bar.getTabButton(i)->setAlpha(i == 0 ? 1.0f : 0.7f);
         }
     }
-    addAndMakeVisible(&envs);
-    
-    addAndMakeVisible(modules[0]);
-    addAndMakeVisible(modules[1]);
+    tab1.addAndMakeVisible(&envs);
+    tab1.addAndMakeVisible(modules[0]);
+    tab1.addAndMakeVisible(modules[1]);
     
     MappingSource* env4 =
     dynamic_cast<MappingSource*>(envs.getTabbedButtonBar().getTabButton(3)->getExtraComponent());
@@ -115,6 +115,15 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     modules[1]->getDial(LowpassCutoff)->getTarget(0)->setMapping(env1, 0.0f, 5000.0f, HookAdd);
     
     //==============================================================================
+    // TAB2 ========================================================================
+    addAndMakeVisible(tab2);
+    tab2.addAndMakeVisible(copedentTable);
+    
+    //==============================================================================
+    
+    tabs.addTab("Synth", Colours::black, &tab1, false);
+    tabs.addTab("Copedent", Colours::black, &tab2, false);
+    addAndMakeVisible(&tabs);
     
     setSize(EDITOR_WIDTH * processor.editorScale, EDITOR_HEIGHT * processor.editorScale);
     
@@ -123,7 +132,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     addAndMakeVisible(*resizer);
     resizer->setAlwaysOnTop(true);
     
-    versionLabel.setJustificationType(Justification::topRight);
+    versionLabel.setJustificationType(Justification::centred);
     versionLabel.setBorderSize(BorderSize<int>(2));
     versionLabel.setText("v" + String(ProjectInfo::versionString), dontSendNotification);
     versionLabel.setColour(Label::ColourIds::textColourId, Colours::lightgrey);
@@ -184,42 +193,43 @@ void ESAudioProcessorEditor::resized()
     float s = width / EDITOR_WIDTH;
     processor.editorScale = s;
     
+    tabs.setBounds(getLocalBounds().expanded(1));
+    tabs.setTabBarDepth(30*s);
+    
+    //==============================================================================
+    // TAB1 ========================================================================
     const float knobSize = 50.0f*s;
-    
     const float masterSize = knobSize * 1.5f;
-    masterDial->setBounds(550*s, 20*s, masterSize, masterSize*1.5f);
     
-    ampDial->setBounds(450*s, 20*s, masterSize, masterSize*1.5f);
+    masterDial->setBounds(550*s, 10*s, masterSize, masterSize*1.5f);
+    ampDial->setBounds(450*s, 10*s, masterSize, masterSize*1.5f);
     
     for (int i = 0; i < NUM_GLOBAL_CC; ++i)
     {
 //        ccDials[i]->setBounds(450*s + 90*s*i, 460*s, knobSize, knobSize*1.5f);
-        ccDials[i]->setBounds(6.0f*s + 56.0f*s*i, 500.0f*s, knobSize, knobSize*1.4f);
+        ccDials[i]->setBounds(6.0f*s + 56.0f*s*i, 470.0f*s, knobSize, knobSize*1.4f);
     }
     
-    modules[0]->setBounds(0, 20*s, 530*s, 110*s);
-    modules[1]->setBounds(0, 130*s, 530*s, 110*s);
-    envs.setBounds(350*s, 330*s, width - 350*s + 2, 160*s);
+    modules[0]->setBounds(0, 10*s, 530*s, 110*s);
+    modules[1]->setBounds(0, 120*s, 530*s, 110*s);
+    envs.setBounds(350*s, 300*s, width - 350*s + 2, 160*s);
     envs.setIndent(10*s);
     envs.setTabBarDepth(25*s);
     
-//    
-//    for (auto label : stDialLabels)
-//        label->setFont(euphemia.withHeight(height * 0.027f));
+    resizedChannelSelection();
     
-    resizeChannelSelection();
-    
-    int w = width - channelSelection[15]->getRight();
-    for (int i = 0; i < NUM_CHANNELS; ++i)
-    {
-        pitchBendSliders[i]->setBounds(channelSelection[15]->getRight(), height * 0.81f, w, height * 0.06f);
-    }
-    
-    keyboard.setBounds(0, height * 0.87f, width, height * 0.13f);
+    keyboard.setBoundsRelative(0.f, 0.86f, 1.0f, 0.14f);
     keyboard.setKeyWidth(width / 52.0f);
+    
+    //==============================================================================
+    // TAB2 ========================================================================
+    
+    copedentTable.setBoundsRelative(0.1f, 0.1f, 0.8f, 0.8f);
 
-    versionLabel.setBounds(width*0.95, 0, width * 0.05f, height * 0.03f);
-    versionLabel.setFont(euphemia.withHeight(height * 0.025f));
+    //==============================================================================
+    
+    versionLabel.setBounds(width*0.95, 0, width * 0.05f, 30*s);
+    versionLabel.setFont(euphemia.withHeight(20*s));
     
     float r = EDITOR_WIDTH / EDITOR_HEIGHT;
     constrain->setSizeLimits(200, 200/r, 800*r, 800);
@@ -228,14 +238,14 @@ void ESAudioProcessorEditor::resized()
 //    container.setBounds(getLocalBounds());
 }
 
-void ESAudioProcessorEditor::resizeChannelSelection()
+void ESAudioProcessorEditor::resizedChannelSelection()
 {
     int width = getWidth();
-    int height = getHeight();
+    float s = width / EDITOR_WIDTH;
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
-        float yf = 0.822f;
-        if (channelSelection[i]->getToggleState()) yf -= 0.005f;
+        float yf = 547;
+        if (channelSelection[i]->getToggleState()) yf -= 4;
         float offset = width * 0.07f;
         float w = width * 0.04f;
         if (i == 0)
@@ -243,11 +253,17 @@ void ESAudioProcessorEditor::resizeChannelSelection()
             w += offset;
             offset = 0.0f;
         }
-        Rectangle<float> bounds ((width * 0.04f - 1.f) * i + offset, height * yf, w, height * 0.06f);
+        Rectangle<float> bounds ((width * 0.04f - 1.f) * i + offset, yf*s, w, 42*s);
         channelSelection[i]->setBounds(Rectangle<int>::leftTopRightBottom ((bounds.getX()),
                                                                            (bounds.getY()),
                                                                            (bounds.getRight()),
                                                                            (bounds.getBottom())));
+    }
+    
+    int w = width - channelSelection[15]->getRight();
+    for (int i = 0; i < NUM_CHANNELS; ++i)
+    {
+        pitchBendSliders[i]->setBounds(channelSelection[15]->getRight(), 543*s, w, 40*s);
     }
 }
 
@@ -260,7 +276,7 @@ void ESAudioProcessorEditor::buttonClicked(Button* button)
 {
     if (button == nullptr) return;
     
-    resizeChannelSelection();
+    resizedChannelSelection();
     
     if (TextButton* tb = dynamic_cast<TextButton*>(button))
     {
