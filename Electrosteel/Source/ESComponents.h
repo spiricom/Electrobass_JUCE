@@ -196,53 +196,177 @@ public:
 };
 
 //==============================================================================
-
 class CopedentTable : public Component,
-                      public TableListBoxModel
+                      public TableListBoxModel,
+                      public ComboBox::Listener
 {
 public:
-    CopedentTable()
+    CopedentTable(Array<Array<float>>& array) :
+    copedentArray(array),
+    exportChooser("Export copedent to file...",
+                  File::getSpecialLocation(File::userDocumentsDirectory),
+                  "*.xml"),
+    importChooser("Import copedent file...",
+                  File::getSpecialLocation(File::userDocumentsDirectory),
+                  "*.xml")
     {
-        // Create our table component and add it to this component..
-        addAndMakeVisible (table);
-        table.setModel (this);
+        for (int i = 0; i < CopedentColumnNil; ++i)
+        {
+            columnList.add(cCopedentColumnNames[i]);
+        }
         
-        // give it a border
-        table.setColour (ListBox::outlineColourId, Colours::grey);
-        table.setOutlineThickness (1);
+        stringTable.setModel (this);
+        stringTable.setLookAndFeel(&laf);
+        stringTable.setColour (ListBox::outlineColourId, Colours::grey);
+        stringTable.setOutlineThickness (1);
         
-        // we could now change some initial settings..
-        table.getHeader().setSortColumnId (1, true); // sort forwards by the ID column
-        table.getHeader().setColumnVisible (7, false); // hide the "length" column until the user shows it
+        leftTable.setModel (this);
+        leftTable.setLookAndFeel(&laf);
+        leftTable.setColour (ListBox::outlineColourId, Colours::grey);
+        leftTable.setOutlineThickness (1);
         
-        // un-comment this line to have a go of stretch-to-fit mode
-        // table.getHeader().setStretchToFitActive (true);
+        pedalTable.setModel (this);
+        pedalTable.setLookAndFeel(&laf);
+        pedalTable.setColour (ListBox::outlineColourId, Colours::grey);
+        pedalTable.setOutlineThickness (1);
         
-        table.setRowSelectedOnMouseDown(false);
+        rightTable.setModel (this);
+        rightTable.setLookAndFeel(&laf);
+        rightTable.setColour (ListBox::outlineColourId, Colours::grey);
+        rightTable.setOutlineThickness (1);
+        
+        int i = 0;
+        int columnId = 1;
+        TableHeaderComponent::ColumnPropertyFlags flags =
+        TableHeaderComponent::ColumnPropertyFlags::notResizableOrSortable;
+        stringTable.getHeader().addColumn(columnList[i++], columnId++, 20, 1, 1000, flags);
+        
+        leftTable.getHeader().addColumn(columnList[i++], columnId++, 20, 1, 1000, flags);
+        leftTable.getHeader().addColumn(columnList[i++], columnId++, 20, 1, 1000, flags);
+        leftTable.getHeader().addColumn(columnList[i++], columnId++, 20, 1, 1000, flags);
+        
+        pedalTable.getHeader().addColumn(columnList[i++], columnId++, 20, 1, 1000, flags);
+        pedalTable.getHeader().addColumn(columnList[i++], columnId++, 20, 1, 1000, flags);
+        pedalTable.getHeader().addColumn(columnList[i++], columnId++, 20, 1, 1000, flags);
+        pedalTable.getHeader().addColumn(columnList[i++], columnId++, 20, 1, 1000, flags);
+        pedalTable.getHeader().addColumn(columnList[i++], columnId++, 20, 1, 1000, flags);
+        
+        rightTable.getHeader().addColumn(columnList[i++], columnId++, 20, 1, 1000, flags);
+        rightTable.getHeader().addColumn(columnList[i++], columnId++, 20, 1, 1000, flags);
+
+        addAndMakeVisible (stringTable);
+        addAndMakeVisible (leftTable);
+        addAndMakeVisible (pedalTable);
+        addAndMakeVisible (rightTable);
+    }
+    
+    ~CopedentTable()
+    {
+        stringTable.setLookAndFeel(nullptr);
+        leftTable.setLookAndFeel(nullptr);
+        pedalTable.setLookAndFeel(nullptr);
+        rightTable.setLookAndFeel(nullptr);
     }
     
     //==============================================================================
     // this loads the embedded database XML file into memory
-    void loadData(std::unique_ptr<InputStream>input)
+    void exportXml()
     {
-        data = parseXML (input->readString());
-        
-        dataList   = data->getChildByName ("DATA");
-        columnList = data->getChildByName ("COLUMNS");
-        
-        //numRows = dataList->getNumChildElements();
-        
-        table.getHeader().removeAllColumns();
-        
-        // Add some columns to the table header, based on the column list in our database..
-        for (auto* columnXml : columnList->getChildIterator())
+        exportChooser.launchAsync (FileBrowserComponent::saveMode |
+                                   FileBrowserComponent::canSelectFiles |
+                                   FileBrowserComponent::warnAboutOverwriting,
+                                   [this] (const FileChooser& chooser)
+                                   {
+            String path = chooser.getResult().getFullPathName();
+            if (path.isEmpty()) return;
+            
+            File file(path);
+            
+            ValueTree copedentVT("Copedent");
+            
+            for (int c = 0; c < numColumns; ++c)
+            {
+                String name = String(cCopedentColumnNames[c]);
+                ValueTree child(name);
+                for (int r = 0; r < numRows; ++r)
+                {
+                    child.setProperty("r" + String(r), copedentArray[c][r], nullptr);
+                }
+                copedentVT.addChild(child, -1, nullptr);
+            }
+            
+            std::unique_ptr<XmlElement> xml = copedentVT.createXml();
+            
+            xml->writeTo(file, XmlElement::TextFormat());
+        });
+    }
+    
+    void importXml()
+    {
+        importChooser.launchAsync (FileBrowserComponent::openMode |
+                                   FileBrowserComponent::canSelectFiles,
+                                   [this] (const FileChooser& chooser)
+                                   {
+            String path = chooser.getResult().getFullPathName();
+            if (path.isEmpty()) return;
+            File file(path);
+            importXml(XmlDocument::parse(file).get());
+        });
+    }
+    
+    void importXml(XmlElement* xml)
+    {
+        for (int c = 0; c < numColumns; ++c)
         {
-            table.getHeader().addColumn (columnXml->getStringAttribute ("name"),
-                                         columnXml->getIntAttribute ("columnId"),
-                                         columnXml->getIntAttribute ("width"),
-                                         50, 400,
-                                         TableHeaderComponent::defaultFlags);
+            String name = String(cCopedentColumnNames[c]);
+            XmlElement* columnXml = xml->getChildByName(name);
+            if (columnXml == nullptr) continue;
+            for (int r = 0; r < numRows; ++r)
+            {
+                float value = columnXml->getDoubleAttribute("r" + String(r));
+                copedentArray.getReference(c).set(r, value);
+            }
         }
+        resized();
+    }
+    
+    String getTextFromData (const int columnNumber, const int rowNumber, bool asDestination) const
+    {
+        float value = copedentArray[columnNumber-1][rowNumber];
+        
+        if (value == 0.0f) return String();
+        
+        String text = String();
+        bool displayAsDestination = columnNumber == 1 || asDestination;
+        if (displayAsDestination)
+        {
+            if (columnNumber != 1)
+            {
+                if (value > 0.0f) for (int i = 0; i < value; i+=12) text += String("+");
+                else for (int i = 0; i < -value; i+=12) text += String("-");
+                value += copedentArray[0][rowNumber];
+            }
+            int n = roundf(value);
+            float f = value - n;
+            // Use sharp except for E and B
+            bool useSharps = (n % 12 != 4) && (n % 12 != 11);
+            
+            text += MidiMessage::getMidiNoteName(n, useSharps, false, 4);
+            if (f > 0.0f) text += "+" + String(f);
+            else if (f < 0.0f) text += String(f);
+        }
+        else
+        {
+            if (value > 0.0f) text += "+";
+            text += String(value);
+        }
+        return text;
+    }
+    
+    void setDataFromText (const int columnNumber, const int rowNumber, const String& newText)
+    {
+        float value = newText.getFloatValue();
+        copedentArray.getReference(columnNumber-1).set(rowNumber, value);
     }
     
     // This is overloaded from TableListBoxModel, and must return the total number of rows in our table
@@ -254,12 +378,8 @@ public:
     // This is overloaded from TableListBoxModel, and should fill in the background of the whole row
     void paintRowBackground (Graphics& g, int rowNumber, int /*width*/, int /*height*/, bool rowIsSelected) override
     {
-        auto alternateColour = getLookAndFeel().findColour (ListBox::backgroundColourId)
-        .interpolatedWith (getLookAndFeel().findColour (ListBox::textColourId), 0.03f);
-//        if (rowIsSelected)
-//            g.fillAll (Colours::lightblue);
-        else if (rowNumber % 2)
-            g.fillAll (alternateColour);
+        if (rowNumber % 2) g.fillAll (Colours::darkgrey.withBrightness(0.1f));
+        else g.fillAll (Colours::darkgrey.withBrightness(0.1f));
     }
     
     // This is overloaded from TableListBoxModel, and must paint any cells that aren't using custom
@@ -268,55 +388,25 @@ public:
                     int width, int height, bool /*rowIsSelected*/) override
     {
         g.setColour (getLookAndFeel().findColour (ListBox::textColourId));
-        g.setFont (font);
+        g.setFont (Font(14.));
         
-        if (auto* rowElement = dataList->getChildElement (rowNumber))
+        for (int c = 0; c < numColumns; ++c)
         {
-            auto text = rowElement->getStringAttribute (getAttributeNameForColumnId (columnId));
-            
-            g.drawText (text, 2, 0, width - 4, height, Justification::centredLeft, true);
+            for (int r = 0; r < numRows; ++r)
+            {
+                g.drawText (getTextFromData(c, r, true), 2, 0, width - 4, height,
+                            Justification::centredLeft, true);
+            }
         }
         
         g.setColour (getLookAndFeel().findColour (ListBox::backgroundColourId));
         g.fillRect (width - 1, 0, 1, height);
     }
     
-    // This is overloaded from TableListBoxModel, and tells us that the user has clicked a table header
-    // to change the sort order.
-    void sortOrderChanged (int newSortColumnId, bool isForwards) override
-    {
-        if (newSortColumnId != 0)
-        {
-            DemoDataSorter sorter (getAttributeNameForColumnId (newSortColumnId), isForwards);
-            dataList->sortChildElements (sorter);
-            
-            table.updateContent();
-        }
-    }
-    
     // This is overloaded from TableListBoxModel, and must update any custom components that we're using
     Component* refreshComponentForCell (int rowNumber, int columnId, bool /*isRowSelected*/,
                                         Component* existingComponentToUpdate) override
     {
-        if (columnId == 1 || columnId == 7) // The ID and Length columns do not have a custom component
-        {
-            jassert (existingComponentToUpdate == nullptr);
-            return nullptr;
-        }
-        
-        if (columnId == 5) // For the ratings column, we return the custom combobox component
-        {
-            auto* ratingsBox = static_cast<RatingColumnCustomComponent*> (existingComponentToUpdate);
-            
-            // If an existing component is being passed-in for updating, we'll re-use it, but
-            // if not, we'll have to create one.
-            if (ratingsBox == nullptr)
-                ratingsBox = new RatingColumnCustomComponent (*this);
-            
-            ratingsBox->setRowAndColumn (rowNumber, columnId);
-            return ratingsBox;
-        }
-        
         // The other columns are editable text columns, for which we use the custom Label component
         auto* textLabel = static_cast<EditableTextCustomComponent*> (existingComponentToUpdate);
         
@@ -328,88 +418,99 @@ public:
         return textLabel;
     }
     
-    // This is overloaded from TableListBoxModel, and should choose the best width for the specified
-    // column.
-    int getColumnAutoSizeWidth (int columnId) override
+    void comboBoxChanged(ComboBox *comboBoxThatHasChanged) override
     {
-        if (columnId == 5)
-            return 100; // (this is the ratings column, containing a custom combobox component)
-        
-        int widest = 32;
-        
-        // find the widest bit of text in this column..
-        for (int i = getNumRows(); --i >= 0;)
-        {
-            if (auto* rowElement = dataList->getChildElement (i))
-            {
-                auto text = rowElement->getStringAttribute (getAttributeNameForColumnId (columnId));
-                
-                widest = jmax (widest, font.getStringWidth (text));
-            }
-        }
-        
-        return widest + 8;
-    }
-    
-    // A couple of quick methods to set and get cell values when the user changes them
-    int getRating (const int rowNumber) const
-    {
-        return dataList->getChildElement (rowNumber)->getIntAttribute ("Rating");
-    }
-    
-    void setRating (const int rowNumber, const int newRating)
-    {
-        dataList->getChildElement (rowNumber)->setAttribute ("Rating", newRating);
-    }
-    
-    String getText (const int columnNumber, const int rowNumber) const
-    {
-        return dataList->getChildElement (rowNumber)->getStringAttribute ( getAttributeNameForColumnId(columnNumber));
-    }
-    
-    void setText (const int columnNumber, const int rowNumber, const String& newText)
-    {
-        auto columnName = table.getHeader().getColumnName (columnNumber);
-        dataList->getChildElement (rowNumber)->setAttribute (columnName, newText);
+        // Display behavior setting
     }
     
     //==============================================================================
     void resized() override
     {
-        // position our table with a gap around its edge
-        table.setBoundsInset (BorderSize<int> (8));
+        Rectangle<int> area = getLocalBounds();
+        
+        int n = (numColumns*2)+3;
+        int w = area.getWidth() / n;
+        int r = area.getWidth() - (w*n) - 2;
+
+        stringTable.setBounds(area.removeFromLeft(w*2+r));
+        area.removeFromLeft(w);
+        leftTable.setBounds(area.removeFromLeft(w*6));
+        area.removeFromLeft(w);
+        pedalTable.setBounds(area.removeFromLeft(w*10));
+        area.removeFromLeft(w);
+        rightTable.setBounds(area.removeFromLeft(w*4));
+        
+        int columnId = 1;
+        stringTable.getHeader().setColumnWidth(columnId++, w*2+r-2);
+        
+        leftTable.getHeader().setColumnWidth(columnId++, w*2);
+        leftTable.getHeader().setColumnWidth(columnId++, w*2-1);
+        leftTable.getHeader().setColumnWidth(columnId++, w*2-1);
+        
+        pedalTable.getHeader().setColumnWidth(columnId++, w*2);
+        pedalTable.getHeader().setColumnWidth(columnId++, w*2);
+        pedalTable.getHeader().setColumnWidth(columnId++, w*2);
+        pedalTable.getHeader().setColumnWidth(columnId++, w*2-1);
+        pedalTable.getHeader().setColumnWidth(columnId++, w*2-1);
+        
+        rightTable.getHeader().setColumnWidth(columnId++, w*2-1);
+        rightTable.getHeader().setColumnWidth(columnId++, w*2-1);
+        
+        int h = stringTable.getHeight() / (numRows+1);
+        r = stringTable.getHeight() - (h*(numRows+1)) - 2;
+        stringTable.setHeaderHeight(h+r);
+        stringTable.setRowHeight(h);
+        leftTable.setHeaderHeight(h+r);
+        leftTable.setRowHeight(h);
+        pedalTable.setHeaderHeight(h+r);
+        pedalTable.setRowHeight(h);
+        rightTable.setHeaderHeight(h+r);
+        rightTable.setRowHeight(h);
     }
     
-private:
-    TableListBox table;     // the table component itself
-    Font font  { 14.0f };
     
-    std::unique_ptr<XmlElement> data;  // This is the XML document loaded from the embedded file "demo table data.xml"
-    XmlElement* columnList = nullptr;     // A pointer to the sub-node of demoData that contains the list of columns
-    XmlElement* dataList   = nullptr;     // A pointer to the sub-node of demoData that contains the list of data rows
-    static const int numRows = 12;        // Number of strings
+private:
+    
+    TableListBox stringTable;
+    TableListBox leftTable;
+    TableListBox pedalTable;
+    TableListBox rightTable;
+    
+    static const int numColumns = CopedentColumnNil;
+    static const int numRows = NUM_VOICES;        // Number of strings
+    
+    StringArray columnList;
+    Array<Array<float>>& copedentArray;
+    
+    FileChooser exportChooser;
+    FileChooser importChooser;
+    
+    ESLookAndFeel laf;
+    
     //==============================================================================
     // This is a custom Label component, which we use for the table's editable text columns.
-    class EditableTextCustomComponent  : public Label
+    class EditableTextCustomComponent : public Label
     {
     public:
         EditableTextCustomComponent (CopedentTable& td)  : owner (td)
         {
             // double click to edit the label text; single click handled below
-            setEditable (false, true, false);
+            setEditable (true, true, false);
+            setJustificationType(Justification::centred);
         }
         
         void mouseDown (const MouseEvent& event) override
         {
-            // single click on the label should simply select the row
-            owner.table.selectRowsBasedOnModifierKeys (row, event.mods, false);
-            
+//            // single click on the label should simply select the row
+//            owner.table.selectRowsBasedOnModifierKeys (row, event.mods, false);
+//
             Label::mouseDown (event);
         }
         
         void textWasEdited() override
         {
-            owner.setText (columnId, row, getText());
+            owner.setDataFromText (columnId, row, getText());
+            setText (owner.getTextFromData(columnId, row, true), dontSendNotification);
         }
         
         // Our demo code will call this when we may need to update our contents
@@ -417,7 +518,7 @@ private:
         {
             row = newRow;
             columnId = newColumn;
-            setText (owner.getText(columnId, row), dontSendNotification);
+            setText (owner.getTextFromData(columnId, row, true), dontSendNotification);
         }
         
         void paint (Graphics& g) override
@@ -427,6 +528,13 @@ private:
                 lf.setColour (textColourId, Colours::black);
             
             Label::paint (g);
+            g.setColour(Colours::lightgrey);
+            g.fillRect(0, getHeight()-1, getWidth(), 1);
+            if (columnId != 1 && columnId != 4 && columnId != 9 && columnId != 11)
+                g.fillRect(getWidth()-1, 0, 1, getHeight());
+            
+            if (TextEditor* editor = getCurrentTextEditor())
+                editor->setJustification(Justification::centredLeft);
         }
         
     private:
@@ -434,87 +542,6 @@ private:
         int row, columnId;
         Colour textColour;
     };
-    
-    //==============================================================================
-    // This is a custom component containing a combo box, which we're going to put inside
-    // our table's "rating" column.
-    class RatingColumnCustomComponent    : public Component
-    {
-    public:
-        RatingColumnCustomComponent (CopedentTable& td)  : owner (td)
-        {
-            // just put a combo box inside this component
-            addAndMakeVisible (comboBox);
-            comboBox.addItem ("fab",        1);
-            comboBox.addItem ("groovy",     2);
-            comboBox.addItem ("hep",        3);
-            comboBox.addItem ("mad for it", 4);
-            comboBox.addItem ("neat",       5);
-            comboBox.addItem ("swingin",    6);
-            comboBox.addItem ("wild",       7);
-            
-            comboBox.onChange = [this] { owner.setRating (row, comboBox.getSelectedId()); };
-            comboBox.setWantsKeyboardFocus (false);
-        }
-        
-        void resized() override
-        {
-            comboBox.setBoundsInset (BorderSize<int> (2));
-        }
-        
-        // Our demo code will call this when we may need to update our contents
-        void setRowAndColumn (int newRow, int newColumn)
-        {
-            row = newRow;
-            columnId = newColumn;
-            comboBox.setSelectedId (owner.getRating (row), dontSendNotification);
-        }
-        
-    private:
-        CopedentTable& owner;
-        ComboBox comboBox;
-        int row, columnId;
-    };
-    
-    //==============================================================================
-    // A comparator used to sort our data when the user clicks a column header
-    class DemoDataSorter
-    {
-    public:
-        DemoDataSorter (const String& attributeToSortBy, bool forwards)
-        : attributeToSort (attributeToSortBy),
-        direction (forwards ? 1 : -1)
-        {
-        }
-        
-        int compareElements (XmlElement* first, XmlElement* second) const
-        {
-            auto result = first->getStringAttribute (attributeToSort)
-            .compareNatural (second->getStringAttribute (attributeToSort));
-            
-            if (result == 0)
-                result = first->getStringAttribute ("ID")
-                .compareNatural (second->getStringAttribute ("ID"));
-            
-            return direction * result;
-        }
-        
-    private:
-        String attributeToSort;
-        int direction;
-    };
-    
-    // (a utility method to search our XML for the attribute that matches a column ID)
-    String getAttributeNameForColumnId (const int columnId) const
-    {
-        for (auto* columnXml : columnList->getChildIterator())
-        {
-            if (columnXml->getIntAttribute ("columnId") == columnId)
-                return columnXml->getStringAttribute ("name");
-        }
-        
-        return {};
-    }
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (CopedentTable)
 };

@@ -87,6 +87,19 @@ public:
         return value = smoothed.getNextValue();
     }
     
+    float skip(int numSamples)
+    {
+        float target = raw->load() +
+        hooks[0].getValue() + hooks[1].getValue() + hooks[2].getValue();
+        smoothed.setTargetValue(target);
+        return value = smoothed.skip(numSamples);
+    }
+    
+    float get()
+    {
+        return value;
+    }
+    
     float* getValuePointer()
     {
         return &value;
@@ -156,5 +169,8 @@ public:
     String name;
     StringArray paramNames;
     
-    static float passTick(float sample) { return sample; }
+    float passTick(float sample) { return sample; }
+    
+    double currentSampleRate;
+    int currentSamplesPerBlock;
 };

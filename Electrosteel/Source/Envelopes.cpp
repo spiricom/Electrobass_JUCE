@@ -16,7 +16,7 @@ Envelope::Envelope(const String& n, ESAudioProcessor& p,
                    AudioProcessorValueTreeState& vts, StringArray s) :
 AudioComponent(n, p, vts, s)
 {
-    // Trying to make it as fast as possibel to access the SmoothedParameters
+    // Trying to make it as fast as possible to access the SmoothedParameters
     // so we'll put pointers to them in a plain array instead of the OwnedArrays
     for (int i = 0; i < EnvelopeParamNil; ++i)
     {
@@ -61,21 +61,39 @@ void Envelope::prepareToPlay (double sampleRate, int samplesPerBlock)
     }
 }
 
-void Envelope::tick()
+void Envelope::frame()
 {
     for (int v = 0; v < NUM_VOICES; v++)
     {
-        float attack = ref[EnvelopeAttack][v]->tick();
-        float decay = ref[EnvelopeDecay][v]->tick();
-        float sustain = ref[EnvelopeSustain][v]->tick();
-        float release = ref[EnvelopeRelease][v]->tick();
-        float leak = ref[EnvelopeLeak][v]->tick();
+        float attack = ref[EnvelopeAttack][v]->skip(currentSamplesPerBlock);
+        float decay = ref[EnvelopeDecay][v]->skip(currentSamplesPerBlock);
+        float sustain = ref[EnvelopeSustain][v]->skip(currentSamplesPerBlock);
+        float release = ref[EnvelopeRelease][v]->skip(currentSamplesPerBlock);
+        float leak = ref[EnvelopeLeak][v]->skip(currentSamplesPerBlock);
 
         tADSRT_setAttack(&envs[v], expBuffer[(int)(attack * expBufferSizeMinusOne)] * 8192.0f);
         tADSRT_setDecay(&envs[v], expBuffer[(int)(decay * expBufferSizeMinusOne)] * 8192.0f);
         tADSRT_setSustain(&envs[v], sustain);
         tADSRT_setRelease(&envs[v], expBuffer[(int)(release * expBufferSizeMinusOne)] * 8192.0f);
         tADSRT_setLeakFactor(&envs[v], ((1.0f - leak) * 0.00005f) + 0.99995f);
+    }
+}
+
+void Envelope::tick()
+{
+    for (int v = 0; v < NUM_VOICES; v++)
+    {
+//        float attack = ref[EnvelopeAttack][v]->tick();
+//        float decay = ref[EnvelopeDecay][v]->tick();
+//        float sustain = ref[EnvelopeSustain][v]->tick();
+//        float release = ref[EnvelopeRelease][v]->tick();
+//        float leak = ref[EnvelopeLeak][v]->tick();
+//
+//        tADSRT_setAttack(&envs[v], expBuffer[(int)(attack * expBufferSizeMinusOne)] * 8192.0f);
+//        tADSRT_setDecay(&envs[v], expBuffer[(int)(decay * expBufferSizeMinusOne)] * 8192.0f);
+//        tADSRT_setSustain(&envs[v], sustain);
+//        tADSRT_setRelease(&envs[v], expBuffer[(int)(release * expBufferSizeMinusOne)] * 8192.0f);
+//        tADSRT_setLeakFactor(&envs[v], ((1.0f - leak) * 0.00005f) + 0.99995f);
         
         value[v] = tADSRT_tick(&envs[v]);
     }

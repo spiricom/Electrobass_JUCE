@@ -20,17 +20,29 @@ vts(vts),
 tabs(TabbedButtonBar::Orientation::TabsAtTop),
 keyboard(p.keyboardState, MidiKeyboardComponent::Orientation::horizontalKeyboard),
 envs(TabbedButtonBar::TabsAtTop),
+copedentTable(processor.copedentArray),
 constrain(new ComponentBoundsConstrainer()),
 resizer(new ResizableCornerComponent (this, constrain.get())),
 chooser("Select a .wav file to load...", {}, "*.wav")
 {
-    setWantsKeyboardFocus(true);
-    
-    getTopLevelComponent()->addKeyListener(this);
-        
     Typeface::Ptr tp = Typeface::createSystemTypefaceFor(BinaryData::EuphemiaCAS_ttf,
                                                          BinaryData::EuphemiaCAS_ttfSize);
     euphemia = Font(tp);
+    
+    logo = Drawable::createFromImageData (BinaryData::logo_large_svg, BinaryData::logo_large_svgSize);
+    addAndMakeVisible(logo.get());
+    synderphonicsLabel.setText("SNYDERPHONICS", dontSendNotification);
+    synderphonicsLabel.setJustificationType(Justification::topLeft);
+    synderphonicsLabel.setColour(Label::textColourId, Colours::gold.withBrightness(0.9f));
+    addAndMakeVisible(synderphonicsLabel);
+    electrosteelLabel.setText("ELECTROSTEEL", dontSendNotification);
+    electrosteelLabel.setJustificationType(Justification::topLeft);
+    electrosteelLabel.setColour(Label::textColourId, Colours::gold.withBrightness(0.9f));
+    addAndMakeVisible(electrosteelLabel);
+    
+    setWantsKeyboardFocus(true);
+    
+    getTopLevelComponent()->addKeyListener(this);
     
     //==============================================================================
     // TAB1 ========================================================================
@@ -114,10 +126,34 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     dynamic_cast<MappingSource*>(envs.getTabbedButtonBar().getTabButton(0)->getExtraComponent());
     modules[1]->getDial(LowpassCutoff)->getTarget(0)->setMapping(env1, 0.0f, 5000.0f, HookAdd);
     
+    for (int i = 0; i < CopedentColumnNil; ++i)
+    {
+        copedentButtons.add(new TextButton(cCopedentColumnNames[i]));
+        copedentButtons[i]->setClickingTogglesState(true);
+        copedentButtons[i]->setLookAndFeel(&laf);
+        if (i != 0)
+        {
+            tab1.addAndMakeVisible(copedentButtons[i]);
+            buttonAttachments.add(new ButtonAttachment(vts, cCopedentColumnNames[i],
+                                                       *copedentButtons[i]));
+        }
+    }
+    
     //==============================================================================
     // TAB2 ========================================================================
     addAndMakeVisible(tab2);
+    
     tab2.addAndMakeVisible(copedentTable);
+    
+    exportButton.setButtonText("Export");
+    exportButton.setLookAndFeel(&laf);
+    exportButton.onClick = [this] { copedentTable.exportXml(); };
+    tab2.addAndMakeVisible(exportButton);
+    
+    importButton.setButtonText("Import");
+    importButton.setLookAndFeel(&laf);
+    importButton.onClick = [this] { copedentTable.importXml(); };
+    tab2.addAndMakeVisible(importButton);
     
     //==============================================================================
     
@@ -157,16 +193,18 @@ ESAudioProcessorEditor::~ESAudioProcessorEditor()
         pitchBendSliders[i]->setLookAndFeel(nullptr);
     }
     envs.setLookAndFeel(nullptr);
+    for (int i = 0; i < CopedentColumnNil; ++i)
+        copedentButtons[i]->setLookAndFeel(nullptr);
+    exportButton.setLookAndFeel(nullptr);
+    importButton.setLookAndFeel(nullptr);
 }
 
 //==============================================================================
 void ESAudioProcessorEditor::paint (Graphics& g)
 {
-    float s = processor.editorScale;
-    
     // (Our component is opaque, so we must completely fill the background with a solid colour)
-    g.setGradientFill(ColourGradient(Colour(25, 25, 25), juce::Point<float>(0,0), Colour(10, 10, 10), juce::Point<float>(0, getHeight()), false));
-    
+//    g.setGradientFill(ColourGradient(Colour(25, 25, 25), juce::Point<float>(0,0), Colour(10, 10, 10), juce::Point<float>(0, getHeight()), false));
+    g.setColour(Colours::black);
     g.fillRect(0, 0, getWidth(), getHeight());
     
 //    Rectangle<float> panelArea = getLocalBounds().toFloat();
@@ -176,19 +214,12 @@ void ESAudioProcessorEditor::paint (Graphics& g)
     
     g.fillRect(getWidth() * 0.25f, getHeight() * 0.25f, getWidth() * 0.6f, getHeight() * 0.5f);
     g.fillRect(getWidth() * 0.25f, getHeight() * 0.75f, getWidth() * 0.2f, getHeight() * 0.15f);
-    
-//    if (currentMappingSource != nullptr)
-//    {
-//        g.setColour(Colours::gold);
-//        g.drawLine(getMouseXYRelative().getX(), getMouseXYRelative().getY(),
-//                   currentMappingSource->getX() + 10*s, currentMappingSource->getY() + 10*s);
-//    }
 }
 
 void ESAudioProcessorEditor::resized()
 {
     int width = getWidth();
-    int height = getHeight();
+//    int height = getHeight();
     
     float s = width / EDITOR_WIDTH;
     processor.editorScale = s;
@@ -212,7 +243,15 @@ void ESAudioProcessorEditor::resized()
     
     modules[0]->setBounds(0, 10*s, 530*s, 110*s);
     modules[1]->setBounds(0, 120*s, 530*s, 110*s);
-    envs.setBounds(350*s, 300*s, width - 350*s + 2, 160*s);
+    
+    copedentButtons[1]->setBounds(getWidth()-60*s, 0, 60*s+1, 30*s);
+    for (int i = 2; i < CopedentColumnNil; ++i)
+    {
+        copedentButtons[i]->setBounds(getWidth()-60*s, copedentButtons[i-1]->getBottom(),
+                                      60*s+1, 30*s);
+    }
+    
+    envs.setBounds(350*s, copedentButtons.getLast()->getBottom(), width - 350*s + 2, 160*s);
     envs.setIndent(10*s);
     envs.setTabBarDepth(25*s);
     
@@ -224,12 +263,26 @@ void ESAudioProcessorEditor::resized()
     //==============================================================================
     // TAB2 ========================================================================
     
-    copedentTable.setBoundsRelative(0.1f, 0.1f, 0.8f, 0.8f);
+    copedentTable.setBoundsRelative(0.05f, 0.1f, 0.9f, 0.7f);
+    exportButton.setBoundsRelative(0.05f, 0.85f, 0.15f, 0.05f);
+    importButton.setBoundsRelative(0.21f, 0.85f, 0.15f, 0.05f);
 
     //==============================================================================
     
-    versionLabel.setBounds(width*0.95, 0, width * 0.05f, 30*s);
+    versionLabel.setBounds(width*0.95, 0, width * 0.05f, tabs.getTabBarDepth());
     versionLabel.setFont(euphemia.withHeight(20*s));
+    
+    int logoLeft = tabs.getTabbedButtonBar().getTabButton(1)->getRight() + 90*s;
+    Rectangle<float> logoArea (logoLeft, 0, 98*s, tabs.getTabBarDepth());
+    logo->setTransformToFit (logoArea,
+                             RectanglePlacement::xLeft +
+                             RectanglePlacement::yTop +
+                             RectanglePlacement::fillDestination);
+    synderphonicsLabel.setBounds(logoLeft+50*s, -5*s, 220*s, 34*s);
+    synderphonicsLabel.setFont(euphemia.withHeight(34*s));
+    electrosteelLabel.setBounds(synderphonicsLabel.getRight(), -5*s, 300*s, 34*s);
+    electrosteelLabel.setFont(euphemia.withHeight(34*s).withStyle(3));
+    
     
     float r = EDITOR_WIDTH / EDITOR_HEIGHT;
     constrain->setSizeLimits(200, 200/r, 800*r, 800);
@@ -253,17 +306,17 @@ void ESAudioProcessorEditor::resizedChannelSelection()
             w += offset;
             offset = 0.0f;
         }
-        Rectangle<float> bounds ((width * 0.04f - 1.f) * i + offset, yf*s, w, 42*s);
+        Rectangle<float> bounds ((width * 0.04f) * i + offset, yf*s, w, 42*s);
         channelSelection[i]->setBounds(Rectangle<int>::leftTopRightBottom ((bounds.getX()),
                                                                            (bounds.getY()),
                                                                            (bounds.getRight()),
                                                                            (bounds.getBottom())));
     }
     
-    int w = width - channelSelection[15]->getRight();
+    int w = width - channelSelection[NUM_CHANNELS-1]->getRight();
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
-        pitchBendSliders[i]->setBounds(channelSelection[15]->getRight(), 543*s, w, 40*s);
+        pitchBendSliders[i]->setBounds(channelSelection[NUM_CHANNELS-1]->getRight(), 543*s, w, 40*s);
     }
 }
 
@@ -349,7 +402,7 @@ bool ESAudioProcessorEditor::keyPressed (const KeyPress &key, Component *origina
             if (KeyPress::isKeyCurrentlyDown('1')) d = 10;
             if (key.isKeyCode('2' + i))
             {
-                if (i + d >= 15) return false;
+                if (i + d > NUM_CHANNELS) return false;
                 channelSelection[i + d + 1]->setToggleState(true, sendNotification);
                 return true;
             }

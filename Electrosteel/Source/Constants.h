@@ -13,13 +13,13 @@
 #include <JuceHeader.h>
 #include <float.h>
 
-#define NUM_CHANNELS 16
-
 #define NUM_GLOBAL_CC 16
 
-#define NUM_VOICES 15
+#define NUM_VOICES 12
 #define NUM_OSC_PER_VOICE 3
 #define INV_NUM_OSC_PER_VOICE 0.333333f
+
+#define NUM_CHANNELS (NUM_VOICES+1)
 
 #define NUM_ENVS 4
 
@@ -221,3 +221,54 @@ static const std::vector<std::vector<float>> cWavetableKnobParamInitValues = {
     { 0.0f, 1.0f, 0.1f },   //WavetableFilterRelease
     { 0.0f, 1.0f, 0.1f }    //WavetableFilterLeak
 };
+
+
+typedef enum _CopedentColumn
+{
+    CopedentString = 0,
+    CopedentLKL,
+    CopedentLKV,
+    CopedentLKR,
+    CopedentP1,
+    CopedentP2,
+    CopedentP3,
+    CopedentP4,
+    CopedentP5,
+    CopedentRKL,
+    CopedentRKR,
+    CopedentColumnNil
+} CopedentColumn;
+
+static const std::vector<std::string> cCopedentColumnNames = {
+    "Strings",
+    "LKL",
+    "LKV",
+    "LKR",
+    "P1",
+    "P2",
+    "P3",
+    "P4",
+    "P5",
+    "RKL",
+    "RKR"
+};
+
+static const std::vector<std::vector<float>> cCopedentArrayInit = {
+    { 23.f, 28.f, 32.f, 35.f, 40.f, 42.f, 44.f, 47.f, 52.f, 56.f, 63.f, 67.f },
+    
+    { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f },
+    { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f },
+    { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f },
+    { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f },
+    
+    { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f },
+    { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f },
+    { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f },
+    { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f },
+    { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f },
+    
+    { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f },
+    { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f },
+};
+
+

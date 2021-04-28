@@ -175,6 +175,7 @@ void MappingTarget::setMappingRange(float start, float end)
     }
     ESDial* attached = dynamic_cast<ESDial*>(getParentComponent());
     setValue((end + start) / attached->getSlider().getRange().getLength());
+    DBG(String(start) + String(end));
 }
 
 void MappingTarget::menuCallback(int result, MappingTarget* target)
@@ -346,12 +347,12 @@ void ESDial::mouseDown(const MouseEvent& event)
     if (MappingTarget* mt = dynamic_cast<MappingTarget*>(event.originalComponent))
     {
         float pos = slider.valueToProportionOfLength(slider.getValue());
-        mt->setRange(-pos, 1.0f-pos);
+        mt->setRange(-pos, 1.f-pos);
     }
     else if (MappingTarget* mt = dynamic_cast<MappingTarget*>(event.originalComponent->getParentComponent()))
     {
         float pos = slider.valueToProportionOfLength(slider.getValue());
-        mt->setRange(-pos, 1.0f-pos);
+        mt->setRange(-pos, 1.f-pos);
     }
 }
 

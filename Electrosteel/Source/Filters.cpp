@@ -37,17 +37,16 @@ LowpassFilter::~LowpassFilter()
 
 void LowpassFilter::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    
+    AudioComponent::prepareToPlay(sampleRate, samplesPerBlock);
 }
 
 float LowpassFilter::tick(int v, float input)
 {
-    float follow = processor.voiceNote[v] - 60.f;
-    
     float midiCutoff = LEAF_frequencyToMidi(ref[LowpassCutoff][v]->tick());
     float keyFollow = ref[LowpassKeyFollow][v]->tick();
     float q = ref[LowpassResonance][v]->tick();
     
+    float follow = processor.voiceNote[v] - 60.f;
     float adjustedMidiCutoff = (midiCutoff * (1.f - keyFollow)) + ((midiCutoff + follow) * keyFollow);
     float cutoff = LEAF_midiToFrequency(adjustedMidiCutoff);
     

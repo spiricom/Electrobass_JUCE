@@ -104,6 +104,8 @@ public:
     
     OwnedArray<SmoothedParameter> params;
     
+    Array<Array<float>> copedentArray;
+    
 private:
     
     AudioProcessorValueTreeState vts;

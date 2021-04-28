@@ -26,7 +26,9 @@ public:
     void prepareToPlay (double sampleRate, int samplesPerBlock);
     
     //==============================================================================
+    void frame();
     void tick();
+    
     void noteOn(int voice, float velocity);
     void noteOff(int voice, float velocity);
 
@@ -45,4 +47,8 @@ private:
     float decayExpBuffer[DECAY_EXP_BUFFER_SIZE];
     float decayExpBufferSizeMinusOne;
     
+    int framePosition;
+    
+    float current[EnvelopeParamNil];
+    float next[EnvelopeParamNil];
 };

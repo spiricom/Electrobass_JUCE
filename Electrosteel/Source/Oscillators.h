@@ -15,30 +15,9 @@
 
 class ESAudioProcessor;
 
-// This class might not be needed but keeping for now in case we want
-// oscillators to share some behavior down the line
-class Oscillator : public AudioComponent
-{
-public:
-    //==============================================================================
-    Oscillator(const String&, ESAudioProcessor&, AudioProcessorValueTreeState&, StringArray);
-    virtual ~Oscillator() = default;
-    
-    //==============================================================================
-    void prepareToPlay (double sampleRate, int samplesPerBlock);
-    
-    //==============================================================================
-//    virtual void frame() = 0;
-    virtual float tick(int v) = 0;
-    
-private:
-
-};
-
-//==============================================================================
 //==============================================================================
 
-class SawPulseOscillator : public Oscillator
+class SawPulseOscillator : public AudioComponent
 {
 public:
     //==============================================================================
@@ -50,7 +29,7 @@ public:
     
     //==============================================================================
 //    void frame() override;
-    float tick(int v) override;
+    float tick(int v);
     
 private:
     

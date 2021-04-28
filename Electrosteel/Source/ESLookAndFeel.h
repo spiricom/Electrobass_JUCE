@@ -64,9 +64,59 @@ public:
         Typeface::Ptr tp = Typeface::createSystemTypefaceFor(BinaryData::EuphemiaCAS_ttf,
                                                              BinaryData::EuphemiaCAS_ttfSize);
         Font font (tp);
-        font.setHeight(label.getHeight() * 0.8f);
+        if (label.isEditable() && dynamic_cast<Slider*>(label.getParentComponent()) == nullptr)
+            font.setHeight(label.getHeight() * 0.5f);
+        else
+            font.setHeight(label.getHeight() * 0.8f);
         font.setDefaultMinimumHorizontalScaleFactor(0.01f);
         return font;
+    }
+    
+    void drawButtonBackground (Graphics& g,
+                               Button& button,
+                               const Colour& backgroundColour,
+                               bool shouldDrawButtonAsHighlighted,
+                               bool shouldDrawButtonAsDown) override
+    {
+        auto cornerSize = 6.0f;
+        auto bounds = button.getLocalBounds().toFloat().reduced (0.5f, 0.5f);
+        
+        auto baseColour = backgroundColour.withMultipliedSaturation (button.hasKeyboardFocus (true) ? 1.3f : 0.9f)
+        .withMultipliedAlpha (button.isEnabled() ? 1.0f : 0.5f);
+        
+        if (shouldDrawButtonAsDown || shouldDrawButtonAsHighlighted)
+            baseColour = baseColour.contrasting (shouldDrawButtonAsDown ? 0.2f : 0.05f);
+        
+        g.setColour (baseColour);
+        
+        auto flatOnLeft   = button.isConnectedOnLeft();
+        auto flatOnRight  = button.isConnectedOnRight();
+        auto flatOnTop    = button.isConnectedOnTop();
+        auto flatOnBottom = button.isConnectedOnBottom();
+        
+        if (flatOnLeft || flatOnRight || flatOnTop || flatOnBottom)
+        {
+            Path path;
+            path.addRoundedRectangle (bounds.getX(), bounds.getY(),
+                                      bounds.getWidth(), bounds.getHeight(),
+                                      0, 0,
+                                      ! (flatOnLeft  || flatOnTop),
+                                      ! (flatOnRight || flatOnTop),
+                                      ! (flatOnLeft  || flatOnBottom),
+                                      ! (flatOnRight || flatOnBottom));
+            
+            g.fillPath (path);
+            
+            g.setColour (button.findColour (ComboBox::outlineColourId));
+            g.strokePath (path, PathStrokeType (1.0f));
+        }
+        else
+        {
+            g.fillRoundedRectangle (bounds, 0);
+            
+            g.setColour (button.findColour (ComboBox::outlineColourId));
+            g.drawRoundedRectangle (bounds, 0, 1.0f);
+        }
     }
     
     void drawButtonText (Graphics& g, TextButton& button,
@@ -341,36 +391,20 @@ public:
     
     Rectangle<int> getTabButtonExtraComponentBounds (const TabBarButton& button, Rectangle<int>& textArea, Component& comp) override
     {
-        Rectangle<int> extraComp;
-        
-        auto orientation = button.getTabbedButtonBar().getOrientation();
         auto depth = button.getHeight();
-        
-//        if (button.getExtraComponentPlacement() == TabBarButton::beforeText)
-//        {
-//            switch (orientation)
-//            {
-//                case TabbedButtonBar::TabsAtBottom:
-//                case TabbedButtonBar::TabsAtTop:     extraComp = textArea.removeFromLeft   (depth); break;
-//                case TabbedButtonBar::TabsAtLeft:    extraComp = textArea.removeFromBottom (depth); break;
-//                case TabbedButtonBar::TabsAtRight:   extraComp = textArea.removeFromTop    (depth); break;
-//                default:                             jassertfalse; break;
-//            }
-//        }
-//        else
-//        {
-//            switch (orientation)
-//            {
-//                case TabbedButtonBar::TabsAtBottom:
-//                case TabbedButtonBar::TabsAtTop:     extraComp = textArea.removeFromRight  (depth); break;
-//                case TabbedButtonBar::TabsAtLeft:    extraComp = textArea.removeFromTop    (depth); break;
-//                case TabbedButtonBar::TabsAtRight:   extraComp = textArea.removeFromBottom (depth); break;
-//                default:                             jassertfalse; break;
-//            }
-//        }
-//
-//        return extraComp;
-        
         return textArea.reduced(depth*0.2f, depth*0.2f);
+    }
+    
+    void drawTableHeaderColumn (Graphics& g, TableHeaderComponent& header,
+                                const String& columnName, int /*columnId*/,
+                                int width, int height, bool isMouseOver, bool isMouseDown,
+                                int columnFlags) override
+    {
+        Rectangle<int> area (width, height);
+        area.reduce (4, 0);
+        
+        g.setColour (header.findColour (TableHeaderComponent::textColourId));
+        g.setFont (Font ((float) height * 0.5f, Font::bold));
+        g.drawFittedText (columnName, area, Justification::centred, 1);
     }
 };

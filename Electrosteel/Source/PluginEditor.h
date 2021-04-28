@@ -74,19 +74,26 @@ private:
     OwnedArray<ESModule> modules;
     ESTabbedComponent envs;
     MappingSource* currentMappingSource;
+    OwnedArray<TextButton> copedentButtons;
     
     Component tab2;
     CopedentTable copedentTable;
-    
-    std::unique_ptr<ComponentBoundsConstrainer> constrain;
-    std::unique_ptr<ResizableCornerComponent> resizer;
-    std::unique_ptr<Drawable> panel;
-    
-    OwnedArray<SliderAttachment> sliderAttachments;
+    TextButton exportButton;
+    TextButton importButton;
     
     Label versionLabel;
+    std::unique_ptr<Drawable> logo;
+    Label synderphonicsLabel;
+    Label electrosteelLabel;
+
+    std::unique_ptr<ComponentBoundsConstrainer> constrain;
+    std::unique_ptr<ResizableCornerComponent> resizer;
+    
+    OwnedArray<SliderAttachment> sliderAttachments;
+    OwnedArray<ButtonAttachment> buttonAttachments;
+
     Font euphemia;
-    juce::FileChooser chooser;
+    FileChooser chooser;
     ESLookAndFeel laf;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ESAudioProcessorEditor)

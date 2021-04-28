@@ -12,22 +12,10 @@
 #include "PluginProcessor.h"
 
 //==============================================================================
-Oscillator::Oscillator(const String& n, ESAudioProcessor& p,
-                       AudioProcessorValueTreeState& vts, StringArray s) :
-AudioComponent(n, p, vts, s)
-{
-}
-
-void Oscillator::prepareToPlay (double sampleRate, int samplesPerBlock)
-{
-    AudioComponent::prepareToPlay(sampleRate, samplesPerBlock);
-}
-
-//==============================================================================
 
 SawPulseOscillator::SawPulseOscillator(const String& n, ESAudioProcessor& p,
                                        AudioProcessorValueTreeState& vts, StringArray s) :
-Oscillator(n, p, vts, s)
+AudioComponent(n, p, vts, s)
 {
     for (int i = 0; i < SawPulseParamNil; ++i)
     {
@@ -61,7 +49,7 @@ SawPulseOscillator::~SawPulseOscillator()
 
 void SawPulseOscillator::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    Oscillator::prepareToPlay(sampleRate, samplesPerBlock);
+    AudioComponent::prepareToPlay(sampleRate, samplesPerBlock);
     for (int i = 0; i < NUM_VOICES; i++)
     {
         for (int j = 0; j < NUM_OSC_PER_VOICE; j++)

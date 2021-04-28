@@ -45,13 +45,13 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
     for (int i = 0; i < 2; ++i)
     {
         String s (i+1);
-        sposcs.add(std::make_unique<SawPulseOscillator>("SawPulse" + s, *this, vts, cSawPulseParams));
-        lps.add(std::make_unique<LowpassFilter>("Lowpass" + s, *this, vts, cLowpassParams));
+        sposcs.add(new SawPulseOscillator("SawPulse" + s, *this, vts, cSawPulseParams));
+        lps.add(new LowpassFilter("Lowpass" + s, *this, vts, cLowpassParams));
     }
     
     for (int i = 0; i < NUM_ENVS; ++i)
     {
-        envs.add(std::make_unique<Envelope>("Envelope" + String(i+1), *this, vts, cEnvelopeParams));
+        envs.add(new Envelope("Envelope" + String(i+1), *this, vts, cEnvelopeParams));
     }
     
     // Make a SmoothedParameter for each voice from the single AudioParameter
@@ -76,6 +76,17 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
     }
     
     masterVolume = std::make_unique<SmoothedParameter>(*this, vts, "Master");
+    
+    //==============================================================================
+    
+    for (int i = 0; i < CopedentColumnNil; ++i)
+    {
+        copedentArray.add(Array<float>());
+        for (int v = 0; v < NUM_VOICES; ++v)
+        {
+            copedentArray.getReference(i).add(cCopedentArrayInit[i][v]);
+        }
+    }
 }
 
 ESAudioProcessor::~ESAudioProcessor()
@@ -145,6 +156,13 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
             String n = "Envelope" + String(j+1) + cEnvelopeParams[i];
             layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
         }
+    }
+    
+    for (int i = 1; i < CopedentColumnNil; ++i)
+    {
+        layout.add (std::make_unique<AudioParameterChoice>(cCopedentColumnNames[i],
+                                                           cCopedentColumnNames[i],
+                                                           StringArray("Off", "On"), 0));
     }
     
     return layout;
@@ -219,23 +237,46 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
         handleMidiMessage(m);
     }
     
+    Array<float> resolvedCopedent;
+    for (int r = 0; r < NUM_VOICES; ++r)
+    {
+        float minBelowZero = 0.0f;
+        float maxAboveZero = 0.0f;
+        for (int c = 1; c < CopedentColumnNil; ++c)
+        {
+            if (vts.getParameter(cCopedentColumnNames[c])->getValue() > 0)
+            {
+                float value = copedentArray.getReference(c)[r];
+                if (value < minBelowZero) minBelowZero = value;
+                else if (value > maxAboveZero) maxAboveZero = value;
+            }
+        }
+        resolvedCopedent.add(minBelowZero + maxAboveZero);
+    }
+    
+    for (int i = 0; i < envs.size(); ++i)
+    {
+        envs[i]->frame();
+    }
+    
     for (int i = 0; i < buffer.getNumSamples(); i++)
     {
         for (int p = 0; p < NUM_GLOBAL_CC; ++p)
         {
             ccParams[p]->tick();
         }
-        
-        float sample = 0.f;
-        float globalPitchBend = pitchBendParams[0]->tick();
         for (int i = 0; i < envs.size(); ++i)
         {
             envs[i]->tick();
         }
+        float sample = 0.f;
+        float globalPitchBend = pitchBendParams[0]->tick();
         for (int v = 0; v < NUM_VOICES; ++v)
         {
             float pitchBend = globalPitchBend + pitchBendParams[v+1]->tick();
-            float tempNote = (float)tSimplePoly_getPitch(&voice[v], 0) + pitchBend;
+            float tempNote = (float)tSimplePoly_getPitch(&voice[v], 0);
+            tempNote += resolvedCopedent[v];
+            tempNote += pitchBend;
             float tempPitchClass = ((((int)tempNote) - keyCenter) % 12 );
             float tunedNote = tempNote + centsDeviation[(int)tempPitchClass];
             voiceNote[v] = tunedNote;

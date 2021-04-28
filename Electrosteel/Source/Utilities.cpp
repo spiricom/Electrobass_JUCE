@@ -45,6 +45,8 @@ AudioComponent::~AudioComponent()
 
 void AudioComponent::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
+    currentSampleRate = sampleRate;
+    currentSamplesPerBlock = samplesPerBlock;
 }
 
 OwnedArray<SmoothedParameter>& AudioComponent::getParameter(int p)
