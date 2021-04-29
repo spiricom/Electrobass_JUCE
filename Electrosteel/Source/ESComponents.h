@@ -332,9 +332,13 @@ public:
     
     String getTextFromData (const int columnNumber, const int rowNumber, bool asDestination) const
     {
-        float value = copedentArray[columnNumber-1][rowNumber];
+        double value = copedentArray[columnNumber-1][rowNumber];
         
-        if (value == 0.0f) return String();
+        if (value == 0.0) return String();
+        
+        // Not really important since tuning doesn't matter much at precision this high,
+        // but this will stop any potential ugly numbers from displaying
+        value = round( value * 10000. ) / 10000.;
         
         String text = String();
         bool displayAsDestination = columnNumber == 1 || asDestination;
@@ -342,22 +346,27 @@ public:
         {
             if (columnNumber != 1)
             {
-                if (value > 0.0f) for (int i = 0; i < value; i+=12) text += String("+");
-                else for (int i = 0; i < -value; i+=12) text += String("-");
+//                if (value > 0.0f) for (int i = 0; i < value; ++i) text += String("+");
+//                else for (int i = 0; i < -value; ++i) text += String("-");
                 value += copedentArray[0][rowNumber];
             }
-            int n = roundf(value);
-            float f = value - n;
-            // Use sharp except for E and B
-            bool useSharps = (n % 12 != 4) && (n % 12 != 11);
+            int n = round(value);
+            double f = value - n;
+            if (f == -0.5)
+            {
+                n -= 1;
+                f += 1.;
+            }
             
-            text += MidiMessage::getMidiNoteName(n, useSharps, false, 4);
-            if (f > 0.0f) text += "+" + String(f);
-            else if (f < 0.0f) text += String(f);
+            bool useSharps = true;//(n % 12 != 3) && (n % 12 != 10);
+            
+            text += MidiMessage::getMidiNoteName(n, useSharps, true, 4);
+            if (f > 0.0) text += "+" + String(f);
+            else if (f < 0.0) text += String(f);
         }
         else
         {
-            if (value > 0.0f) text += "+";
+            if (value > 0.0) text += "+";
             text += String(value);
         }
         return text;
@@ -365,8 +374,81 @@ public:
     
     void setDataFromText (const int columnNumber, const int rowNumber, const String& newText)
     {
-        float value = newText.getFloatValue();
+        String text = newText.toUpperCase().removeCharacters(" ");
+        
+        double value;
+        if (!text.containsAnyOf("CDEFGAB"))
+        {
+            value = text.getDoubleValue();
+        }
+        else if (!text.containsOnly("0123456789CDEFGAB#+-.,"))
+        {
+            return;
+        }
+        else
+        {
+            int i = text.indexOfAnyOf("CDEFGAB");
+            
+            // Start by getting the basic pitch class number
+            if (text[i] == 'C') value = 0.;
+            else if (text[i] == 'D') value = 2.;
+            else if (text[i] == 'E') value = 4.;
+            else if (text[i] == 'F') value = 5.;
+            else if (text[i] == 'G') value = 7.;
+            else if (text[i] == 'A') value = 9.;
+            else if (text[i] == 'B') value = 11.;
+            i++;
+            
+            // Adjust for sharps and flats
+            for (; i < text.length(); i++)
+            {
+                if (text[i] == '#') value++;
+                else if (text[i] == 'B') value--;
+                else break;
+            }
+            
+            int fineIndex = text.indexOfAnyOf("+-", i);
+            if (fineIndex >= 0) value += text.substring(fineIndex).getDoubleValue();
+            else fineIndex = text.length();
+                
+            // Check for octave
+            String withoutFine = text.substring(0, fineIndex);
+            int octave = withoutFine.getTrailingIntValue();
+            
+            // Use it if we have it
+            if (withoutFine.endsWith(String(octave)))
+            {
+                value += octave * 12 + 12;
+            }
+            else // Otherwise use the current fundamental octave
+            {
+                value += int(copedentArray[0][rowNumber] / 12) * 12;
+                
+                // Get the value as an offset from the fundamental
+                double offset = value - copedentArray[0][rowNumber];
+                
+                // Make sure the offset is in the right direction if specified
+                // and if not specified, minimize the offset size
+                if (text.startsWith("-"))
+                {
+                    if (offset > 0.) value -= 12;
+                }
+                else if (text.startsWith("+"))
+                {
+                    if (offset < 0.) value += 12;
+                }
+                else if (offset > 6.) value -= 12;
+                else if (offset < -6.) value += 12;
+            }
+            
+            // Change value to an offset if not string column
+            if (columnNumber != 1)
+            {
+                value -= copedentArray[0][rowNumber];
+            }
+        }
         copedentArray.getReference(columnNumber-1).set(rowNumber, value);
+        if (columnNumber == 1) resized();
     }
     
     // This is overloaded from TableListBoxModel, and must return the total number of rows in our table

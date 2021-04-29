@@ -222,7 +222,6 @@ static const std::vector<std::vector<float>> cWavetableKnobParamInitValues = {
     { 0.0f, 1.0f, 0.1f }    //WavetableFilterLeak
 };
 
-
 typedef enum _CopedentColumn
 {
     CopedentString = 0,
@@ -254,9 +253,8 @@ static const std::vector<std::string> cCopedentColumnNames = {
 };
 
 static const std::vector<std::vector<float>> cCopedentArrayInit = {
-    { 23.f, 28.f, 32.f, 35.f, 40.f, 42.f, 44.f, 47.f, 52.f, 56.f, 63.f, 67.f },
+    { 66.f, 63.f, 56.f, 52.f, 47.f, 44.f, 42.f, 40.f, 35.f, 32.f, 28.f, 23.f },
     
-    { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f },
     { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f },
     { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f },
     { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f },
