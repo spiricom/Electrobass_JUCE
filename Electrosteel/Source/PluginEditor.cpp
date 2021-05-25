@@ -19,7 +19,7 @@ processor (p),
 vts(vts),
 tabs(TabbedButtonBar::Orientation::TabsAtTop),
 keyboard(p.keyboardState, MidiKeyboardComponent::Orientation::horizontalKeyboard),
-envs(TabbedButtonBar::TabsAtTop),
+envsAndLFOs(TabbedButtonBar::TabsAtTop),
 copedentTable(processor.copedentArray),
 constrain(new ComponentBoundsConstrainer()),
 resizer(new ResizableCornerComponent (this, constrain.get())),
@@ -59,7 +59,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     for (int i = 0; i < NUM_GLOBAL_CC; ++i)
     {
         ccDials.add(new ESDial(*this, "CC" + String(i+1), Colours::red,
-                               processor.ccParams[i]->getValuePointer(), 1));
+                               processor.ccParams[i]->getValuePointer(), 1, false));
         sliderAttachments.add(new SliderAttachment(vts, "CC" + String(i+1), ccDials[i]->getSlider()));
         tab1.addAndMakeVisible(ccDials[i]);
     }
@@ -94,37 +94,57 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     modules.add(new ESModule(*this, vts, *processor.sposcs[0]));
     modules.add(new ESModule(*this, vts, *processor.lps[0]));
     
-    envs.setLookAndFeel(&laf);
+    envsAndLFOs.setLookAndFeel(&laf);
     for (int i = 0; i < NUM_ENVS; ++i)
     {
         String name = "Env" + String(i+1);
-        envs.addTab(" ", Colours::black,
+        envsAndLFOs.addTab(" ", Colours::black,
                     new ESModule(*this, vts, *processor.envs[i]), true);
-        envs.setColour(TabbedComponent::outlineColourId, Colours::darkgrey);
+        envsAndLFOs.setColour(TabbedComponent::outlineColourId, Colours::darkgrey);
         
-        TabbedButtonBar& bar = envs.getTabbedButtonBar();
+        TabbedButtonBar& bar = envsAndLFOs.getTabbedButtonBar();
         bar.getTabButton(i)
         ->setExtraComponent(new MappingSource(*this, name, processor.envs[i]->getValuePointer(),
-                                              NUM_VOICES, Colours::cyan),
+                                              NUM_VOICES, false, Colours::cyan),
                             TabBarButton::ExtraComponentPlacement::afterText);
         bar.setColour(TabbedButtonBar::tabOutlineColourId, Colours::darkgrey);
         bar.setColour(TabbedButtonBar::frontOutlineColourId, Colours::darkgrey);
-        for (int i = 0; i < envs.getTabbedButtonBar().getNumTabs(); ++i)
+        for (int i = 0; i < envsAndLFOs.getTabbedButtonBar().getNumTabs(); ++i)
         {
-            bar.getTabButton(i)->setAlpha(i == 0 ? 1.0f : 0.7f);
+            bar.getTabButton(i)->setAlpha(i == 0 ? 1.0f : 0.5f);
         }
     }
-    tab1.addAndMakeVisible(&envs);
+    for (int i = 0; i < NUM_LFOS; ++i)
+    {
+        String name = "LFO" + String(i+1);
+        envsAndLFOs.addTab(" ", Colours::black,
+                           new ESModule(*this, vts, *processor.lfos[i]), true);
+        envsAndLFOs.setColour(TabbedComponent::outlineColourId, Colours::darkgrey);
+        
+        TabbedButtonBar& bar = envsAndLFOs.getTabbedButtonBar();
+        bar.getTabButton(i + NUM_ENVS)
+        ->setExtraComponent(new MappingSource(*this, name, processor.lfos[i]->getValuePointer(),
+                                              NUM_VOICES, true, Colours::lime),
+                            TabBarButton::ExtraComponentPlacement::afterText);
+        bar.setColour(TabbedButtonBar::tabOutlineColourId, Colours::darkgrey);
+        bar.setColour(TabbedButtonBar::frontOutlineColourId, Colours::darkgrey);
+        for (int i = 0; i < envsAndLFOs.getTabbedButtonBar().getNumTabs(); ++i)
+        {
+            bar.getTabButton(i)->setAlpha(i == 0 ? 1.0f : 0.5f);
+        }
+    }
+
+    tab1.addAndMakeVisible(&envsAndLFOs);
     tab1.addAndMakeVisible(modules[0]);
     tab1.addAndMakeVisible(modules[1]);
     
     MappingSource* env4 =
-    dynamic_cast<MappingSource*>(envs.getTabbedButtonBar().getTabButton(3)->getExtraComponent());
-    ampDial->getTarget(0)->setMapping(env4, 0.0f, 1.0f, HookAdd);
+    dynamic_cast<MappingSource*>(envsAndLFOs.getTabbedButtonBar().getTabButton(3)->getExtraComponent());
+    ampDial->getTarget(0)->setMapping(env4, 1.0f, HookAdd);
     
     MappingSource* env1 =
-    dynamic_cast<MappingSource*>(envs.getTabbedButtonBar().getTabButton(0)->getExtraComponent());
-    modules[1]->getDial(LowpassCutoff)->getTarget(0)->setMapping(env1, 0.0f, 5000.0f, HookAdd);
+    dynamic_cast<MappingSource*>(envsAndLFOs.getTabbedButtonBar().getTabButton(0)->getExtraComponent());
+    modules[1]->getDial(LowpassCutoff)->getTarget(0)->setMapping(env1, 5000.0f, HookAdd);
     
     for (int i = 0; i < CopedentColumnNil; ++i)
     {
@@ -145,15 +165,20 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     
     tab2.addAndMakeVisible(copedentTable);
     
-    exportButton.setButtonText("Export");
+    exportButton.setButtonText("Export .xml");
     exportButton.setLookAndFeel(&laf);
     exportButton.onClick = [this] { copedentTable.exportXml(); };
     tab2.addAndMakeVisible(exportButton);
     
-    importButton.setButtonText("Import");
+    importButton.setButtonText("Import .xml");
     importButton.setLookAndFeel(&laf);
     importButton.onClick = [this] { copedentTable.importXml(); };
     tab2.addAndMakeVisible(importButton);
+    
+    sendOutButton.setButtonText("Send via MIDI");
+    sendOutButton.setLookAndFeel(&laf);
+    sendOutButton.onClick = [this] { processor.sendCopedentMidiMessage(); };
+    tab2.addAndMakeVisible(sendOutButton);
     
     //==============================================================================
     
@@ -192,11 +217,12 @@ ESAudioProcessorEditor::~ESAudioProcessorEditor()
         channelSelection[i]->setLookAndFeel(nullptr);
         pitchBendSliders[i]->setLookAndFeel(nullptr);
     }
-    envs.setLookAndFeel(nullptr);
+    envsAndLFOs.setLookAndFeel(nullptr);
     for (int i = 0; i < CopedentColumnNil; ++i)
         copedentButtons[i]->setLookAndFeel(nullptr);
     exportButton.setLookAndFeel(nullptr);
     importButton.setLookAndFeel(nullptr);
+    sendOutButton.setLookAndFeel(nullptr);
 }
 
 //==============================================================================
@@ -251,9 +277,9 @@ void ESAudioProcessorEditor::resized()
                                       60*s+1, 30*s);
     }
     
-    envs.setBounds(350*s, copedentButtons.getLast()->getBottom(), width - 350*s + 2, 160*s);
-    envs.setIndent(10*s);
-    envs.setTabBarDepth(25*s);
+    envsAndLFOs.setBounds(350*s, copedentButtons.getLast()->getBottom(), width - 350*s + 2, 160*s);
+    envsAndLFOs.setIndent(10*s);
+    envsAndLFOs.setTabBarDepth(25*s);
     
     resizedChannelSelection();
     
@@ -266,6 +292,7 @@ void ESAudioProcessorEditor::resized()
     copedentTable.setBoundsRelative(0.05f, 0.1f, 0.9f, 0.7f);
     exportButton.setBoundsRelative(0.05f, 0.85f, 0.15f, 0.05f);
     importButton.setBoundsRelative(0.21f, 0.85f, 0.15f, 0.05f);
+    sendOutButton.setBoundsRelative(0.37f, 0.85f, 0.15f, 0.05f);
 
     //==============================================================================
     

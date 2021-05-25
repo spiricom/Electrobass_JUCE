@@ -14,12 +14,14 @@
 //==============================================================================
 //==============================================================================
 
-MappingSource::MappingSource(ESAudioProcessorEditor& editor, const String &name, float* source, int n, Colour colour) :
+MappingSource::MappingSource(ESAudioProcessorEditor& editor, const String &name, float* source,
+                             int n, bool bipolar, Colour colour) :
 Component(name),
 label(name, name),
 button(name, DrawableButton::ButtonStyle::ImageFitted),
 source(source),
 numSourcePointers(n),
+bipolar(bipolar),
 colour(colour)
 {
     addMouseListener(&editor, true);
@@ -95,7 +97,7 @@ bool MappingTarget::isInterestedInDragSource(const SourceDetails &dragSourceDeta
 void MappingTarget::itemDropped(const SourceDetails &dragSourceDetails)
 {
     MappingSource* source = dynamic_cast<MappingSource*>(dragSourceDetails.sourceComponent.get());
-    setMapping(source, 0.0f, 0.0f, HookAdd);
+    setMapping(source, 0.f, HookAdd);
 }
 
 void MappingTarget::resized()
@@ -136,22 +138,25 @@ void MappingTarget::setTextColour(Colour c)
     setColour(textBoxTextColourId, colour);
 }
 
-void MappingTarget::setMapping(MappingSource* source, float start, float end, HookOperation op)
+void MappingTarget::setMapping(MappingSource* source, float end, HookOperation op)
 {
     if (source == nullptr) return;
     sliderEnabled = true;
     String name = source->getName();
     setTextColour(source->getColour());
     setText(String(name.getTrailingIntValue()));
+    bipolar = source->isBipolar();
+    
     int i = 0;
     int n = source->getNumSourcePointers();
+    float start = bipolar ? -end : 0.f;
     for (auto t : target)
     {
         t->setHook(index, &(source->getValuePointer()[i]), start, end, op);
         if (i < n-1) i++;
     }
     ESDial* attached = dynamic_cast<ESDial*>(getParentComponent());
-    setValue((end + start) / attached->getSlider().getRange().getLength());
+    setValue(end / attached->getSlider().getRange().getLength());
 }
 
 void MappingTarget::removeMapping()
@@ -167,15 +172,16 @@ void MappingTarget::removeMapping()
     setValue(0.0);
 }
 
-void MappingTarget::setMappingRange(float start, float end)
+void MappingTarget::setMappingRange(float end)
 {
+    float start = bipolar ? -end : 0.f;
     for (auto t : target)
     {
         t->setRange(index, start, end);
     }
     ESDial* attached = dynamic_cast<ESDial*>(getParentComponent());
-    setValue((end + start) / attached->getSlider().getRange().getLength());
-    DBG(String(start) + String(end));
+    setValue(end / attached->getSlider().getRange().getLength());
+    DBG(String(start) + " " + String(end));
 }
 
 void MappingTarget::menuCallback(int result, MappingTarget* target)
@@ -205,7 +211,7 @@ label(name, name)
 }
 
 ESDial::ESDial(ESAudioProcessorEditor& editor, const String& name,
-               Colour colour, float* source, int n) :
+               Colour colour, float* source, int n, bool bipolar) :
 label(name, name)
 {
     slider.setLookAndFeel(&laf);
@@ -215,7 +221,7 @@ label(name, name)
     slider.addListener(this);
     addAndMakeVisible(&slider);
 
-    s = std::make_unique<MappingSource>(editor, name, source, n, colour);
+    s = std::make_unique<MappingSource>(editor, name, source, n, bipolar, colour);
     addAndMakeVisible(s.get());
 }
 
@@ -231,6 +237,7 @@ label(name, name)
     addAndMakeVisible(&slider);
 
     label.setJustificationType(Justification::centred);
+    label.setBorderSize(BorderSize<int>(0));
     label.setLookAndFeel(&laf);
     addAndMakeVisible(&label);
 
@@ -280,8 +287,7 @@ void ESDial::paint(Graphics& g)
             auto endAngle = slider.getRotaryParameters().endAngleRadians;
             auto currentAngle = startAngle +
             slider.valueToProportionOfLength(slider.getValue()) * (endAngle - startAngle);
-            auto angle = currentAngle +
-            (t[i]->getValue()) * (endAngle - startAngle);
+            auto angle = currentAngle + (t[i]->getValue() * (endAngle - startAngle));
             angle = fmax(startAngle, fmin(angle, endAngle));
             
             Path arc;
@@ -297,14 +303,24 @@ void ESDial::paint(Graphics& g)
             radius = jmin(width / 2, height / 2) - width*0.15f;
             centreX = x + width * 0.5f;
             centreY = y + height * 0.5f;
-            rx = centreX - radius;
-            ry = centreY - radius;
-            rw = radius * 2.0f;
-            b = rw * 0.05f;
+            auto rx2 = centreX - radius;
+            auto ry2 = centreY - radius;
+            auto rw2 = radius * 2.0f;
+            auto b2 = rw * 0.05f;
 
-            arc.addArc(rx - b*4, ry - b*4, rw + b*8, rw + b*8, angle, currentAngle, false);
+            arc.addArc(rx2 - b2*4, ry2 - b*4, rw2 + b*8, rw2 + b2*8, angle, currentAngle, false);
             g.setColour(t[i]->getColour());
             g.fillPath(arc);
+            
+            if (t[i]->isBipolar())
+            {
+                angle = currentAngle - (t[i]->getValue() * (endAngle - startAngle));
+                Path oppArc;
+                oppArc.addArc(rx - b*4, ry - b*4, rw + b*8, rw + b*8, currentAngle, angle, true);
+                oppArc.addArc(rx2 - b2*4, ry2 - b2*4, rw2 + b2*8, rw2 + b2*8, angle, currentAngle, false);
+                g.setColour(t[i]->getColour().withSaturation(0.1));
+                g.fillPath(oppArc);
+            }
         }
     }
 }
@@ -361,14 +377,7 @@ void ESDial::sliderValueChanged(Slider* s)
     if (MappingTarget* mt = dynamic_cast<MappingTarget*>(s))
     {
         float v = mt->getValue();
-//        if (v < 0)
-//        {
-//            mt->setMappingRange(v*slider.getRange().getLength(), 0.0f);
-//        }
-//        else
-        {
-            mt->setMappingRange(0.0f, v*slider.getRange().getLength());
-        }
+        mt->setMappingRange(v*slider.getRange().getLength());
     }
     repaint();
 }

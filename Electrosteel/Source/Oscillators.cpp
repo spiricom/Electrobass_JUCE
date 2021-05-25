@@ -101,6 +101,62 @@ float SawPulseOscillator::tick(int v)
 }
 
 
+//==============================================================================
 
+LowFreqOscillator::LowFreqOscillator(const String& n, ESAudioProcessor& p, AudioProcessorValueTreeState& vts, StringArray s) :
+AudioComponent(n, p, vts, s)
+{
+    for (int i = 0; i < LowFreqParamNil; ++i)
+    {
+        for (int v = 0; v < NUM_VOICES; ++v)
+        {
+            ref[i][v] = params[i]->getUnchecked(v);
+        }
+    }
+    
+    for (int i = 0; i < NUM_VOICES; i++)
+    {
+        tCycle_init(&lfo[i], &processor.leaf);
+    }
+}
 
+LowFreqOscillator::~LowFreqOscillator()
+{
+    
+}
 
+void LowFreqOscillator::prepareToPlay (double sampleRate, int samplesPerBlock)
+{
+    AudioComponent::prepareToPlay(sampleRate, samplesPerBlock);
+    for (int i = 0; i < NUM_VOICES; i++)
+    {
+        tCycle_setSampleRate(&lfo[i], sampleRate);
+    }
+}
+
+void LowFreqOscillator::tick()
+{
+    for (int v = 0; v < NUM_VOICES; v++)
+    {
+        float rate = ref[LowFreqRate][v]->tick();
+        
+        tCycle_setFreq(&lfo[v], rate);
+        
+        value[v] = tCycle_tick(&lfo[v]);
+    }
+}
+
+void LowFreqOscillator::noteOn(int voice, float velocity)
+{
+    // Maybe reset phase on note on?
+}
+
+void LowFreqOscillator::noteOff(int voice, float velocity)
+{
+    
+}
+
+float* LowFreqOscillator::getValuePointer()
+{
+    return value;
+}

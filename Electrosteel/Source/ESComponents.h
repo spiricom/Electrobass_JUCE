@@ -21,10 +21,12 @@ class ESAudioProcessorEditor;
 class MappingSource : public Component
 {
 public:
-    MappingSource(ESAudioProcessorEditor& editor, const String &name, float* sources, int n, Colour colour);
+    MappingSource(ESAudioProcessorEditor& editor, const String &name, float* sources,
+                  int n, bool bipolar, Colour colour);
     ~MappingSource() override;
     
     Colour getColour() { return colour; }
+    bool isBipolar() { return bipolar; }
     
     void resized() override;
     
@@ -39,6 +41,7 @@ private:
     std::unique_ptr<Drawable> image;
     float* source;
     int numSourcePointers;
+    bool bipolar;
     
     Colour colour;
     
@@ -59,6 +62,7 @@ public:
     
     String getTextFromValue(double value) override { return text; }
     Colour getColour() { return colour; }
+    bool isBipolar() { return bipolar; }
     
     bool isInterestedInDragSource(const SourceDetails &dragSourceDetails) override;
     void itemDropped(const SourceDetails &dragSourceDetails) override;
@@ -71,10 +75,10 @@ public:
     void setText(String s);
     void setTextColour(Colour colour);
     
-    void setMapping(MappingSource* source, float start, float end, HookOperation op);
+    void setMapping(MappingSource* source, float end, HookOperation op);
     void removeMapping();
     
-    void setMappingRange(float start, float end);
+    void setMappingRange(float end);
     
     static void menuCallback(int result, MappingTarget* target);
     
@@ -84,6 +88,7 @@ private:
     OwnedArray<SmoothedParameter>& target;
     int index;
     bool sliderEnabled;
+    bool bipolar;
     
     Colour colour;
     
@@ -100,7 +105,8 @@ class ESDial : public Component,
 public:
     
     ESDial(ESAudioProcessorEditor& editor, const String& name);
-    ESDial(ESAudioProcessorEditor& editor, const String& name, Colour colour, float* source, int n);
+    ESDial(ESAudioProcessorEditor& editor, const String& name, Colour colour,
+           float* source, int n, bool bipolar);
     ESDial(ESAudioProcessorEditor& editor, const String& name, OwnedArray<SmoothedParameter>& target);
     ~ESDial() override;
     

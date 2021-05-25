@@ -22,6 +22,7 @@
 #define NUM_CHANNELS (NUM_VOICES+1)
 
 #define NUM_ENVS 4
+#define NUM_LFOS 4
 
 #define EXP_BUFFER_SIZE 128
 #define DECAY_EXP_BUFFER_SIZE 512
@@ -71,6 +72,26 @@ static const std::vector<std::vector<float>> vSawPulseInit = {
     { 0.0f, 1.0f, 0.06f },  //Shape
     { 0.0f, 1.0f, 0.0f },   //Detune
     { 0.0f, 1.0f, 0.5f },   //Volume
+};
+
+//==============================================================================
+
+typedef enum _LowFreqParam
+{
+    LowFreqRate = 0,
+    LowFreqShape,
+    LowFreqPhaseOffset,
+    LowFreqParamNil
+} LowFreqParam;
+static const StringArray cLowFreqParams = {
+    "Rate",
+    "Shape",
+    "Phase Offset"
+};
+static const std::vector<std::vector<float>> vLowFreqInit = {
+    { 0.0f, 10.f, 1.0f },  //Rate
+    { 0.0f, 1.0f, 0.0f },  //Shape
+    { 0.0f, 1.0f, 0.0f} // Phase Offset
 };
 
 //==============================================================================
@@ -140,7 +161,6 @@ static const std::vector<std::string> cSubtractiveKnobParamNames = {
     "SubtractiveFilterRelease",
     "SubtractiveFilterLeak"
 };
-
 static const std::vector<std::vector<float>> cSubtractiveKnobParamInitValues = {
     { 0.0f, 1.0f, 0.5f },   //SubtractiveVolume
     { 0.0f, 1.0f, 0.06f },  //SubtractiveShape

@@ -76,6 +76,9 @@ public:
     void toggleSustain();
     
     //==============================================================================
+    void sendCopedentMidiMessage();
+    
+    //==============================================================================
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
@@ -97,6 +100,7 @@ public:
     OwnedArray<SawPulseOscillator> sposcs;
     OwnedArray<LowpassFilter> lps;
     OwnedArray<Envelope> envs;
+    OwnedArray<LowFreqOscillator> lfos;
     
     OwnedArray<SmoothedParameter> voiceAmpParams;
     OwnedArray<SmoothedParameter> pitchBendParams;
@@ -116,6 +120,8 @@ private:
     float centsDeviation[12];
     int currentTuning;
     int keyCenter;
+    
+    bool waitingToSendCopedent = false;
     
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ESAudioProcessor)

@@ -72,7 +72,7 @@ private:
     MidiKeyboardComponent keyboard;
     OwnedArray<TextButton> channelSelection;
     OwnedArray<ESModule> modules;
-    ESTabbedComponent envs;
+    ESTabbedComponent envsAndLFOs;
     MappingSource* currentMappingSource;
     OwnedArray<TextButton> copedentButtons;
     
@@ -80,6 +80,7 @@ private:
     CopedentTable copedentTable;
     TextButton exportButton;
     TextButton importButton;
+    TextButton sendOutButton;
     
     Label versionLabel;
     std::unique_ptr<Drawable> logo;

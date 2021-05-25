@@ -54,6 +54,11 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
         envs.add(new Envelope("Envelope" + String(i+1), *this, vts, cEnvelopeParams));
     }
     
+    for (int i = 0; i < NUM_LFOS; ++i)
+    {
+        lfos.add(new LowFreqOscillator("LFO" + String(i+1), *this, vts, cLowFreqParams));
+    }
+    
     // Make a SmoothedParameter for each voice from the single AudioParameter
     // to allow for env mapping
     for (int i = 0; i < NUM_VOICES; ++i)
@@ -158,6 +163,18 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
         }
     }
     
+    for (int i = 0; i < cLowFreqParams.size(); ++i)
+    {
+        float min = vLowFreqInit[i][0];
+        float max = vLowFreqInit[i][1];
+        float def = vLowFreqInit[i][2];
+        for (int j = 0; j < NUM_LFOS; ++j)
+        {
+            String n = "LFO" + String(j+1) + cLowFreqParams[i];
+            layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
+        }
+    }
+    
     for (int i = 1; i < CopedentColumnNil; ++i)
     {
         layout.add (std::make_unique<AudioParameterChoice>(cCopedentColumnNames[i],
@@ -187,6 +204,10 @@ void ESAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     for (auto env : envs)
     {
         env->prepareToPlay(sampleRate, samplesPerBlock);
+    }
+    for (auto lfo : lfos)
+    {
+        lfo->prepareToPlay(sampleRate, samplesPerBlock);
     }
 }
 
@@ -237,6 +258,21 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
         handleMidiMessage(m);
     }
     
+    if (waitingToSendCopedent)
+    {
+        Array<float> flat;
+        for (auto column : copedentArray)
+        {
+            for (auto value : column)
+            {
+                flat.add(value);
+            }
+        }
+        MidiMessage copedentMessage = MidiMessage::createSysExMessage(flat.getRawDataPointer(), sizeof(float) * flat.size());
+        midiMessages.addEvent(copedentMessage, 0);
+        waitingToSendCopedent = false;
+    }
+    
     Array<float> resolvedCopedent;
     for (int r = 0; r < NUM_VOICES; ++r)
     {
@@ -258,6 +294,10 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
     {
         envs[i]->frame();
     }
+//    for (int i = 0; i < lfos.size(); ++i)
+//    {
+//        lfos[i]->frame();
+//    }
     
     for (int i = 0; i < buffer.getNumSamples(); i++)
     {
@@ -268,6 +308,10 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
         for (int i = 0; i < envs.size(); ++i)
         {
             envs[i]->tick();
+        }
+        for (int i = 0; i < lfos.size(); ++i)
+        {
+            lfos[i]->tick();
         }
         float sample = 0.f;
         float globalPitchBend = pitchBendParams[0]->tick();
@@ -350,6 +394,7 @@ void ESAudioProcessor::noteOn(int channel, int key, float velocity)
         if (v >= 0)
         {
             for (auto e : envs) e->noteOn(i, velocity);
+            for (auto o : lfos) o->noteOn(i, velocity);
         }
     }
     
@@ -369,7 +414,9 @@ void ESAudioProcessor::noteOff(int channel, int key, float velocity)
     
     if (v >= 0)
     {
-        for (auto e : envs) e->noteOff(i, velocity);    }
+        for (auto e : envs) e->noteOff(i, velocity);
+        for (auto o : lfos) o->noteOff(i, velocity);
+    }
     
     if (tSimplePoly_getNumActiveVoices(&voice[i]) < 1)
     {
@@ -414,6 +461,12 @@ void ESAudioProcessor::toggleBypass()
 void ESAudioProcessor::toggleSustain()
 {
     
+}
+
+//==============================================================================
+void ESAudioProcessor::sendCopedentMidiMessage()
+{
+    waitingToSendCopedent = true;
 }
 
 //==============================================================================

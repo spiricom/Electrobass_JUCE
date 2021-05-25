@@ -42,3 +42,32 @@ private:
 //    tCycle pwmLFO1;
 //    tCycle pwmLFO2;
 };
+
+//==============================================================================
+
+class LowFreqOscillator : public AudioComponent
+{
+public:
+    //==============================================================================
+    LowFreqOscillator(const String&, ESAudioProcessor&, AudioProcessorValueTreeState&, StringArray);
+    ~LowFreqOscillator();
+    
+    //==============================================================================
+    void prepareToPlay (double sampleRate, int samplesPerBlock);
+    
+    //==============================================================================
+    //    void frame() override;
+    void tick();
+    
+    void noteOn(int voice, float velocity);
+    void noteOff(int voice, float velocity);
+    
+    float* getValuePointer();
+    
+private:
+    
+    SmoothedParameter* ref[LowFreqParamNil][NUM_VOICES];
+    
+    tCycle lfo[NUM_VOICES];
+    float value[NUM_VOICES];
+};
