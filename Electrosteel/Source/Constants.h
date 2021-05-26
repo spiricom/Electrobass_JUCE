@@ -55,20 +55,23 @@ typedef enum _SubtractiveKnobParam
 
 typedef enum _SawPulseParam
 {
-    SawPulseTranspose = 0,
+    SawPulsePitch = 0,
+    SawPulseFine,
     SawPulseShape,
     SawPulseDetune,
     SawPulseVolume,
     SawPulseParamNil
 } SawPulseParam;
 static const StringArray cSawPulseParams = {
-    "Transpose",
+    "Pitch",
+    "Fine",
     "Shape",
     "Detune",
     "Volume"
 };
 static const std::vector<std::vector<float>> vSawPulseInit = {
-    { -24.0f, 24.0f, 0.0f },  //Transpose
+    { -24.0f, 24.0f, 0.0f }, //Pitch
+    { -50.0f, 50.0f, 0.0f }, //Fine
     { 0.0f, 1.0f, 0.06f },  //Shape
     { 0.0f, 1.0f, 0.0f },   //Detune
     { 0.0f, 1.0f, 0.5f },   //Volume
@@ -80,16 +83,16 @@ typedef enum _LowFreqParam
 {
     LowFreqRate = 0,
     LowFreqShape,
-    LowFreqPhaseOffset,
+    LowFreqSyncPhase,
     LowFreqParamNil
 } LowFreqParam;
 static const StringArray cLowFreqParams = {
     "Rate",
     "Shape",
-    "Phase Offset"
+    "Sync Phase"
 };
 static const std::vector<std::vector<float>> vLowFreqInit = {
-    { 0.0f, 10.f, 1.0f },  //Rate
+    { 0.0f, 20.f, 1.0f },  //Rate
     { 0.0f, 1.0f, 0.0f },  //Shape
     { 0.0f, 1.0f, 0.0f} // Phase Offset
 };

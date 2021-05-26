@@ -67,7 +67,9 @@ public:
 private:
     
     SmoothedParameter* ref[LowFreqParamNil][NUM_VOICES];
+    RangedAudioParameter* sync;
     
     tCycle lfo[NUM_VOICES];
+    float phaseReset;
     float value[NUM_VOICES];
 };

@@ -69,7 +69,8 @@ void SawPulseOscillator::prepareToPlay (double sampleRate, int samplesPerBlock)
 
 float SawPulseOscillator::tick(int v)
 {
-    float transpose = ref[SawPulseTranspose][v]->tick();
+    float pitch = ref[SawPulsePitch][v]->tick();
+    float fine = ref[SawPulseFine][v]->tick();
     float shape = ref[SawPulseShape][v]->tick();
     float detuneAmount = ref[SawPulseDetune][v]->tick();
     float volume = ref[SawPulseVolume][v]->tick();
@@ -80,7 +81,7 @@ float SawPulseOscillator::tick(int v)
     for (int i = 0; i < NUM_OSC_PER_VOICE; i++)
     {
         float tempFreq = processor.voiceFreq[v] * (1.0f + (detune[v][i] * detuneAmount));
-        tempFreq = mtof((ftom(tempFreq) + transpose));
+        tempFreq = mtof((ftom(tempFreq) + pitch + fine*0.01f));
         tSawtooth_setFreq(&saw[v][i], tempFreq);
         tRosenbergGlottalPulse_setFreq(&pulse[v][i], tempFreq);
 //        tRosenbergGlottalPulse_setPulseLength(&glottal[v][i], tempLFO1);
@@ -114,10 +115,15 @@ AudioComponent(n, p, vts, s)
         }
     }
     
+    sync = vts.getParameter(n + "Sync");
+    
     for (int i = 0; i < NUM_VOICES; i++)
     {
         tCycle_init(&lfo[i], &processor.leaf);
+        value[i] = 0.0f;
     }
+    
+    phaseReset = 0.0f;
 }
 
 LowFreqOscillator::~LowFreqOscillator()
@@ -139,6 +145,7 @@ void LowFreqOscillator::tick()
     for (int v = 0; v < NUM_VOICES; v++)
     {
         float rate = ref[LowFreqRate][v]->tick();
+        phaseReset = ref[LowFreqSyncPhase][v]->tick();
         
         tCycle_setFreq(&lfo[v], rate);
         
@@ -148,7 +155,7 @@ void LowFreqOscillator::tick()
 
 void LowFreqOscillator::noteOn(int voice, float velocity)
 {
-    // Maybe reset phase on note on?
+    if (sync->getValue() > 0) tCycle_setPhase(&lfo[voice], phaseReset);
 }
 
 void LowFreqOscillator::noteOff(int voice, float velocity)

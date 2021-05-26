@@ -86,13 +86,13 @@ private:
     std::unique_ptr<Drawable> logo;
     Label synderphonicsLabel;
     Label electrosteelLabel;
-
-    std::unique_ptr<ComponentBoundsConstrainer> constrain;
-    std::unique_ptr<ResizableCornerComponent> resizer;
     
     OwnedArray<SliderAttachment> sliderAttachments;
     OwnedArray<ButtonAttachment> buttonAttachments;
 
+    std::unique_ptr<ComponentBoundsConstrainer> constrain;
+    std::unique_ptr<ResizableCornerComponent> resizer;
+    
     Font euphemia;
     FileChooser chooser;
     ESLookAndFeel laf;
@@ -106,7 +106,8 @@ class ESModule : public Component
 {
 public:
     
-    ESModule(ESAudioProcessorEditor& editor, AudioProcessorValueTreeState&, AudioComponent&);
+    ESModule(ESAudioProcessorEditor& editor, AudioProcessorValueTreeState&, AudioComponent&,
+             float relWidth, float relSpacing);
     ~ESModule() override;
     
     void resized() override;
@@ -117,14 +118,51 @@ public:
     ESDial* getDial (int index);
     ESDial* getDial (String param);
     
-private:
+protected:
     
     ESAudioProcessorEditor& editor;
     AudioProcessorValueTreeState& vts;
     AudioComponent& ac;
     OwnedArray<ESDial> dials;
     
+    float relWidth, relSpacing;
+    
     OwnedArray<SliderAttachment> sliderAttachments;
-
+    OwnedArray<ButtonAttachment> buttonAttachments;
+    
+private:
+    
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ESModule)
+};
+
+//==============================================================================
+
+class OscModule : public ESModule
+{
+public:
+    
+    OscModule(ESAudioProcessorEditor& editor, AudioProcessorValueTreeState&, AudioComponent&);
+    ~OscModule() override;
+    
+private:
+    
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (OscModule)
+};
+
+//==============================================================================
+
+class LFOModule : public ESModule
+{
+public:
+    
+    LFOModule(ESAudioProcessorEditor& editor, AudioProcessorValueTreeState&, AudioComponent&);
+    ~LFOModule() override;
+    
+    void resized() override;
+    
+private:
+    
+    ToggleButton syncToggle;
+    
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (LFOModule)
 };

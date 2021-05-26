@@ -174,6 +174,11 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
             layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
         }
     }
+    for (int j = 0; j < NUM_LFOS; ++j)
+    {
+        String n = "LFO" + String(j+1) + "Sync";
+        layout.add (std::make_unique<AudioParameterChoice> (n, n, StringArray("Off", "On"), 0));
+    }
     
     for (int i = 1; i < CopedentColumnNil; ++i)
     {

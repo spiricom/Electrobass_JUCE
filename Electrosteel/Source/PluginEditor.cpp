@@ -91,15 +91,15 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     keyboard.setOctaveForMiddleC(4);
     tab1.addAndMakeVisible(&keyboard);
     
-    modules.add(new ESModule(*this, vts, *processor.sposcs[0]));
-    modules.add(new ESModule(*this, vts, *processor.lps[0]));
+    modules.add(new OscModule(*this, vts, *processor.sposcs[0]));
+    modules.add(new ESModule(*this, vts, *processor.lps[0], 0.12f, 0.04f));
     
     envsAndLFOs.setLookAndFeel(&laf);
     for (int i = 0; i < NUM_ENVS; ++i)
     {
         String name = "Env" + String(i+1);
         envsAndLFOs.addTab(" ", Colours::black,
-                    new ESModule(*this, vts, *processor.envs[i]), true);
+                    new ESModule(*this, vts, *processor.envs[i], 0.12f, 0.08f), true);
         envsAndLFOs.setColour(TabbedComponent::outlineColourId, Colours::darkgrey);
         
         TabbedButtonBar& bar = envsAndLFOs.getTabbedButtonBar();
@@ -118,7 +118,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     {
         String name = "LFO" + String(i+1);
         envsAndLFOs.addTab(" ", Colours::black,
-                           new ESModule(*this, vts, *processor.lfos[i]), true);
+                           new LFOModule(*this, vts, *processor.lfos[i]), true);
         envsAndLFOs.setColour(TabbedComponent::outlineColourId, Colours::darkgrey);
         
         TabbedButtonBar& bar = envsAndLFOs.getTabbedButtonBar();
@@ -258,8 +258,8 @@ void ESAudioProcessorEditor::resized()
     const float knobSize = 50.0f*s;
     const float masterSize = knobSize * 1.5f;
     
-    masterDial->setBounds(550*s, 10*s, masterSize, masterSize*1.5f);
-    ampDial->setBounds(450*s, 10*s, masterSize, masterSize*1.5f);
+    masterDial->setBounds(650*s, 10*s, masterSize, masterSize*1.5f);
+    ampDial->setBounds(550*s, 10*s, masterSize, masterSize*1.5f);
     
     for (int i = 0; i < NUM_GLOBAL_CC; ++i)
     {
@@ -491,10 +491,13 @@ Array<Component*> ESAudioProcessorEditor::getAllChildren()
 //==============================================================================
 //==============================================================================
 
-ESModule::ESModule(ESAudioProcessorEditor& editor, AudioProcessorValueTreeState& vts, AudioComponent& ac) :
+ESModule::ESModule(ESAudioProcessorEditor& editor, AudioProcessorValueTreeState& vts, AudioComponent& ac,
+                   float relWidth, float relSpacing) :
 editor(editor),
 vts(vts),
-ac(ac)
+ac(ac),
+relWidth(relWidth),
+relSpacing(relSpacing)
 {
     setInterceptsMouseClicks(false, true);
     
@@ -516,12 +519,12 @@ void ESModule::resized()
     Rectangle<int> area = getLocalBounds();
     
     float x = area.getX();
-    float w = area.getWidth() / 5.f;
-    float dialWidth = w * 0.6f;
+    float w = area.getWidth() * relWidth;
+    float spacing = area.getWidth() * relSpacing;
     
     for (int i = 0; i < ac.paramNames.size(); ++i)
     {
-        dials[i]->setBounds(x + w*i + w*0.2f, 0, dialWidth, dialWidth * 1.6f);
+        dials[i]->setBounds(x + spacing*0.5f + (spacing + w)*i, 0, w, w * 1.6f);
 //        dials[i]->setSliderBounds(x + w*i + w*0.2f, 0, dialWidth, dialWidth * 1.35f);
 //        dials[i]->setLabelBounds(dials[i]->getSlider().getX() + dialWidth*0.5f - labelWidth*0.5f,
 //                                 dials[i]->getSlider().getY() + dialWidth*1.325f,
@@ -550,4 +553,51 @@ ESDial* ESModule::getDial (String param)
     int i = ac.paramNames.indexOf(param);
     if (i < 0) return nullptr;
     return dials[i];
+}
+
+//==============================================================================
+//==============================================================================
+
+LFOModule::LFOModule(ESAudioProcessorEditor& editor, AudioProcessorValueTreeState& vts,
+                     AudioComponent& ac) :
+ESModule(editor, vts, ac, 0.12f, 0.08f)
+{
+    syncToggle.setButtonText("Sync to note-on");
+    addAndMakeVisible(syncToggle);
+    buttonAttachments.add(new ButtonAttachment(vts, ac.name + "Sync", syncToggle));
+}
+
+LFOModule::~LFOModule()
+{
+    
+}
+
+void LFOModule::resized()
+{
+    ESModule::resized();
+    
+    Rectangle<int> area = getLocalBounds();
+    
+    float w = area.getWidth();
+    float h = area.getHeight();
+    float x = 2 * area.getWidth() / 3.f;
+    
+    syncToggle.setBounds(x, dials.getLast()->getY(), w * 0.25f, h * 0.2f);
+}
+
+//==============================================================================
+//==============================================================================
+
+OscModule::OscModule(ESAudioProcessorEditor& editor, AudioProcessorValueTreeState& vts,
+                     AudioComponent& ac) :
+ESModule(editor, vts, ac, 0.12f, 0.04f)
+{
+    // All oscs should have pitch as the first param,
+    // and the pitch slider should snap to ints
+    getDial(ac.paramNames[0])->getSlider().setRange(-24., 24., 1.);
+}
+
+OscModule::~OscModule()
+{
+    
 }
