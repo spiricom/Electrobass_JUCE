@@ -78,7 +78,6 @@ public:
                                bool shouldDrawButtonAsHighlighted,
                                bool shouldDrawButtonAsDown) override
     {
-        auto cornerSize = 6.0f;
         auto bounds = button.getLocalBounds().toFloat().reduced (0.5f, 0.5f);
         
         auto baseColour = backgroundColour.withMultipliedSaturation (button.hasKeyboardFocus (true) ? 1.3f : 0.9f)
@@ -139,7 +138,7 @@ public:
         if (textWidth > 0)
             g.drawFittedText (button.getButtonText(),
                               leftIndent, yIndent, textWidth, button.getHeight() - yIndent * 2,
-                              Justification::centredTop, 2);
+                              Justification::centred, 2);
     }
     
     void drawLinearSlider (Graphics& g, int x, int y, int width, int height,

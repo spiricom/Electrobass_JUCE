@@ -187,6 +187,10 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
                                                            StringArray("Off", "On"), 0));
     }
     
+    layout.add (std::make_unique<AudioParameterFloat>("Copedent Fundamental",
+                                                      "Copedent Fundamental",
+                                                      0.f, 60.f, 21.f));
+    
     return layout;
 }
 
@@ -273,6 +277,9 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
                 flat.add(value);
             }
         }
+        RangedAudioParameter* fund = vts.getParameter("Copedent Fundamental");
+        flat.add(fund->convertFrom0to1(fund->getValue()));
+        
         MidiMessage copedentMessage = MidiMessage::createSysExMessage(flat.getRawDataPointer(), sizeof(float) * flat.size());
         midiMessages.addEvent(copedentMessage, 0);
         waitingToSendCopedent = false;

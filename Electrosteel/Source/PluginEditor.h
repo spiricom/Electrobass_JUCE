@@ -78,9 +78,6 @@ private:
     
     Component tab2;
     CopedentTable copedentTable;
-    TextButton exportButton;
-    TextButton importButton;
-    TextButton sendOutButton;
     
     Label versionLabel;
     std::unique_ptr<Drawable> logo;

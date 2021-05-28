@@ -20,7 +20,7 @@ vts(vts),
 tabs(TabbedButtonBar::Orientation::TabsAtTop),
 keyboard(p.keyboardState, MidiKeyboardComponent::Orientation::horizontalKeyboard),
 envsAndLFOs(TabbedButtonBar::TabsAtTop),
-copedentTable(processor.copedentArray),
+copedentTable(processor, vts),
 constrain(new ComponentBoundsConstrainer()),
 resizer(new ResizableCornerComponent (this, constrain.get())),
 chooser("Select a .wav file to load...", {}, "*.wav")
@@ -165,21 +165,6 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     
     tab2.addAndMakeVisible(copedentTable);
     
-    exportButton.setButtonText("Export .xml");
-    exportButton.setLookAndFeel(&laf);
-    exportButton.onClick = [this] { copedentTable.exportXml(); };
-    tab2.addAndMakeVisible(exportButton);
-    
-    importButton.setButtonText("Import .xml");
-    importButton.setLookAndFeel(&laf);
-    importButton.onClick = [this] { copedentTable.importXml(); };
-    tab2.addAndMakeVisible(importButton);
-    
-    sendOutButton.setButtonText("Send via MIDI");
-    sendOutButton.setLookAndFeel(&laf);
-    sendOutButton.onClick = [this] { processor.sendCopedentMidiMessage(); };
-    tab2.addAndMakeVisible(sendOutButton);
-    
     //==============================================================================
     
     tabs.addTab("Synth", Colours::black, &tab1, false);
@@ -220,9 +205,6 @@ ESAudioProcessorEditor::~ESAudioProcessorEditor()
     envsAndLFOs.setLookAndFeel(nullptr);
     for (int i = 0; i < CopedentColumnNil; ++i)
         copedentButtons[i]->setLookAndFeel(nullptr);
-    exportButton.setLookAndFeel(nullptr);
-    importButton.setLookAndFeel(nullptr);
-    sendOutButton.setLookAndFeel(nullptr);
 }
 
 //==============================================================================
@@ -289,10 +271,7 @@ void ESAudioProcessorEditor::resized()
     //==============================================================================
     // TAB2 ========================================================================
     
-    copedentTable.setBoundsRelative(0.05f, 0.1f, 0.9f, 0.7f);
-    exportButton.setBoundsRelative(0.05f, 0.85f, 0.15f, 0.05f);
-    importButton.setBoundsRelative(0.21f, 0.85f, 0.15f, 0.05f);
-    sendOutButton.setBoundsRelative(0.37f, 0.85f, 0.15f, 0.05f);
+    copedentTable.setBoundsRelative(0.05f, 0.1f, 0.9f, 0.8f);
 
     //==============================================================================
     
@@ -333,7 +312,7 @@ void ESAudioProcessorEditor::resizedChannelSelection()
             w += offset;
             offset = 0.0f;
         }
-        Rectangle<float> bounds ((width * 0.04f) * i + offset, yf*s, w, 42*s);
+        Rectangle<float> bounds ((width * 0.04f) * i + offset, yf*s, w, 37*s);
         channelSelection[i]->setBounds(Rectangle<int>::leftTopRightBottom ((bounds.getX()),
                                                                            (bounds.getY()),
                                                                            (bounds.getRight()),

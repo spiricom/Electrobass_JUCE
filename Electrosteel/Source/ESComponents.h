@@ -207,14 +207,17 @@ class CopedentTable : public Component,
                       public ComboBox::Listener
 {
 public:
-    CopedentTable(Array<Array<float>>& array) :
-    copedentArray(array),
-    exportChooser("Export copedent to file...",
+    CopedentTable(ESAudioProcessor& p, AudioProcessorValueTreeState& vts) :
+    processor(p),
+    copedentArray(processor.copedentArray),
+    fundamental(vts.getParameter("Copedent Fundamental")),
+    exportChooser("Export copedent to .xml...",
                   File::getSpecialLocation(File::userDocumentsDirectory),
                   "*.xml"),
-    importChooser("Import copedent file...",
+    importChooser("Import copedent .xml...",
                   File::getSpecialLocation(File::userDocumentsDirectory),
-                  "*.xml")
+                  "*.xml"),
+    fundamentalField(*this)
     {
         for (int i = 0; i < CopedentColumnNil; ++i)
         {
@@ -264,6 +267,29 @@ public:
         addAndMakeVisible (leftTable);
         addAndMakeVisible (pedalTable);
         addAndMakeVisible (rightTable);
+        
+        fundamentalField.setRowAndColumn(0, 0);
+        fundamentalField.setLookAndFeel(&laf);
+        addAndMakeVisible (fundamentalField);
+        
+        fundamentalLabel.setText("Fundamental", dontSendNotification);
+        fundamentalLabel.setLookAndFeel(&laf);
+        addAndMakeVisible (fundamentalLabel);
+        
+        exportButton.setButtonText("Export .xml");
+        exportButton.setLookAndFeel(&laf);
+        exportButton.onClick = [this] { exportXml(); };
+        addAndMakeVisible(exportButton);
+        
+        importButton.setButtonText("Import .xml");
+        importButton.setLookAndFeel(&laf);
+        importButton.onClick = [this] { importXml(); };
+        addAndMakeVisible(importButton);
+        
+        sendOutButton.setButtonText("Send via MIDI");
+        sendOutButton.setLookAndFeel(&laf);
+        sendOutButton.onClick = [this] { processor.sendCopedentMidiMessage(); };
+        addAndMakeVisible(sendOutButton);
     }
     
     ~CopedentTable()
@@ -272,6 +298,10 @@ public:
         leftTable.setLookAndFeel(nullptr);
         pedalTable.setLookAndFeel(nullptr);
         rightTable.setLookAndFeel(nullptr);
+        fundamentalField.setLookAndFeel(nullptr);
+        exportButton.setLookAndFeel(nullptr);
+        importButton.setLookAndFeel(nullptr);
+        sendOutButton.setLookAndFeel(nullptr);
     }
     
     //==============================================================================
@@ -289,7 +319,7 @@ public:
             File file(path);
             
             ValueTree copedentVT("Copedent");
-            
+        
             for (int c = 0; c < numColumns; ++c)
             {
                 String name = String(cCopedentColumnNames[c]);
@@ -300,6 +330,9 @@ public:
                 }
                 copedentVT.addChild(child, -1, nullptr);
             }
+            
+            float f = fundamental->convertFrom0to1(fundamental->getValue());
+            copedentVT.setProperty("Fundamental", f, nullptr);
             
             std::unique_ptr<XmlElement> xml = copedentVT.createXml();
             
@@ -333,24 +366,30 @@ public:
                 copedentArray.getReference(c).set(r, value);
             }
         }
+        float f = fundamental->convertTo0to1(xml->getDoubleAttribute("Fundamental"));
+        fundamental->setValueNotifyingHost(f);
         resized();
     }
     
     String getTextFromData (const int columnNumber, const int rowNumber, bool asDestination) const
     {
-        double value = copedentArray[columnNumber-1][rowNumber];
+        double value;
+        if (columnNumber == 0)
+            value = fundamental->convertFrom0to1(fundamental->getValue());
+        else
+            value = copedentArray[columnNumber-1][rowNumber];
         
-        if (value == 0.0) return String();
+        if (columnNumber > 1 && value == 0.0) return String();
         
-        // Not really important since tuning doesn't matter much at precision this high,
+        // Not really important since tuning shouldn't matter much at precision this high,
         // but this will stop any potential ugly numbers from displaying
         value = round( value * 10000. ) / 10000.;
         
         String text = String();
-        bool displayAsDestination = columnNumber == 1 || asDestination;
+        bool displayAsDestination = columnNumber <= 1 || asDestination;
         if (displayAsDestination)
         {
-            if (columnNumber != 1)
+            if (columnNumber > 1)
             {
 //                if (value > 0.0f) for (int i = 0; i < value; ++i) text += String("+");
 //                else for (int i = 0; i < -value; ++i) text += String("-");
@@ -383,9 +422,26 @@ public:
         String text = newText.toUpperCase().removeCharacters(" ");
         
         double value;
-        if (!text.containsAnyOf("CDEFGAB"))
+        if (text.isEmpty()) value = 0.0f;
+        else if (!text.containsAnyOf("CDEFGAB"))
         {
             value = text.getDoubleValue();
+            if (text.contains("/"))
+            {
+                float f = fundamental->convertFrom0to1(fundamental->getValue());
+                float h = mtof(f);
+                value = ftom(value * h);
+            }
+
+            // Value isn't an offset
+            if (!text.startsWith("+") && !text.startsWith("-"))
+            {
+                // Change value to an offset if not string column
+                if (columnNumber > 1)
+                {
+                    value -= copedentArray[0][rowNumber];
+                }
+            }
         }
         else if (!text.containsOnly("0123456789CDEFGAB#+-.,"))
         {
@@ -448,12 +504,18 @@ public:
             }
             
             // Change value to an offset if not string column
-            if (columnNumber != 1)
+            if (columnNumber > 1)
             {
                 value -= copedentArray[0][rowNumber];
             }
         }
-        copedentArray.getReference(columnNumber-1).set(rowNumber, value);
+        if (columnNumber == 0)
+        {
+            float f = fundamental->convertTo0to1(value);
+            fundamental->setValueNotifyingHost(f);
+        }
+        else
+            copedentArray.getReference(columnNumber-1).set(rowNumber, value);
         if (columnNumber == 1) resized();
     }
     
@@ -516,9 +578,22 @@ public:
     {
         Rectangle<int> area = getLocalBounds();
         
+        int h = area.getHeight();
         int n = (numColumns*2)+3;
         int w = area.getWidth() / n;
         int r = area.getWidth() - (w*n) - 2;
+        
+        Rectangle<int> bottomArea = area.removeFromBottom(h*0.125);
+        bottomArea.removeFromTop(h*0.05);
+        fundamentalLabel.setBounds(bottomArea.removeFromLeft(w*3).reduced(0, h*0.012));
+        fundamentalField.setBounds(bottomArea.removeFromLeft(w*4));
+        
+        bottomArea.removeFromRight(1);
+        sendOutButton.setBounds(bottomArea.removeFromRight(w*4));
+        bottomArea.removeFromRight(w);
+        importButton.setBounds(bottomArea.removeFromRight(w*4));
+        bottomArea.removeFromRight(w);
+        exportButton.setBounds(bottomArea.removeFromRight(w*4));
 
         stringTable.setBounds(area.removeFromLeft(w*2+r));
         area.removeFromLeft(w);
@@ -544,7 +619,7 @@ public:
         rightTable.getHeader().setColumnWidth(columnId++, w*2-1);
         rightTable.getHeader().setColumnWidth(columnId++, w*2-1);
         
-        int h = stringTable.getHeight() / (numRows+1);
+        h = stringTable.getHeight() / (numRows+1);
         r = stringTable.getHeight() - (h*(numRows+1)) - 2;
         stringTable.setHeaderHeight(h+r);
         stringTable.setRowHeight(h);
@@ -556,19 +631,25 @@ public:
         rightTable.setRowHeight(h);
     }
     
-    
 private:
+    
+    ESAudioProcessor& processor;
     
     TableListBox stringTable;
     TableListBox leftTable;
     TableListBox pedalTable;
     TableListBox rightTable;
     
+    TextButton exportButton;
+    TextButton importButton;
+    TextButton sendOutButton;
+    
     static const int numColumns = CopedentColumnNil;
     static const int numRows = NUM_VOICES;        // Number of strings
     
     StringArray columnList;
     Array<Array<float>>& copedentArray;
+    RangedAudioParameter* fundamental;
     
     FileChooser exportChooser;
     FileChooser importChooser;
@@ -585,6 +666,7 @@ private:
             // double click to edit the label text; single click handled below
             setEditable (true, true, false);
             setJustificationType(Justification::centred);
+            setColour(Label::backgroundColourId, Colours::darkgrey.withBrightness(0.1f));
         }
         
         void mouseDown (const MouseEvent& event) override
@@ -618,7 +700,8 @@ private:
             Label::paint (g);
             g.setColour(Colours::lightgrey);
             g.fillRect(0, getHeight()-1, getWidth(), 1);
-            if (columnId != 1 && columnId != 4 && columnId != 9 && columnId != 11)
+            if (columnId != 0 && columnId != 1 && columnId != 4 &&
+                columnId != 9 && columnId != 11)
                 g.fillRect(getWidth()-1, 0, 1, getHeight());
             
             if (TextEditor* editor = getCurrentTextEditor())
@@ -630,6 +713,9 @@ private:
         int row, columnId;
         Colour textColour;
     };
+    
+    EditableTextCustomComponent fundamentalField;
+    Label fundamentalLabel;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (CopedentTable)
 };
