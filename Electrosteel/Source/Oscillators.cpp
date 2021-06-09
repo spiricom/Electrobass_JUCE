@@ -155,7 +155,8 @@ void LowFreqOscillator::tick()
 
 void LowFreqOscillator::noteOn(int voice, float velocity)
 {
-    if (sync->getValue() > 0) tCycle_setPhase(&lfo[voice], phaseReset);
+    //TODO: gotta put phase sync back into LEAF
+    //if (sync->getValue() > 0) tCycle_setPhase(&lfo[voice], phaseReset);
 }
 
 void LowFreqOscillator::noteOff(int voice, float velocity)

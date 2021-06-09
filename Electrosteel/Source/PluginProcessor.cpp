@@ -252,6 +252,12 @@ bool ESAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 }
 #endif
 
+union flatUnion
+{
+    float f;
+    uint32_t i;
+};
+
 void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
@@ -270,6 +276,9 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
     if (waitingToSendCopedent)
     {
         Array<float> flat;
+        
+
+        
         for (auto column : copedentArray)
         {
             for (auto value : column)
@@ -277,11 +286,40 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
                 flat.add(value);
             }
         }
-        RangedAudioParameter* fund = vts.getParameter("Copedent Fundamental");
-        flat.add(fund->convertFrom0to1(fund->getValue()));
+
         
-        MidiMessage copedentMessage = MidiMessage::createSysExMessage(flat.getRawDataPointer(), sizeof(float) * flat.size());
-        midiMessages.addEvent(copedentMessage, 0);
+        //RangedAudioParameter* fund = vts.getParameter("Copedent Fundamental");
+        //flat.add(fund->convertFrom0to1(fund->getValue()));
+        
+
+        Array<uint8_t> flat7bitInt;
+        
+        union flatUnion fu;
+        
+        for (int j =0; j < 11; j++)
+        {
+            flat7bitInt.clear();
+            
+            flat7bitInt.add(1); // saying it's a copedent
+            flat7bitInt.add(1); // saying which copedent number to store (need this to be a user entered value
+            flat7bitInt.add(50 + j);
+            
+            for (int i = 0; i < 12; i++)
+            {
+                fu.f = flat[i + (j*12)];
+                flat7bitInt.add((fu.i >> 28) & 15);
+                flat7bitInt.add((fu.i >> 21) & 127);
+                flat7bitInt.add((fu.i >> 14) & 127);
+                flat7bitInt.add((fu.i >> 7) & 127);
+                flat7bitInt.add(fu.i & 127);
+            }
+            
+            
+            
+            MidiMessage copedentMessage = MidiMessage::createSysExMessage(flat7bitInt.getRawDataPointer(), sizeof(uint8_t) * flat7bitInt.size());
+            
+            midiMessages.addEvent(copedentMessage, 0);
+        }
         waitingToSendCopedent = false;
     }
     
