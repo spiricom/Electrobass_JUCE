@@ -301,7 +301,7 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
             flat7bitInt.clear();
             
             flat7bitInt.add(1); // saying it's a copedent
-            flat7bitInt.add(1); // saying which copedent number to store (need this to be a user entered value
+            flat7bitInt.add(1); // saying which copedent number to store (need this to be a user entered value)
             flat7bitInt.add(50 + j);
             
             for (int i = 0; i < 12; i++)
