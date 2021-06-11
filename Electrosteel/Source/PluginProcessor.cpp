@@ -13,6 +13,141 @@
 #include "PluginEditor.h"
 
 //==============================================================================
+AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterLayout()
+{
+    AudioProcessorValueTreeState::ParameterLayout layout;
+    
+    //==============================================================================
+    // Top level parameters
+    
+    for (int i = 0; i < NUM_MACROS; ++i)
+    {
+        layout.add (std::make_unique<AudioParameterFloat> ("M" + String(i+1),
+                                                           "M" + String(i+1),
+                                                           0., 1., 0.));
+    }
+    
+    for (int i = 0; i < NUM_CHANNELS; ++i)
+    {
+        layout.add (std::make_unique<AudioParameterFloat> ("PitchBend" + String(i),
+                                                           "PitchBend" + String(i),
+                                                           -24., 24., 0.));
+    }
+    
+    //==============================================================================
+    for (int i = 0; i < cOscParams.size(); ++i)
+    {
+        float min = vOscInit[i][0];
+        float max = vOscInit[i][1];
+        float def = vOscInit[i][2];
+        for (int j = 0; j < NUM_OSCS; ++j)
+        {
+            String n = "Osc" + String(j+1) + cOscParams[i];
+            layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
+        }
+    }
+    for (int i = 0; i < NUM_OSCS; ++i)
+    {
+        String n = "Osc" + String(i+1);
+        layout.add (std::make_unique<AudioParameterChoice> (n, n, StringArray("Off", "On"), 1));
+        n = "Osc" + String(i+1) + "ShapeSet";
+        layout.add (std::make_unique<AudioParameterChoice> (n, n, oscSetNames, 0));
+        n = "Osc" + String(i+1) + "FilterSend";
+        layout.add (std::make_unique<AudioParameterFloat> (n, n, 0.f, 1.f, 0.5f));
+    }
+    
+    //==============================================================================
+    for (int i = 0; i < cFilterParams.size(); ++i)
+    {
+        float min = vFilterInit[i][0];
+        float max = vFilterInit[i][1];
+        float def = vFilterInit[i][2];
+        for (int j = 0; j < NUM_FILT; ++j)
+        {
+            String n = "Filter" + String(j+1) + cFilterParams[i];
+            layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
+        }
+    }
+    for (int i = 0; i < NUM_FILT; ++i)
+    {
+        String n = "Filter" + String(i+1);
+        layout.add (std::make_unique<AudioParameterChoice> (n, n, StringArray("Off", "On"), 1));
+        n = "Filter" + String(i+1) + "Type";
+        layout.add (std::make_unique<AudioParameterChoice> (n, n, oscSetNames, 0));
+    }
+    
+    layout.add (std::make_unique<AudioParameterFloat> ("Filter Series-Parallel Mix",
+                                                       "Filter Series-Parallel Mix",
+                                                       0., 1., 0.));
+    
+    //==============================================================================
+    for (int i = 0; i < cEnvelopeParams.size(); ++i)
+    {
+        float min = vEnvelopeInit[i][0];
+        float max = vEnvelopeInit[i][1];
+        float def = vEnvelopeInit[i][2];
+        for (int j = 0; j < NUM_ENVS; ++j)
+        {
+            String n = "Envelope" + String(j+1) + cEnvelopeParams[i];
+            layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
+        }
+    }
+    for (int i = 0; i < NUM_ENVS; ++i)
+    {
+        String n = "Envelope" + String(i+1) + "Velocity";
+        layout.add (std::make_unique<AudioParameterChoice> (n, n, StringArray("Off", "On"), 1));
+    }
+    
+    //==============================================================================
+    for (int i = 0; i < cLowFreqParams.size(); ++i)
+    {
+        float min = vLowFreqInit[i][0];
+        float max = vLowFreqInit[i][1];
+        float def = vLowFreqInit[i][2];
+        for (int j = 0; j < NUM_LFOS; ++j)
+        {
+            String n = "LFO" + String(j+1) + cLowFreqParams[i];
+            layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
+        }
+    }
+    for (int i = 0; i < NUM_LFOS; ++i)
+    {
+        String n = "LFO" + String(i+1) + "Sync";
+        layout.add (std::make_unique<AudioParameterChoice> (n, n, StringArray("Off", "On"), 0));
+        n = "LFO" + String(i+1) + "ShapeSet";
+        layout.add (std::make_unique<AudioParameterChoice> (n, n, oscSetNames, 0));
+    }
+    
+    //==============================================================================
+    for (int i = 0; i < cOutputParams.size(); ++i)
+    {
+        float min = vOutputInit[i][0];
+        float max = vOutputInit[i][1];
+        float def = vOutputInit[i][2];
+        String n = "Output" + cOutputParams[i];
+        layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
+    }
+    
+    layout.add (std::make_unique<AudioParameterFloat> ("Master", "Master",
+                                                       0., 2., 1.));
+    
+    //==============================================================================
+    for (int i = 1; i < CopedentColumnNil; ++i)
+    {
+        layout.add (std::make_unique<AudioParameterChoice>(cCopedentColumnNames[i],
+                                                           cCopedentColumnNames[i],
+                                                           StringArray("Off", "On"), 0));
+    }
+    
+    layout.add (std::make_unique<AudioParameterFloat>("Copedent Fundamental",
+                                                      "Copedent Fundamental",
+                                                      0.f, 60.f, 21.f));
+    
+    return layout;
+}
+
+//==============================================================================
+//==============================================================================
 ESAudioProcessor::ESAudioProcessor()
 #ifndef JucePlugin_PreferredChannelConfigurations
 : AudioProcessor (BusesProperties()
@@ -33,61 +168,69 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
     
     leaf.clearOnAllocation = 1;
     
-    for (int i = 0; i < NUM_VOICES; i++)
+    tSimplePoly_init(&strings[0], 12, &leaf);
+    tSimplePoly_setNumVoices(&strings[0], 1);
+    for (int i = 1; i < NUM_STRINGS; i++)
     {
-        tSimplePoly_init(&voice[i], 1, &leaf);
+        tSimplePoly_init(&strings[i], 1, &leaf);
         voiceFreq[i] = 220.0f;
     }
 
     leaf.clearOnAllocation = 0;
     
-    
-    for (int i = 0; i < 2; ++i)
+    for (int i = 0; i < NUM_OSCS; ++i)
     {
-        String s (i+1);
-        sposcs.add(new SawPulseOscillator("SawPulse" + s, *this, vts, cSawPulseParams));
-        lps.add(new LowpassFilter("Lowpass" + s, *this, vts, cLowpassParams));
+        oscs.add(new Oscillator("Osc" + String(i+1), *this, vts));
     }
+    
+    for (int i = 0; i < NUM_FILT; ++i)
+    {
+        filt.add(new Filter("Filter" + String(i+1), *this, vts));
+    }
+    
+    afpSeriesParallel = vts.getRawParameterValue("Filter Series-Parallel Mix");
     
     for (int i = 0; i < NUM_ENVS; ++i)
     {
-        envs.add(new Envelope("Envelope" + String(i+1), *this, vts, cEnvelopeParams));
+        envs.add(new Envelope("Envelope" + String(i+1), *this, vts));
     }
     
     for (int i = 0; i < NUM_LFOS; ++i)
     {
-        lfos.add(new LowFreqOscillator("LFO" + String(i+1), *this, vts, cLowFreqParams));
+        lfos.add(new LowFreqOscillator("LFO" + String(i+1), *this, vts));
     }
+    
+    output = std::make_unique<Output>("Output", *this, vts);
     
     // Make a SmoothedParameter for each voice from the single AudioParameter
     // to allow for env mapping
-    for (int i = 0; i < NUM_VOICES; ++i)
+    for (int i = 0; i < NUM_STRINGS; ++i)
     {
-        voiceAmpParams.add(new SmoothedParameter(*this, vts, "Amp"));
-        voiceAmpParams[i]->setHook(0, &(envs[3]->getValuePointer()[i]),
-                                   0.0, 1.0, HookAdd);
-        lps[0]->getParameter(LowpassCutoff)[i]->setHook(0, envs[0]->getValuePointer(),
-                                                        0.f, 5000.f, HookAdd);
+        output->getParameter(OutputAmp)[i]->setHook(2, &(envs[NUM_ENVS-1]->getValuePointer()[i]),
+                                                    0.0, 1.0, HookAdd);
+        filt[0]->getParameter(FilterCutoff)[i]->setHook(2, envs[NUM_ENVS-1]->getValuePointer(),
+                                                       0.f, 5000.f, HookAdd);
     }
     
-    for (int i = 0; i < NUM_GLOBAL_CC; ++i)
+    for (int i = 0; i < NUM_MACROS; ++i)
     {
-        ccParams.add(new SmoothedParameter(*this, vts, "CC" + String(i+1)));
+        ccParams.add(new SmoothedParameter(*this, vts, "M" + String(i+1)));
     }
     
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
-        pitchBendParams.add(new SmoothedParameter(*this, vts, "PitchBendCh" + String(i+1)));
+        pitchBendParams.add(new SmoothedParameter(*this, vts, "PitchBend" + String(i)));
+        midiChannelNoteCount[i+1] = 0;
+        midiChannelActivity[i+1] = 0;
+        channelToString[i+1] = i;
     }
-    
-    masterVolume = std::make_unique<SmoothedParameter>(*this, vts, "Master");
     
     //==============================================================================
     
     for (int i = 0; i < CopedentColumnNil; ++i)
     {
         copedentArray.add(Array<float>());
-        for (int v = 0; v < NUM_VOICES; ++v)
+        for (int v = 0; v < NUM_STRINGS; ++v)
         {
             copedentArray.getReference(i).add(cCopedentArrayInit[i][v]);
         }
@@ -100,113 +243,19 @@ ESAudioProcessor::~ESAudioProcessor()
 }
 
 //==============================================================================
-AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterLayout()
-{
-    AudioProcessorValueTreeState::ParameterLayout layout;
-    
-    //==============================================================================
-    // Top level parameters
-    layout.add (std::make_unique<AudioParameterFloat> ("Master", "Master",
-                                                       0., 2., 1.));
-    
-    layout.add (std::make_unique<AudioParameterFloat> ("Amp", "Amp",
-                                                       0., 2., 0.));
-    
-    for (int i = 0; i < NUM_GLOBAL_CC; ++i)
-    {
-        layout.add (std::make_unique<AudioParameterFloat> ("CC" + String(i+1),
-                                                           "CC" + String(i+1),
-                                                           0., 1., 0.));
-    }
-    
-    for (int i = 0; i < NUM_CHANNELS; ++i)
-    {
-        layout.add (std::make_unique<AudioParameterFloat> ("PitchBendCh" + String(i+1),
-                                                           "PitchBendCh" + String(i+1),
-                                                           -24., 24., 0.));
-    }
-    //==============================================================================
-    
-    for (int i = 0; i < cSawPulseParams.size(); ++i)
-    {
-        float min = vSawPulseInit[i][0];
-        float max = vSawPulseInit[i][1];
-        float def = vSawPulseInit[i][2];
-        for (int j = 0; j < 2 /* NUM SPOSC */; ++j)
-        {
-            String n = "SawPulse" + String(j+1) + cSawPulseParams[i];
-            layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
-        }
-    }
-    
-    for (int i = 0; i < cLowpassParams.size(); ++i)
-    {
-        float min = vLowpassInit[i][0];
-        float max = vLowpassInit[i][1];
-        float def = vLowpassInit[i][2];
-        for (int j = 0; j < 2 /* NUM LP */; ++j)
-        {
-            String n = "Lowpass" + String(j+1) + cLowpassParams[i];
-            layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
-        }
-    }
-    
-    for (int i = 0; i < cEnvelopeParams.size(); ++i)
-    {
-        float min = vEnvelopeInit[i][0];
-        float max = vEnvelopeInit[i][1];
-        float def = vEnvelopeInit[i][2];
-        for (int j = 0; j < NUM_ENVS; ++j)
-        {
-            String n = "Envelope" + String(j+1) + cEnvelopeParams[i];
-            layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
-        }
-    }
-    
-    for (int i = 0; i < cLowFreqParams.size(); ++i)
-    {
-        float min = vLowFreqInit[i][0];
-        float max = vLowFreqInit[i][1];
-        float def = vLowFreqInit[i][2];
-        for (int j = 0; j < NUM_LFOS; ++j)
-        {
-            String n = "LFO" + String(j+1) + cLowFreqParams[i];
-            layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
-        }
-    }
-    for (int j = 0; j < NUM_LFOS; ++j)
-    {
-        String n = "LFO" + String(j+1) + "Sync";
-        layout.add (std::make_unique<AudioParameterChoice> (n, n, StringArray("Off", "On"), 0));
-    }
-    
-    for (int i = 1; i < CopedentColumnNil; ++i)
-    {
-        layout.add (std::make_unique<AudioParameterChoice>(cCopedentColumnNames[i],
-                                                           cCopedentColumnNames[i],
-                                                           StringArray("Off", "On"), 0));
-    }
-    
-    layout.add (std::make_unique<AudioParameterFloat>("Copedent Fundamental",
-                                                      "Copedent Fundamental",
-                                                      0.f, 60.f, 21.f));
-    
-    return layout;
-}
-
-//==============================================================================
 void ESAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
+    midiChannelActivityTimeout = sampleRate/samplesPerBlock/2;
     LEAF_setSampleRate(&leaf, sampleRate);
     for (auto param : params)
     {
         param->setSampleRate(sampleRate);
     }
-    for (auto sposc : sposcs)
+    for (auto sposc : oscs)
     {
         sposc->prepareToPlay(sampleRate, samplesPerBlock);
     }
-    for (auto lp : lps)
+    for (auto lp : filt)
     {
         lp->prepareToPlay(sampleRate, samplesPerBlock);
     }
@@ -276,9 +325,7 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
     if (waitingToSendCopedent)
     {
         Array<float> flat;
-        
-
-        
+    
         for (auto column : copedentArray)
         {
             for (auto value : column)
@@ -324,7 +371,7 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
     }
     
     Array<float> resolvedCopedent;
-    for (int r = 0; r < NUM_VOICES; ++r)
+    for (int r = 0; r < NUM_STRINGS; ++r)
     {
         float minBelowZero = 0.0f;
         float maxAboveZero = 0.0f;
@@ -340,18 +387,32 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
         resolvedCopedent.add(minBelowZero + maxAboveZero);
     }
     
+    for (int i = 0; i < oscs.size(); ++i)
+    {
+        oscs[i]->frame();
+    }
+    for (int i = 0; i < filt.size(); ++i)
+    {
+        filt[i]->frame();
+    }
     for (int i = 0; i < envs.size(); ++i)
     {
         envs[i]->frame();
     }
-//    for (int i = 0; i < lfos.size(); ++i)
-//    {
-//        lfos[i]->frame();
-//    }
+    for (int i = 0; i < lfos.size(); ++i)
+    {
+        lfos[i]->frame();
+    }
+
+    float parallel = *afpSeriesParallel;
     
+    int mpe = mpeMode ? 1 : 0;
+    int impe = 1-mpe;
+    
+    float samples[2], filterSamples[2];
     for (int i = 0; i < buffer.getNumSamples(); i++)
     {
-        for (int p = 0; p < NUM_GLOBAL_CC; ++p)
+        for (int p = 0; p < NUM_MACROS; ++p)
         {
             ccParams[p]->tick();
         }
@@ -363,12 +424,13 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
         {
             lfos[i]->tick();
         }
-        float sample = 0.f;
+        samples[0] = 0.f;
+        samples[1] = 0.f;
         float globalPitchBend = pitchBendParams[0]->tick();
-        for (int v = 0; v < NUM_VOICES; ++v)
+        for (int v = 0; v < NUM_STRINGS; ++v)
         {
             float pitchBend = globalPitchBend + pitchBendParams[v+1]->tick();
-            float tempNote = (float)tSimplePoly_getPitch(&voice[v], 0);
+            float tempNote = (float)tSimplePoly_getPitch(&strings[v*mpe], v*impe);
             tempNote += resolvedCopedent[v];
             tempNote += pitchBend;
             float tempPitchClass = ((((int)tempNote) - keyCenter) % 12 );
@@ -377,20 +439,27 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
             voiceFreq[v] = LEAF_midiToFrequency(tunedNote);
             if (voiceFreq[v] < 10.0f) voiceFreq[v] = 0.0f;
             
-            float voiceSample = 0.f;
-            voiceSample = sposcs[0]->tick(v);
-            voiceSample = lps[0]->tick(v, voiceSample);
-            voiceSample *= voiceAmpParams[v]->tick();
-            sample += voiceSample;
+            filterSamples[0] = 0.f;
+            filterSamples[1] = 0.f;
+            for (int i = 0; i < oscs.size(); ++i)
+            {
+                oscs[i]->tick(v, filterSamples);
+            }
+            
+            float filter1 = filt[0]->tick(v, filterSamples[0]);
+            float sample = filt[1]->tick(v, filterSamples[1] + filter1*(1.f-parallel))
+            + filter1*parallel;
+            output->tick(v, sample, samples, totalNumOutputChannels);
         }
-        
-        sample *= masterVolume->tick();
-        
+    
         for (int channel = 0; channel < totalNumOutputChannels; ++channel)
         {
-            buffer.setSample(channel, i, sample);
+            buffer.setSample(channel, i, samples[channel]);
         }
     }
+    
+    for (int i = 0; i < NUM_CHANNELS; ++i)
+        if (midiChannelActivity[i] > 0) midiChannelActivity[i]--;
 }
 
 //==============================================================================
@@ -407,39 +476,47 @@ juce::AudioProcessorEditor* ESAudioProcessor::createEditor()
 //==============================================================================
 void ESAudioProcessor::handleNoteOn(MidiKeyboardState*, int midiChannel, int midiNoteNumber, float velocity)
 {
-    if (midiChannel > 1) noteOn(midiChannel, midiNoteNumber, velocity);
+    if (mpeMode) midiChannelNoteCount[midiChannel]++;
+    noteOn(midiChannel, midiNoteNumber, velocity);
 }
 
 void ESAudioProcessor::handleNoteOff(MidiKeyboardState*, int midiChannel, int midiNoteNumber, float velocity)
 {
-    if (midiChannel > 1) noteOff(midiChannel, midiNoteNumber, velocity);
+    if (mpeMode) midiChannelNoteCount[midiChannel]--;
+    noteOff(midiChannel, midiNoteNumber, velocity);
 }
 
 //==============================================================================
 void ESAudioProcessor::handleMidiMessage(const MidiMessage& m)
 {
-    int channel = m.getChannel();
     if (m.isNoteOnOrOff())
     {
-        if (channel > 1) keyboardState.processNextMidiEvent(m);
+        keyboardState.processNextMidiEvent(m);
     }
-    else if (m.isPitchWheel())
+    else
     {
-        pitchBend(channel, m.getPitchWheelValue());
-    }
-    else if (m.isController())
-    {
-        ctrlInput(channel, m.getControllerNumber(), m.getControllerValue());
+        int channel = mpeMode ? m.getChannel() : 1;
+        if (mpeMode) midiChannelActivity[channel] = midiChannelActivityTimeout;
+        if (m.isPitchWheel())
+        {
+            pitchBend(channel, m.getPitchWheelValue());
+        }
+        else if (m.isController())
+        {
+            ctrlInput(channel, m.getControllerNumber(), m.getControllerValue());
+        }
     }
 }
 
 void ESAudioProcessor::noteOn(int channel, int key, float velocity)
 {
-    int i = channel-2;
+    int i = mpeMode ? channelToString[channel]-1 : 0;
+    if (i < 0) return;
     if (!velocity) noteOff(channel, key, velocity);
     else
     {
-        int v = tSimplePoly_noteOn(&voice[i], key, velocity * 127.f);
+        int v = tSimplePoly_noteOn(&strings[i], key, velocity * 127.f);
+        if (!mpeMode) i = v;
         
         if (v >= 0)
         {
@@ -447,30 +524,21 @@ void ESAudioProcessor::noteOn(int channel, int key, float velocity)
             for (auto o : lfos) o->noteOn(i, velocity);
         }
     }
-    
-    if (tSimplePoly_getNumActiveVoices(&voice[i]) >= 1)
-    {
-        //        setLED_2(vcd, 0);
-    }
 }
 
 void ESAudioProcessor::noteOff(int channel, int key, float velocity)
 {
-    int i = channel-2;
-    
+    int i = mpeMode ? channelToString[channel]-1 : 0;
+    if (i < 0) return;
     // if we're monophonic, we need to allow fast voice stealing and returning
     // to previous stolen notes without regard for the release envelopes
-    int v = tSimplePoly_noteOff(&voice[i], key);
+    int v = tSimplePoly_noteOff(&strings[i], key);
+    if (!mpeMode) i = v;
     
     if (v >= 0)
     {
         for (auto e : envs) e->noteOff(i, velocity);
         for (auto o : lfos) o->noteOff(i, velocity);
-    }
-    
-    if (tSimplePoly_getNumActiveVoices(&voice[i]) < 1)
-    {
-        //        setLED_2(vcd, 0);
     }
 }
 
@@ -478,7 +546,14 @@ void ESAudioProcessor::pitchBend(int channel, int data)
 {
     // Parameters need to be set with a 0. to 1. range, but will use their set range when accessed
     float bend = data / 16383.f;
-    vts.getParameter("PitchBendCh" + String(channel))->setValueNotifyingHost(bend);
+    if (mpeMode)
+    {
+        vts.getParameter("PitchBend" + String(channelToString[channel]))->setValueNotifyingHost(bend);
+    }
+    else
+    {
+        vts.getParameter("PitchBend0")->setValueNotifyingHost(bend);
+    }
 }
 
 void ESAudioProcessor::ctrlInput(int channel, int ctrl, int value)
@@ -486,9 +561,9 @@ void ESAudioProcessor::ctrlInput(int channel, int ctrl, int value)
     float v = value / 127.f;
     if (channel == 1)
     {
-        if (1 <= ctrl && ctrl <= 5)
+        if (1 <= ctrl && ctrl <= NUM_MACROS)
         {
-            vts.getParameter("CC" + String(ctrl))->setValueNotifyingHost(v);
+            vts.getParameter("M" + String(ctrl))->setValueNotifyingHost(v);
         }
     }
 }
@@ -511,6 +586,24 @@ void ESAudioProcessor::toggleBypass()
 void ESAudioProcessor::toggleSustain()
 {
     
+}
+
+//==============================================================================
+bool ESAudioProcessor::midiChannelIsActive(int channel)
+{
+    return midiChannelNoteCount[channel] + midiChannelActivity[channel] > 0;
+}
+
+//==============================================================================
+bool ESAudioProcessor::getMPEMode()
+{
+    return mpeMode;
+}
+
+void ESAudioProcessor::setMPEMode(bool enabled)
+{
+    mpeMode = enabled;
+    tSimplePoly_setNumVoices(&strings[0], mpeMode ? 1 : 12);
 }
 
 //==============================================================================
@@ -584,18 +677,17 @@ void ESAudioProcessor::changeProgramName (int index, const juce::String& newName
 //==============================================================================
 void ESAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
-//    std::unique_ptr<juce::XmlElement> xml(new juce::XmlElement("Electrosteel"));
-//
-//    xml->setAttribute("editorScale", editorScale);
-//
-//    auto state = vts.copyState();
-//    xml->addChildElement(state.createXml().get());
-//
-//    copyXmlToBinary (*xml, destData);
-    
     auto state = vts.copyState();
     std::unique_ptr<juce::XmlElement> xml (state.createXml());
+    
     xml->setAttribute("editorScale", editorScale);
+    xml->setAttribute("mpeMode", mpeMode);
+    
+    for (int i = 0; i < NUM_CHANNELS; ++i)
+    {
+        xml->setAttribute("Ch" + String(i+1) + "String", channelToString[i+1]);
+    }
+    
     copyXmlToBinary (*xml, destData);
 }
 
@@ -603,21 +695,18 @@ void ESAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     std::unique_ptr<juce::XmlElement> xmlState(getXmlFromBinary(data, sizeInBytes));
     
-//    if (xmlState.get() != nullptr)
-//    {
-//        editorScale = xmlState->getDoubleAttribute("editorScale", 1.0);
-//        forEachXmlChildElementWithTagName(*xmlState, parameters, vts.state.getType())
-//        {
-//            vts.replaceState(ValueTree::fromXml(*parameters));
-//        }
-//    }
-    
     if (xmlState.get() != nullptr)
     {
         if (xmlState->hasTagName (vts.state.getType()))
             vts.replaceState (juce::ValueTree::fromXml (*xmlState));
         
-//        editorScale = xmlState->getDoubleAttribute("editorScale", 1.05);
+        editorScale = xmlState->getDoubleAttribute("editorScale", 1.05);
+        mpeMode = xmlState->getBoolAttribute("mpeMode", true);
+        
+        for (int i = 0; i < NUM_CHANNELS; ++i)
+        {
+            channelToString[i+1] = xmlState->getIntAttribute("Ch" + String(i+1) + "String", i);
+        }
     }
 }
 

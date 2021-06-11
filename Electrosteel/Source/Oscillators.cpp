@@ -13,103 +13,92 @@
 
 //==============================================================================
 
-SawPulseOscillator::SawPulseOscillator(const String& n, ESAudioProcessor& p,
-                                       AudioProcessorValueTreeState& vts, StringArray s) :
-AudioComponent(n, p, vts, s)
+Oscillator::Oscillator(const String& n, ESAudioProcessor& p,
+                       AudioProcessorValueTreeState& vts) :
+AudioComponent(n, p, vts, cOscParams, true)
 {
-    for (int i = 0; i < SawPulseParamNil; ++i)
+    for (int i = 0; i < OscParamNil; ++i)
     {
-        for (int v = 0; v < NUM_VOICES; ++v)
+        for (int v = 0; v < NUM_STRINGS; ++v)
         {
             ref[i][v] = params[i]->getUnchecked(v);
         }
     }
     
-    for (int i = 0; i < NUM_VOICES; i++)
+    for (int i = 0; i < NUM_STRINGS; i++)
     {
-        for (int j = 0; j < NUM_OSC_PER_VOICE; j++)
-        {
-            tSawtooth_init(&saw[i][j], &processor.leaf);
-            tRosenbergGlottalPulse_init(&pulse[i][j], &processor.leaf);
-            tRosenbergGlottalPulse_setOpenLength(&pulse[i][j], 0.3f);
-            tRosenbergGlottalPulse_setPulseLength(&pulse[i][j], 0.4f);
-            detune[i][j] = ((processor.leaf.random() * 0.0264f) - 0.0132f);
-        }
+        tSawtooth_init(&saw[i], &processor.leaf);
+        tRosenbergGlottalPulse_init(&pulse[i], &processor.leaf);
+        tRosenbergGlottalPulse_setOpenLength(&pulse[i], 0.3f);
+        tRosenbergGlottalPulse_setPulseLength(&pulse[i], 0.4f);
     }
-//    tCycle_init(&pwmLFO1, &processor.leaf);
-//    tCycle_init(&pwmLFO2, &processor.leaf);
-//    tCycle_setFreq(&pwmLFO1, 0.63f);
-//    tCycle_setFreq(&pwmLFO2, 0.7211f);
+    
+    afpFilterSend = vts.getRawParameterValue(n + "FilterSend");
 }
 
-SawPulseOscillator::~SawPulseOscillator()
+Oscillator::~Oscillator()
 {
     
 }
 
-void SawPulseOscillator::prepareToPlay (double sampleRate, int samplesPerBlock)
+void Oscillator::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     AudioComponent::prepareToPlay(sampleRate, samplesPerBlock);
-    for (int i = 0; i < NUM_VOICES; i++)
+    for (int i = 0; i < NUM_STRINGS; i++)
     {
-        for (int j = 0; j < NUM_OSC_PER_VOICE; j++)
-        {
-            tSawtooth_setSampleRate(&saw[i][j], sampleRate);
-            tRosenbergGlottalPulse_setSampleRate(&pulse[i][j], sampleRate);
-        }
+        tSawtooth_setSampleRate(&saw[i], sampleRate);
+        tRosenbergGlottalPulse_setSampleRate(&pulse[i], sampleRate);
     }
 //    tCycle_setSampleRate(&pwmLFO1, sampleRate);
 //    tCycle_setSampleRate(&pwmLFO2, sampleRate);
 }
 
-//void SawPulseOscillator::frame(int v)
-//{
-//
-//}
-
-float SawPulseOscillator::tick(int v)
+void Oscillator::frame()
 {
-    float pitch = ref[SawPulsePitch][v]->tick();
-    float fine = ref[SawPulseFine][v]->tick();
-    float shape = ref[SawPulseShape][v]->tick();
-    float detuneAmount = ref[SawPulseDetune][v]->tick();
-    float volume = ref[SawPulseVolume][v]->tick();
+    enabled = *afpEnabled > 0;
+}
+
+void Oscillator::tick(int v, float* output)
+{
+    if (!enabled) return;
+        
+    float pitch = ref[OscPitch][v]->tick();
+    float fine = ref[OscFine][v]->tick()*0.01f;
+    float shape = ref[OscShape][v]->tick();
+    float volume = ref[OscAmp][v]->tick();
     
 //    float tempLFO1 = (tCycle_tick(&pwmLFO1) * 0.25f) + 0.5f; // pulse length
 //    float tempLFO2 = ((tCycle_tick(&pwmLFO2) * 0.25f) + 0.5f) * tempLFO1; // open length
     
-    for (int i = 0; i < NUM_OSC_PER_VOICE; i++)
-    {
-        float tempFreq = processor.voiceFreq[v] * (1.0f + (detune[v][i] * detuneAmount));
-        tempFreq = mtof((ftom(tempFreq) + pitch + fine*0.01f));
-        tSawtooth_setFreq(&saw[v][i], tempFreq);
-        tRosenbergGlottalPulse_setFreq(&pulse[v][i], tempFreq);
+    float tempFreq = processor.voiceFreq[v];
+    tempFreq = mtof((ftom(tempFreq) + pitch + fine));
+    tSawtooth_setFreq(&saw[v], tempFreq);
+    tRosenbergGlottalPulse_setFreq(&pulse[v], tempFreq);
 //        tRosenbergGlottalPulse_setPulseLength(&glottal[v][i], tempLFO1);
 //        tRosenbergGlottalPulse_setOpenLength(&glottal[v][i], tempLFO2);
-    }
     
     float sample = 0.0f;
     
-    for (int i = 0; i < NUM_OSC_PER_VOICE; i++)
-    {
-        sample += tSawtooth_tick(&saw[v][i]) * (1.0f - shape);
-        sample += tRosenbergGlottalPulse_tickHQ(&pulse[v][i]) * shape;
-    }
+    sample += tSawtooth_tick(&saw[v]) * (1.0f - shape);
+    sample += tRosenbergGlottalPulse_tickHQ(&pulse[v]) * shape;
     
     sample *= INV_NUM_OSC_PER_VOICE * volume;
     sample = tanhf(sample);
-    return sample;
+    
+    float f = *afpFilterSend;
+    output[0] += sample*f;
+    output[1] += sample*(1.f-f);
 }
 
 
 //==============================================================================
 
-LowFreqOscillator::LowFreqOscillator(const String& n, ESAudioProcessor& p, AudioProcessorValueTreeState& vts, StringArray s) :
-AudioComponent(n, p, vts, s)
+LowFreqOscillator::LowFreqOscillator(const String& n, ESAudioProcessor& p, AudioProcessorValueTreeState& vts) :
+AudioComponent(n, p, vts, cLowFreqParams, false)
 {
     for (int i = 0; i < LowFreqParamNil; ++i)
     {
-        for (int v = 0; v < NUM_VOICES; ++v)
+        for (int v = 0; v < NUM_STRINGS; ++v)
         {
             ref[i][v] = params[i]->getUnchecked(v);
         }
@@ -117,7 +106,7 @@ AudioComponent(n, p, vts, s)
     
     sync = vts.getParameter(n + "Sync");
     
-    for (int i = 0; i < NUM_VOICES; i++)
+    for (int i = 0; i < NUM_STRINGS; i++)
     {
         tCycle_init(&lfo[i], &processor.leaf);
         value[i] = 0.0f;
@@ -134,18 +123,25 @@ LowFreqOscillator::~LowFreqOscillator()
 void LowFreqOscillator::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     AudioComponent::prepareToPlay(sampleRate, samplesPerBlock);
-    for (int i = 0; i < NUM_VOICES; i++)
+    for (int i = 0; i < NUM_STRINGS; i++)
     {
         tCycle_setSampleRate(&lfo[i], sampleRate);
     }
 }
 
+void LowFreqOscillator::frame()
+{
+    for (int v = 0; v < NUM_STRINGS; v++)
+    {
+        phaseReset = ref[LowFreqSyncPhase][v]->skip(currentSamplesPerBlock);
+    }
+}
+
 void LowFreqOscillator::tick()
 {
-    for (int v = 0; v < NUM_VOICES; v++)
+    for (int v = 0; v < NUM_STRINGS; v++)
     {
         float rate = ref[LowFreqRate][v]->tick();
-        phaseReset = ref[LowFreqSyncPhase][v]->tick();
         
         tCycle_setFreq(&lfo[v], rate);
         
@@ -156,7 +152,7 @@ void LowFreqOscillator::tick()
 void LowFreqOscillator::noteOn(int voice, float velocity)
 {
     //TODO: gotta put phase sync back into LEAF
-    //if (sync->getValue() > 0) tCycle_setPhase(&lfo[voice], phaseReset);
+    if (sync->getValue() > 0) tCycle_setPhase(&lfo[voice], phaseReset);
 }
 
 void LowFreqOscillator::noteOff(int voice, float velocity)

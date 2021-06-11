@@ -18,6 +18,10 @@
 #define EDITOR_HEIGHT 700.0f
 
 class ESModule;
+class OscModule;
+class LFOModule;
+class FilterModule;
+class OutputModule;
 
 //==============================================================================
 /**
@@ -25,6 +29,7 @@ class ESModule;
 
 typedef AudioProcessorValueTreeState::SliderAttachment SliderAttachment;
 typedef AudioProcessorValueTreeState::ButtonAttachment ButtonAttachment;
+typedef AudioProcessorValueTreeState::ComboBoxAttachment ComboBoxAttachment;
 
 class ESAudioProcessorEditor : public AudioProcessorEditor,
                                public Slider::Listener,
@@ -40,15 +45,12 @@ public:
     //==============================================================================
     void paint (Graphics&) override;
     void resized() override;
-    void resizedChannelSelection();
 	void sliderValueChanged(Slider* slider) override;
 	void buttonClicked(juce::Button* button) override;
 	void buttonStateChanged(Button *button) override;
     
     void mouseDown (const MouseEvent &event) override;
-    
     bool keyPressed (const KeyPress &key, Component *originatingComponent) override;
-    
     void timerCallback() override;
     
     void loadWav();
@@ -65,16 +67,20 @@ private:
     TabbedComponent tabs;
     
     Component tab1;
-    std::unique_ptr<ESDial> masterDial;
-    std::unique_ptr<ESDial> ampDial;
-    OwnedArray<ESDial> ccDials;
+    OwnedArray<ESDial> macroDials;
     OwnedArray<Slider> pitchBendSliders;
     MidiKeyboardComponent keyboard;
-    OwnedArray<TextButton> channelSelection;
-    OwnedArray<ESModule> modules;
+    OwnedArray<TextButton> channelStringButtons;
+    OwnedArray<OscModule> oscModules;
+    OwnedArray<FilterModule> filterModules;
+    std::unique_ptr<OutputModule> outputModule;
     ESTabbedComponent envsAndLFOs;
     MappingSource* currentMappingSource;
     OwnedArray<TextButton> copedentButtons;
+    ToggleButton mpeToggle;
+    Slider seriesParallelSlider;
+    Label seriesLabel;
+    Label parallelLabel;
     
     Component tab2;
     CopedentTable copedentTable;
@@ -99,21 +105,27 @@ private:
 
 //==============================================================================
 
-class ESModule : public Component
+class ESModule : public Component,
+                 public Slider::Listener,
+                 public Label::Listener
 {
 public:
     
     ESModule(ESAudioProcessorEditor& editor, AudioProcessorValueTreeState&, AudioComponent&,
-             float relWidth, float relSpacing);
+             float relLeftMargin, float relDialWidth, float relDialSpacing,
+             float relTopMargin, float relDialHeight);
     ~ESModule() override;
     
     void resized() override;
+    void paint(Graphics &g) override;
+    
+    void sliderValueChanged(Slider* slider) override {};
+    void labelTextChanged(Label* label) override {};
     
     void setBounds (float x, float y, float w, float h);
     void setBounds (Rectangle<float> newBounds);
     
     ESDial* getDial (int index);
-    ESDial* getDial (String param);
     
 protected:
     
@@ -122,10 +134,18 @@ protected:
     AudioComponent& ac;
     OwnedArray<ESDial> dials;
     
-    float relWidth, relSpacing;
+    ToggleButton enabledToggle;
+    
+    float relLeftMargin, relDialWidth, relDialSpacing;
+    float relTopMargin, relDialHeight;
+    
+    Colour outlineColour;
     
     OwnedArray<SliderAttachment> sliderAttachments;
     OwnedArray<ButtonAttachment> buttonAttachments;
+    OwnedArray<ComboBoxAttachment> comboBoxAttachments;
+    
+    ESLookAndFeel laf;
     
 private:
     
@@ -141,9 +161,70 @@ public:
     OscModule(ESAudioProcessorEditor& editor, AudioProcessorValueTreeState&, AudioComponent&);
     ~OscModule() override;
     
+    void resized() override;
+    void sliderValueChanged(Slider* slider) override;
+    void labelTextChanged(Label* label) override;
+    
+    void mouseEnter(const MouseEvent &) override;
+    void mouseExit(const MouseEvent &) override;
+    
+    void displayPitch();
+    void displayPitchMapping(MappingTarget* mt);
+    
 private:
     
+    Label pitchLabel;
+    ComboBox shapeCB;
+    Slider sendSlider;
+    Label f1Label;
+    Label f2Label;
+    
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (OscModule)
+};
+
+//==============================================================================
+
+class FilterModule : public ESModule
+{
+public:
+    
+    FilterModule(ESAudioProcessorEditor& editor, AudioProcessorValueTreeState&, AudioComponent&);
+    ~FilterModule() override;
+    
+    void resized() override;
+    void sliderValueChanged(Slider* slider) override;
+    void labelTextChanged(Label* label) override;
+    
+    void mouseEnter(const MouseEvent &) override;
+    void mouseExit(const MouseEvent &) override;
+    
+    void displayCutoff();
+    void displayCutoffMapping(MappingTarget* mt);
+    
+private:
+    
+    Label cutoffLabel;
+    ComboBox typeCB;
+    
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (FilterModule)
+};
+
+//==============================================================================
+
+class EnvModule : public ESModule
+{
+public:
+    
+    EnvModule(ESAudioProcessorEditor& editor, AudioProcessorValueTreeState&, AudioComponent&);
+    ~EnvModule() override;
+    
+    void resized() override;
+    
+private:
+    
+    ToggleButton velocityToggle;
+    
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EnvModule)
 };
 
 //==============================================================================
@@ -156,10 +237,38 @@ public:
     ~LFOModule() override;
     
     void resized() override;
+    void sliderValueChanged(Slider* slider) override;
+    void labelTextChanged(Label* label) override;
+    
+    void mouseEnter(const MouseEvent &) override;
+    void mouseExit(const MouseEvent &) override;
+    
+    void displayRate();
+    void displayRateMapping(MappingTarget* mt);
     
 private:
     
+    Label rateLabel;
+    ComboBox shapeCB;
     ToggleButton syncToggle;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (LFOModule)
+};
+
+//==============================================================================
+
+class OutputModule : public ESModule
+{
+public:
+    
+    OutputModule(ESAudioProcessorEditor& editor, AudioProcessorValueTreeState&, AudioComponent&);
+    ~OutputModule() override;
+    
+    void resized() override;
+    
+private:
+    
+    std::unique_ptr<ESDial> masterDial;
+    
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (OutputModule)
 };

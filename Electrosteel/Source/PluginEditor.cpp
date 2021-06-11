@@ -48,64 +48,96 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     // TAB1 ========================================================================
     addAndMakeVisible(tab1);
     
-    masterDial = std::make_unique<ESDial>(*this, "Master");
-    sliderAttachments.add(new SliderAttachment(vts, "Master", masterDial->getSlider()));
-    tab1.addAndMakeVisible(masterDial.get());
-    
-    ampDial = std::make_unique<ESDial>(*this, "Amp", processor.voiceAmpParams);
-    sliderAttachments.add(new SliderAttachment(vts, "Amp", ampDial->getSlider()));
-    tab1.addAndMakeVisible(ampDial.get());
-    
-    for (int i = 0; i < NUM_GLOBAL_CC; ++i)
+    for (int i = 0; i < NUM_MACROS; ++i)
     {
-        ccDials.add(new ESDial(*this, "CC" + String(i+1), Colours::red,
-                               processor.ccParams[i]->getValuePointer(), 1, false));
-        sliderAttachments.add(new SliderAttachment(vts, "CC" + String(i+1), ccDials[i]->getSlider()));
-        tab1.addAndMakeVisible(ccDials[i]);
+        macroDials.add(new ESDial(*this, "M" + String(i+1), Colours::red,
+                                  processor.ccParams[i]->getValuePointer(), 1, false));
+        sliderAttachments.add(new SliderAttachment(vts, "M" + String(i+1), macroDials[i]->getSlider()));
+        tab1.addAndMakeVisible(macroDials[i]);
     }
     currentMappingSource = nullptr;
     
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
-        channelSelection.add(new TextButton(String(i + 1)));
-        channelSelection[i]->setLookAndFeel(&laf);
-        channelSelection[i]->setConnectedEdges(Button::ConnectedOnLeft & Button::ConnectedOnRight);
-        channelSelection[i]->setRadioGroupId(1);
-        channelSelection[i]->setClickingTogglesState(true);
-        channelSelection[i]->addListener(this);
-        tab1.addAndMakeVisible(channelSelection[i]);
+        String stringText = "No String";
+        if (processor.channelToString[i+1] > 0)
+        {
+            stringText = "S" + String(processor.channelToString[i+1]);
+        }
+        channelStringButtons.add(new TextButton("Ch" + String(i+1) + "|" + stringText));
+        channelStringButtons[i]->setLookAndFeel(&laf);
+        channelStringButtons[i]->setConnectedEdges(Button::ConnectedOnLeft & Button::ConnectedOnRight);
+        //        channelSelection[i]->setRadioGroupId(1);
+        channelStringButtons[i]->setClickingTogglesState(false);//(true);
+        channelStringButtons[i]->addListener(this);
+        tab1.addAndMakeVisible(channelStringButtons[i]);
         
         pitchBendSliders.add(new Slider());
-        pitchBendSliders[i]->setLookAndFeel(&laf);
+        pitchBendSliders[i]->setSliderStyle(Slider::SliderStyle::LinearBar);
+//        pitchBendSliders[i]->setLookAndFeel(&laf);
+//        pitchBendSliders[i]->setColour(Slider::trackColourId, Colours::lightgrey);
+        pitchBendSliders[i]->setColour(Slider::backgroundColourId, Colours::black);
         pitchBendSliders[i]->setTextValueSuffix(" m2");
         pitchBendSliders[i]->addListener(this);
-        tab1.addAndMakeVisible(pitchBendSliders[i]);
+//        tab1.addAndMakeVisible(pitchBendSliders[i]);
         
-        sliderAttachments.add(new SliderAttachment(vts, "PitchBendCh" + String(i+1),
+        sliderAttachments.add(new SliderAttachment(vts, "PitchBend" + String(i),
                                                    *pitchBendSliders[i]));
     }
-    channelSelection[0]->setButtonText("1 (Global)");
-    channelSelection[1]->setToggleState(true, sendNotification);
+    tab1.addAndMakeVisible(pitchBendSliders[0]);
+    
+    mpeToggle.setButtonText("MPE");
+    mpeToggle.setToggleState(processor.getMPEMode(), dontSendNotification);
+    mpeToggle.addListener(this);
+    tab1.addAndMakeVisible(mpeToggle);
     
     keyboard.setAvailableRange(21, 108);
     keyboard.setOctaveForMiddleC(4);
-    tab1.addAndMakeVisible(&keyboard);
+    //    tab1.addAndMakeVisible(&keyboard);
     
-    modules.add(new OscModule(*this, vts, *processor.sposcs[0]));
-    modules.add(new ESModule(*this, vts, *processor.lps[0], 0.12f, 0.04f));
+    tab1.addAndMakeVisible(&envsAndLFOs);
+    
+    for (int i = 0; i < NUM_OSCS; ++i)
+    {
+        oscModules.add(new OscModule(*this, vts, *processor.oscs[i]));
+        tab1.addAndMakeVisible(oscModules[i]);
+    }
+    
+    for (int i = 0; i < NUM_FILT; ++i)
+    {
+        filterModules.add(new FilterModule(*this, vts, *processor.filt[i]));
+        tab1.addAndMakeVisible(filterModules[i]);
+    }
+    
+    seriesParallelSlider.setSliderStyle(Slider::SliderStyle::LinearHorizontal);
+    seriesParallelSlider.setTextBoxStyle(Slider::TextEntryBoxPosition::NoTextBox, true, 10, 10);
+    tab1.addAndMakeVisible(seriesParallelSlider);
+    sliderAttachments.add(new SliderAttachment(vts, "Filter Series-Parallel Mix",
+                                               seriesParallelSlider));
+    
+    seriesLabel.setText("Ser.", dontSendNotification);
+    seriesLabel.setLookAndFeel(&laf);
+    tab1.addAndMakeVisible(seriesLabel);
+    
+    parallelLabel.setText("Par.", dontSendNotification);
+    parallelLabel.setJustificationType(Justification::centredRight);
+    parallelLabel.setLookAndFeel(&laf);
+    tab1.addAndMakeVisible(parallelLabel);
+    
+    outputModule = std::make_unique<OutputModule>(*this, vts, *processor.output);
+    tab1.addAndMakeVisible(outputModule.get());
     
     envsAndLFOs.setLookAndFeel(&laf);
     for (int i = 0; i < NUM_ENVS; ++i)
     {
         String name = "Env" + String(i+1);
-        envsAndLFOs.addTab(" ", Colours::black,
-                    new ESModule(*this, vts, *processor.envs[i], 0.12f, 0.08f), true);
+        envsAndLFOs.addTab(" ", Colours::black, new EnvModule(*this, vts, *processor.envs[i]), true);
         envsAndLFOs.setColour(TabbedComponent::outlineColourId, Colours::darkgrey);
         
         TabbedButtonBar& bar = envsAndLFOs.getTabbedButtonBar();
         bar.getTabButton(i)
         ->setExtraComponent(new MappingSource(*this, name, processor.envs[i]->getValuePointer(),
-                                              NUM_VOICES, false, Colours::cyan),
+                                              NUM_STRINGS, false, Colours::cyan),
                             TabBarButton::ExtraComponentPlacement::afterText);
         bar.setColour(TabbedButtonBar::tabOutlineColourId, Colours::darkgrey);
         bar.setColour(TabbedButtonBar::frontOutlineColourId, Colours::darkgrey);
@@ -124,7 +156,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
         TabbedButtonBar& bar = envsAndLFOs.getTabbedButtonBar();
         bar.getTabButton(i + NUM_ENVS)
         ->setExtraComponent(new MappingSource(*this, name, processor.lfos[i]->getValuePointer(),
-                                              NUM_VOICES, true, Colours::lime),
+                                              NUM_STRINGS, true, Colours::lime),
                             TabBarButton::ExtraComponentPlacement::afterText);
         bar.setColour(TabbedButtonBar::tabOutlineColourId, Colours::darkgrey);
         bar.setColour(TabbedButtonBar::frontOutlineColourId, Colours::darkgrey);
@@ -133,18 +165,12 @@ chooser("Select a .wav file to load...", {}, "*.wav")
             bar.getTabButton(i)->setAlpha(i == 0 ? 1.0f : 0.5f);
         }
     }
-
-    tab1.addAndMakeVisible(&envsAndLFOs);
-    tab1.addAndMakeVisible(modules[0]);
-    tab1.addAndMakeVisible(modules[1]);
     
     MappingSource* env4 =
     dynamic_cast<MappingSource*>(envsAndLFOs.getTabbedButtonBar().getTabButton(3)->getExtraComponent());
-    ampDial->getTarget(0)->setMapping(env4, 1.0f, HookAdd);
     
-    MappingSource* env1 =
-    dynamic_cast<MappingSource*>(envsAndLFOs.getTabbedButtonBar().getTabButton(0)->getExtraComponent());
-    modules[1]->getDial(LowpassCutoff)->getTarget(0)->setMapping(env1, 5000.0f, HookAdd);
+    outputModule->getDial(OutputAmp)->getTarget(2)->setMapping(env4, 1.0f, HookAdd);
+    filterModules[0]->getDial(FilterCutoff)->getTarget(2)->setMapping(env4, 5000.0f, HookAdd);
     
     for (int i = 0; i < CopedentColumnNil; ++i)
     {
@@ -175,7 +201,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     
     constrain->setFixedAspectRatio(EDITOR_WIDTH / EDITOR_HEIGHT);
     
-    addAndMakeVisible(*resizer);
+//    addAndMakeVisible(*resizer);
     resizer->setAlwaysOnTop(true);
     
     versionLabel.setJustificationType(Justification::centred);
@@ -184,41 +210,41 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     versionLabel.setColour(Label::ColourIds::textColourId, Colours::lightgrey);
     addAndMakeVisible(versionLabel);
     
-//    addAndMakeVisible(&container);
-
+    //    addAndMakeVisible(&container);
+    
     startTimerHz(30);
 }
 
 ESAudioProcessorEditor::~ESAudioProcessorEditor()
 {
-//    masterDial->setLookAndFeel(nullptr);
-//    ampDial->setLookAndFeel(nullptr);
-//    for (int i = 0; i < NUM_GLOBAL_CC; ++i)
-//    {
-//        ccDials[i]->setLookAndFeel(nullptr);
-//    }
+    //    masterDial->setLookAndFeel(nullptr);
+    //    ampDial->setLookAndFeel(nullptr);
+    //    for (int i = 0; i < NUM_MACROS; ++i)
+    //    {
+    //        ccDials[i]->setLookAndFeel(nullptr);
+    //    }
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
-        channelSelection[i]->setLookAndFeel(nullptr);
+        channelStringButtons[i]->setLookAndFeel(nullptr);
         pitchBendSliders[i]->setLookAndFeel(nullptr);
     }
     envsAndLFOs.setLookAndFeel(nullptr);
     for (int i = 0; i < CopedentColumnNil; ++i)
-        copedentButtons[i]->setLookAndFeel(nullptr);
+    copedentButtons[i]->setLookAndFeel(nullptr);
 }
 
 //==============================================================================
 void ESAudioProcessorEditor::paint (Graphics& g)
 {
     // (Our component is opaque, so we must completely fill the background with a solid colour)
-//    g.setGradientFill(ColourGradient(Colour(25, 25, 25), juce::Point<float>(0,0), Colour(10, 10, 10), juce::Point<float>(0, getHeight()), false));
+    //    g.setGradientFill(ColourGradient(Colour(25, 25, 25), juce::Point<float>(0,0), Colour(10, 10, 10), juce::Point<float>(0, getHeight()), false));
     g.setColour(Colours::black);
     g.fillRect(0, 0, getWidth(), getHeight());
     
-//    Rectangle<float> panelArea = getLocalBounds().toFloat();
-//    panelArea.reduce(getWidth()*0.025f, getHeight()*0.01f);
-//    panelArea.removeFromBottom(getHeight()*0.03f);
-//    panel->drawWithin(g, panelArea, RectanglePlacement::centred, 1.0f);
+    //    Rectangle<float> panelArea = getLocalBounds().toFloat();
+    //    panelArea.reduce(getWidth()*0.025f, getHeight()*0.01f);
+    //    panelArea.removeFromBottom(getHeight()*0.03f);
+    //    panel->drawWithin(g, panelArea, RectanglePlacement::centred, 1.0f);
     
     g.fillRect(getWidth() * 0.25f, getHeight() * 0.25f, getWidth() * 0.6f, getHeight() * 0.5f);
     g.fillRect(getWidth() * 0.25f, getHeight() * 0.75f, getWidth() * 0.2f, getHeight() * 0.15f);
@@ -227,52 +253,82 @@ void ESAudioProcessorEditor::paint (Graphics& g)
 void ESAudioProcessorEditor::resized()
 {
     int width = getWidth();
-//    int height = getHeight();
+    int height = getHeight();
     
     float s = width / EDITOR_WIDTH;
-    processor.editorScale = s;
+    processor.editorScale = 1.05f;
     
     tabs.setBounds(getLocalBounds().expanded(1));
     tabs.setTabBarDepth(30*s);
     
+    height -= tabs.getTabBarDepth();
+    
     //==============================================================================
     // TAB1 ========================================================================
     const float knobSize = 50.0f*s;
-    const float masterSize = knobSize * 1.5f;
     
-    masterDial->setBounds(650*s, 10*s, masterSize, masterSize*1.5f);
-    ampDial->setBounds(550*s, 10*s, masterSize, masterSize*1.5f);
-    
-    for (int i = 0; i < NUM_GLOBAL_CC; ++i)
+    for (int i = 0; i < NUM_MACROS; ++i)
     {
-//        ccDials[i]->setBounds(450*s + 90*s*i, 460*s, knobSize, knobSize*1.5f);
-        ccDials[i]->setBounds(6.0f*s + 56.0f*s*i, 470.0f*s, knobSize, knobSize*1.4f);
+        macroDials[i]->setBounds(6*s + 56*s*i, 525*s, knobSize, knobSize*1.4f);
     }
     
-    modules[0]->setBounds(0, 10*s, 530*s, 110*s);
-    modules[1]->setBounds(0, 120*s, 530*s, 110*s);
-    
-    copedentButtons[1]->setBounds(getWidth()-60*s, 0, 60*s+1, 30*s);
-    for (int i = 2; i < CopedentColumnNil; ++i)
+    for (int i = 0; i < NUM_OSCS; ++i)
     {
-        copedentButtons[i]->setBounds(getWidth()-60*s, copedentButtons[i-1]->getBottom(),
-                                      60*s+1, 30*s);
+        oscModules[i]->setBounds(0*s, (120*s*i)-i, 540*s, 120*s);
     }
     
-    envsAndLFOs.setBounds(350*s, copedentButtons.getLast()->getBottom(), width - 350*s + 2, 160*s);
+    seriesLabel.setBounds(540*s-1, 0*s, 60*s, 25*s);
+    parallelLabel.setBounds(840*s, 0*s, 60*s, 25*s);
+    seriesParallelSlider.setBounds(540*s-1, 20*s, 360*s, 30*s);
+    
+    for (int i = 0; i < NUM_FILT; ++i)
+    {
+        filterModules[i]->setBounds(540*s-1, 50*s+(155*s*i)-i-1, 360*s+1, 155*s);
+    }
+
+    envsAndLFOs.setBounds(0*s, oscModules.getLast()->getBottom()-1, 540*s, 160*s);
     envsAndLFOs.setIndent(10*s);
     envsAndLFOs.setTabBarDepth(25*s);
     
-    resizedChannelSelection();
+    outputModule->setBounds(540*s-1, oscModules.getLast()->getBottom()-1, 360*s+1, 160*s-1);
     
-    keyboard.setBoundsRelative(0.f, 0.86f, 1.0f, 0.14f);
-    keyboard.setKeyWidth(width / 52.0f);
+    int align = 78*s;
+    int x = 900*s - 10*align;
+    copedentButtons[1]->setBounds(x, 600*s, align, 35*s);
+    for (int i = 2; i < CopedentColumnNil; ++i)
+    {
+        copedentButtons[i]->setBounds(copedentButtons[i-1]->getRight(), 600*s,
+                                      align, 35*s);
+    }
+    
+    int r = (10*align) % 12;
+    int w = (10*align) / 12;
+    channelStringButtons[0]->setBounds(x-w, height-35*s+2, w, 35*s);
+    for (int i = 1; i < NUM_CHANNELS; ++i)
+    {
+        channelStringButtons[i]->setBounds(channelStringButtons[i-1]->getRight(), height-35*s+2,
+                                           w + (r-- > 0 ? 1 : 0), 35*s);
+    }
+    
+//    w = width - channelStringButtons[NUM_CHANNELS-1]->getRight();
+//    for (int i = 0; i < NUM_CHANNELS; ++i)
+//    {
+//        pitchBendSliders[i]->setBounds(channelStringButtons[NUM_CHANNELS-1]->getRight(),
+//                                       height-35*s+1, w, 35*s);
+//    }
+    
+    pitchBendSliders[0]->setBounds(0*s, 600*s, x, 35*s);
+    
+    mpeToggle.setBounds(6*s, height-35*s+2, x-w-5*s, 35*s);
+    
+    //    keyboard.setBoundsRelative(0.f, 0.86f, 1.0f, 0.14f);
+    //    keyboard.setKeyWidth(width / 52.0f);
     
     //==============================================================================
     // TAB2 ========================================================================
     
     copedentTable.setBoundsRelative(0.05f, 0.1f, 0.9f, 0.8f);
-
+    
     //==============================================================================
     
     versionLabel.setBounds(width*0.95, 0, width * 0.05f, tabs.getTabBarDepth());
@@ -290,40 +346,11 @@ void ESAudioProcessorEditor::resized()
     electrosteelLabel.setFont(euphemia.withHeight(34*s).withStyle(3));
     
     
-    float r = EDITOR_WIDTH / EDITOR_HEIGHT;
-    constrain->setSizeLimits(200, 200/r, 800*r, 800);
+    float rt = EDITOR_WIDTH / EDITOR_HEIGHT;
+    constrain->setSizeLimits(200, 200/rt, 800*rt, 800);
     resizer->setBounds(getWidth()-12, getHeight()-12, 12, 12);
     
-//    container.setBounds(getLocalBounds());
-}
-
-void ESAudioProcessorEditor::resizedChannelSelection()
-{
-    int width = getWidth();
-    float s = width / EDITOR_WIDTH;
-    for (int i = 0; i < NUM_CHANNELS; ++i)
-    {
-        float yf = 547;
-        if (channelSelection[i]->getToggleState()) yf -= 4;
-        float offset = width * 0.07f;
-        float w = width * 0.04f;
-        if (i == 0)
-        {
-            w += offset;
-            offset = 0.0f;
-        }
-        Rectangle<float> bounds ((width * 0.04f) * i + offset, yf*s, w, 37*s);
-        channelSelection[i]->setBounds(Rectangle<int>::leftTopRightBottom ((bounds.getX()),
-                                                                           (bounds.getY()),
-                                                                           (bounds.getRight()),
-                                                                           (bounds.getBottom())));
-    }
-    
-    int w = width - channelSelection[NUM_CHANNELS-1]->getRight();
-    for (int i = 0; i < NUM_CHANNELS; ++i)
-    {
-        pitchBendSliders[i]->setBounds(channelSelection[NUM_CHANNELS-1]->getRight(), 543*s, w, 40*s);
-    }
+    //    container.setBounds(getLocalBounds());
 }
 
 void ESAudioProcessorEditor::sliderValueChanged(Slider* slider)
@@ -335,21 +362,42 @@ void ESAudioProcessorEditor::buttonClicked(Button* button)
 {
     if (button == nullptr) return;
     
-    resizedChannelSelection();
-    
     if (TextButton* tb = dynamic_cast<TextButton*>(button))
     {
-        if (channelSelection.contains(tb))
+        if (channelStringButtons.contains(tb))
         {
-            int channel = channelSelection.indexOf(tb) + 1;
-            keyboard.setMidiChannel(channel);
-            keyboard.setAlpha(channel > 1 ? 1.0f : 0.5f);
-            keyboard.setInterceptsMouseClicks(channel > 1, channel > 1);
+            int ch = channelStringButtons.indexOf(tb) + 1;
+            processor.channelToString[ch] =
+            (processor.channelToString[ch] + 1) % (NUM_STRINGS+1);
             
-            for (int i = 0; i < NUM_CHANNELS; ++i)
+            String stringText = "No String";
+            if (processor.channelToString[ch] > 0)
             {
-                pitchBendSliders[i]->setVisible(false);
-                if (i+1 == channel) pitchBendSliders[i]->setVisible(true);
+                stringText = "S" + String(processor.channelToString[ch]);
+            }
+            tb->setButtonText("Ch" + String(ch) + "|" + stringText);
+            
+//            keyboard.setMidiChannel(channel);
+//            keyboard.setAlpha(channel > 1 ? 1.0f : 0.5f);
+//            keyboard.setInterceptsMouseClicks(channel > 1, channel > 1);
+            
+//            for (int i = 0; i < NUM_CHANNELS; ++i)
+//            {
+//                pitchBendSliders[i]->setVisible(false);
+//                if (i+1 == channel) pitchBendSliders[i]->setVisible(true);
+//            }
+        }
+    }
+    else if (ToggleButton* tb = dynamic_cast<ToggleButton*>(button))
+    {
+        if (tb == &mpeToggle)
+        {
+            bool state = tb->getToggleState();
+            processor.setMPEMode(state);
+            for (auto b : channelStringButtons)
+            {
+                b->setAlpha(state ? 1.f : 0.5f);
+                b->setInterceptsMouseClicks(state, state);
             }
         }
     }
@@ -388,39 +436,15 @@ void ESAudioProcessorEditor::mouseDown (const MouseEvent &event)
 
 bool ESAudioProcessorEditor::keyPressed (const KeyPress &key, Component *originatingComponent)
 {
-    if (key.isKeyCode('0'))
-    {
-        channelSelection[9]->setToggleState(true, sendNotification);
-        return true;
-    }
-    else if (key.isKeyCode('1'))
-    {
-        if (channelSelection[0]->getToggleState())
-            channelSelection[10]->setToggleState(true, sendNotification);
-        else channelSelection[0]->setToggleState(true, sendNotification);
-        return true;
-    }
-    else
-    {
-        for (int i = 0; i < 8; ++i)
-        {
-            int d = 0;
-            if (KeyPress::isKeyCurrentlyDown('1')) d = 10;
-            if (key.isKeyCode('2' + i))
-            {
-                if (i + d > NUM_CHANNELS) return false;
-                channelSelection[i + d + 1]->setToggleState(true, sendNotification);
-                return true;
-            }
-        }
-    }
-    
     return false;
 }
 
 void ESAudioProcessorEditor::timerCallback()
 {
-
+    for (int i = 0; i < NUM_CHANNELS; ++i)
+    {
+        channelStringButtons[i]->setToggleState(processor.midiChannelIsActive(i+1), dontSendNotification);
+    }
 }
 
 void ESAudioProcessorEditor::loadWav()
@@ -442,7 +466,7 @@ void ESAudioProcessorEditor::loadWav()
             
             reader->read(&buffer, 0, buffer.getNumSamples(), 0, true, true);
             
-//            processor.tableSynth.setWavetable(buffer)
+            //            processor.tableSynth.setWavetable(buffer)
             
             processor.readerSource.reset(newSource.release());
             
@@ -471,12 +495,17 @@ Array<Component*> ESAudioProcessorEditor::getAllChildren()
 //==============================================================================
 
 ESModule::ESModule(ESAudioProcessorEditor& editor, AudioProcessorValueTreeState& vts, AudioComponent& ac,
-                   float relWidth, float relSpacing) :
+                   float relLeftMargin, float relDialWidth, float relDialSpacing,
+                   float relTopMargin, float relDialHeight) :
 editor(editor),
 vts(vts),
 ac(ac),
-relWidth(relWidth),
-relSpacing(relSpacing)
+relLeftMargin(relLeftMargin),
+relDialWidth(relDialWidth),
+relDialSpacing(relDialSpacing),
+relTopMargin(relTopMargin),
+relDialHeight(relDialHeight),
+outlineColour(Colours::transparentBlack)
 {
     setInterceptsMouseClicks(false, true);
     
@@ -485,29 +514,49 @@ relSpacing(relSpacing)
         dials.add(new ESDial(editor, ac.paramNames[i], ac.getParameter(i)));
         addAndMakeVisible(dials[i]);
         sliderAttachments.add(new SliderAttachment(vts, ac.name + ac.paramNames[i], dials[i]->getSlider()));
+        dials[i]->getSlider().addListener(this);
+        for (auto t : dials[i]->getTargets())
+        {
+            t->addListener(this);
+            t->addMouseListener(this, true);
+        }
+    }
+    
+    if (ac.toggleable)
+    {
+        addAndMakeVisible(enabledToggle);
+        buttonAttachments.add(new ButtonAttachment(vts, ac.name, enabledToggle));
     }
 }
 
 ESModule::~ESModule()
 {
+    
+}
 
+void ESModule::paint(Graphics &g)
+{
+    Rectangle<int> area = getLocalBounds();
+    
+    g.setColour(outlineColour);
+    g.drawRect(area);
 }
 
 void ESModule::resized()
 {
     Rectangle<int> area = getLocalBounds();
     
-    float x = area.getX();
-    float w = area.getWidth() * relWidth;
-    float spacing = area.getWidth() * relSpacing;
+    float h = area.getHeight();
     
     for (int i = 0; i < ac.paramNames.size(); ++i)
     {
-        dials[i]->setBounds(x + spacing*0.5f + (spacing + w)*i, 0, w, w * 1.6f);
-//        dials[i]->setSliderBounds(x + w*i + w*0.2f, 0, dialWidth, dialWidth * 1.35f);
-//        dials[i]->setLabelBounds(dials[i]->getSlider().getX() + dialWidth*0.5f - labelWidth*0.5f,
-//                                 dials[i]->getSlider().getY() + dialWidth*1.325f,
-//                                 labelWidth, labelHeight);
+        dials[i]->setBoundsRelative(relLeftMargin + (relDialWidth+relDialSpacing)*i, relTopMargin,
+                            relDialWidth, relDialHeight);
+    }
+    
+    if (ac.toggleable)
+    {
+        enabledToggle.setBounds(0, 0, h*0.2f, h*0.2f);
     }
 }
 
@@ -527,11 +576,277 @@ ESDial* ESModule::getDial (int index)
     return dials[index];
 }
 
-ESDial* ESModule::getDial (String param)
+//==============================================================================
+//==============================================================================
+
+OscModule::OscModule(ESAudioProcessorEditor& editor, AudioProcessorValueTreeState& vts,
+                     AudioComponent& ac) :
+ESModule(editor, vts, ac, 0.05f, 0.132f, 0.05f, 0.18f, 0.78f)
 {
-    int i = ac.paramNames.indexOf(param);
-    if (i < 0) return nullptr;
-    return dials[i];
+    outlineColour = Colours::darkgrey;
+    
+    // Pitch slider should snap to ints
+    getDial(OscPitch)->setRange(-24., 24., 1.);
+    
+    double pitch = getDial(OscPitch)->getSlider().getValue();
+    double fine = getDial(OscFine)->getSlider().getValue()*0.01; // Fine is in cents for better precision
+    pitchLabel.setText(String(pitch+fine, 4), dontSendNotification);
+    pitchLabel.setLookAndFeel(&laf);
+    pitchLabel.setEditable(true);
+    pitchLabel.setJustificationType(Justification::centred);
+    pitchLabel.setColour(Label::backgroundColourId, Colours::darkgrey.withBrightness(0.2f));
+    pitchLabel.addListener(this);
+    addAndMakeVisible(pitchLabel);
+    
+    RangedAudioParameter* set = vts.getParameter(ac.name + "ShapeSet");
+    shapeCB.addItemList(oscSetNames, 1);
+    shapeCB.setSelectedItemIndex(set->convertFrom0to1(set->getValue()));
+    shapeCB.setLookAndFeel(&laf);
+    addAndMakeVisible(shapeCB);
+    comboBoxAttachments.add(new ComboBoxAttachment(vts, ac.name + "ShapeSet", shapeCB));
+    
+    sendSlider.setSliderStyle(Slider::SliderStyle::LinearVertical);
+    sendSlider.setTextBoxStyle(Slider::TextEntryBoxPosition::NoTextBox, false, 10, 10);
+    addAndMakeVisible(sendSlider);
+    sliderAttachments.add(new SliderAttachment(vts, ac.name + "FilterSend", sendSlider));
+    
+    f1Label.setText("F1", dontSendNotification);
+    f1Label.setJustificationType(Justification::bottomRight);
+    f1Label.setLookAndFeel(&laf);
+    addAndMakeVisible(f1Label);
+    
+    f2Label.setText("F2", dontSendNotification);
+    f2Label.setJustificationType(Justification::topRight);
+    f2Label.setLookAndFeel(&laf);
+    addAndMakeVisible(f2Label);
+}
+
+OscModule::~OscModule()
+{
+    
+}
+
+void OscModule::resized()
+{
+    ESModule::resized();
+    
+    for (int i = 1; i < ac.paramNames.size(); ++i)
+    {
+        dials[i]->setBoundsRelative(relLeftMargin + (relDialWidth*(i+1))+(relDialSpacing*i),
+                                    relTopMargin, relDialWidth, relDialHeight);
+    }
+    
+    pitchLabel.setBoundsRelative(relLeftMargin+relDialWidth+0.5f*relDialSpacing,
+                                 0.4f, relDialWidth, 0.2f);
+    
+    shapeCB.setBoundsRelative(relLeftMargin+3*relDialWidth+relDialSpacing, 0.01f,
+                              relDialWidth+2*relDialSpacing, 0.16f);
+    
+    sendSlider.setBoundsRelative(0.94f, 0.f, 0.06f, 1.0f);
+    
+    f1Label.setBoundsRelative(0.9f, 0.05f, 0.06f, 0.15f);
+    f2Label.setBoundsRelative(0.9f, 0.80f, 0.06f, 0.15f);
+}
+
+void OscModule::sliderValueChanged(Slider* slider)
+{
+    if (slider == &getDial(OscPitch)->getSlider() || slider == &getDial(OscFine)->getSlider() )
+    {
+        displayPitch();
+    }
+    else if (MappingTarget* mt = dynamic_cast<MappingTarget*>(slider))
+    {
+        displayPitchMapping(mt);
+    }
+}
+
+void OscModule::labelTextChanged(Label* label)
+{
+    if (label == &pitchLabel)
+    {
+        auto value = pitchLabel.getText().getDoubleValue();
+        int i = value;
+        double f = value-i;
+        getDial(OscPitch)->getSlider().setValue(i);
+        getDial(OscFine)->getSlider().setValue(f*100.);
+    }
+}
+
+void OscModule::mouseEnter(const MouseEvent& e)
+{
+    if (MappingTarget* mt = dynamic_cast<MappingTarget*>(e.originalComponent->getParentComponent()))
+    {
+        displayPitchMapping(mt);
+    }
+}
+
+void OscModule::mouseExit(const MouseEvent& e)
+{
+    displayPitch();
+}
+
+void OscModule::displayPitch()
+{
+    auto pitch = getDial(OscPitch)->getSlider().getValue();
+    auto fine = getDial(OscFine)->getSlider().getValue()*0.01;
+    pitchLabel.setColour(Label::textColourId, Colours::gold.withBrightness(0.95f));
+    pitchLabel.setText(String(pitch+fine, 4), dontSendNotification);
+}
+
+void OscModule::displayPitchMapping(MappingTarget* mt)
+{
+    if (!mt->isActive())
+    {
+        displayPitch();
+        return;
+    }
+    auto value = fabs(mt->getValue());
+    if (mt->getParentComponent() == getDial(OscPitch))
+    {
+        pitchLabel.setColour(Label::textColourId, mt->getColour());
+        String text;
+        if (mt->isBipolar()) text = String::charToString(0xb1);
+        else text = (value >= 0 ? "+" : "-");
+        text += String(value, 4);
+        pitchLabel.setText(text, dontSendNotification);
+    }
+    else if (mt->getParentComponent() == getDial(OscFine))
+    {
+        pitchLabel.setColour(Label::textColourId, mt->getColour());
+        String text;
+        if (mt->isBipolar()) text = String::charToString(0xb1);
+        else text = (value >= 0 ? "+" : "-");
+        text += String(value*0.01, 4);
+        pitchLabel.setText(text, dontSendNotification);
+    }
+}
+
+//==============================================================================
+//==============================================================================
+
+FilterModule::FilterModule(ESAudioProcessorEditor& editor, AudioProcessorValueTreeState& vts,
+                     AudioComponent& ac) :
+ESModule(editor, vts, ac, 0.05f, 0.2f, 0.05f, 0.2f, 0.7f)
+{
+    outlineColour = Colours::darkgrey;
+    
+    double cutoff = getDial(FilterCutoff)->getSlider().getValue();
+    cutoffLabel.setText(String(cutoff, 1), dontSendNotification);
+    cutoffLabel.setLookAndFeel(&laf);
+    cutoffLabel.setEditable(true);
+    cutoffLabel.setJustificationType(Justification::centred);
+    cutoffLabel.setColour(Label::backgroundColourId, Colours::darkgrey.withBrightness(0.2f));
+    cutoffLabel.addListener(this);
+    addAndMakeVisible(cutoffLabel);
+    
+    RangedAudioParameter* set = vts.getParameter(ac.name + "Type");
+    typeCB.addItemList(filterTypeNames, 1);
+    typeCB.setSelectedItemIndex(set->convertFrom0to1(set->getValue()));
+    typeCB.setLookAndFeel(&laf);
+    addAndMakeVisible(typeCB);
+    comboBoxAttachments.add(new ComboBoxAttachment(vts, ac.name + "Type", typeCB));
+}
+
+FilterModule::~FilterModule()
+{
+    
+}
+
+void FilterModule::resized()
+{
+    ESModule::resized();
+    
+    for (int i = 1; i < ac.paramNames.size(); ++i)
+    {
+        dials[i]->setBoundsRelative(relLeftMargin + (relDialWidth*(i+1))+(relDialSpacing*i),
+                                    relTopMargin, relDialWidth, relDialHeight);
+    }
+    
+    cutoffLabel.setBoundsRelative(relLeftMargin+relDialWidth+0.5f*relDialSpacing,
+                                 0.42f, relDialWidth, 0.16f);
+    
+    typeCB.setBoundsRelative(relLeftMargin+relDialWidth, 0.01f,
+                             relDialWidth+relDialSpacing, 0.16f);
+}
+
+void FilterModule::sliderValueChanged(Slider* slider)
+{
+    if (slider == &getDial(FilterCutoff)->getSlider())
+    {
+        displayCutoff();
+    }
+    else if (MappingTarget* mt = dynamic_cast<MappingTarget*>(slider))
+    {
+        displayCutoffMapping(mt);
+    }
+}
+
+void FilterModule::labelTextChanged(Label* label)
+{
+    if (label == &cutoffLabel)
+    {
+        auto value = cutoffLabel.getText().getDoubleValue();
+        getDial(FilterCutoff)->getSlider().setValue(value);
+    }
+}
+
+void FilterModule::mouseEnter(const MouseEvent& e)
+{
+    if (MappingTarget* mt = dynamic_cast<MappingTarget*>(e.originalComponent->getParentComponent()))
+    {
+        displayCutoffMapping(mt);
+    }
+}
+
+void FilterModule::mouseExit(const MouseEvent& e)
+{
+    displayCutoff();
+}
+
+void FilterModule::displayCutoff()
+{
+    double cutoff = getDial(FilterCutoff)->getSlider().getValue();
+    cutoffLabel.setColour(Label::textColourId, Colours::gold.withBrightness(0.95f));
+    cutoffLabel.setText(String(cutoff, 1), dontSendNotification);
+}
+
+void FilterModule::displayCutoffMapping(MappingTarget* mt)
+{
+    if (!mt->isActive()) displayCutoff();
+    else if (mt->getParentComponent() == getDial(FilterCutoff))
+    {
+        auto value = fabs(mt->getValue());
+        cutoffLabel.setColour(Label::textColourId, mt->getColour());
+        String text;
+        if (mt->isBipolar()) text = String::charToString(0xb1);
+        else text = (value >= 0 ? "+" : "-");
+        text += String(value, 1);
+        cutoffLabel.setText(text, dontSendNotification);
+    }
+}
+
+//==============================================================================
+//==============================================================================
+
+EnvModule::EnvModule(ESAudioProcessorEditor& editor, AudioProcessorValueTreeState& vts,
+                           AudioComponent& ac) :
+ESModule(editor, vts, ac, 0.04f, 0.13f, 0.0675f, 0.16f, 0.84f)
+{
+    velocityToggle.setButtonText("Scale to velocity");
+    addAndMakeVisible(velocityToggle);
+    buttonAttachments.add(new ButtonAttachment(vts, ac.name + "Velocity", velocityToggle));
+}
+
+EnvModule::~EnvModule()
+{
+    
+}
+
+void EnvModule::resized()
+{
+    ESModule::resized();
+    
+    velocityToggle.setBoundsRelative(relLeftMargin, 0.f, 2*relDialWidth+relDialSpacing, 0.16f);
 }
 
 //==============================================================================
@@ -539,8 +854,24 @@ ESDial* ESModule::getDial (String param)
 
 LFOModule::LFOModule(ESAudioProcessorEditor& editor, AudioProcessorValueTreeState& vts,
                      AudioComponent& ac) :
-ESModule(editor, vts, ac, 0.12f, 0.08f)
+ESModule(editor, vts, ac, 0.12f, 0.13f, 0.185f, 0.16f, 0.84f)
 {
+    double rate = getDial(LowFreqRate)->getSlider().getValue();
+    rateLabel.setText(String(rate, 2) + " Hz", dontSendNotification);
+    rateLabel.setLookAndFeel(&laf);
+    rateLabel.setEditable(true);
+    rateLabel.setJustificationType(Justification::centred);
+    rateLabel.setColour(Label::backgroundColourId, Colours::darkgrey.withBrightness(0.2f));
+    rateLabel.addListener(this);
+    addAndMakeVisible(rateLabel);
+    
+    RangedAudioParameter* set = vts.getParameter(ac.name + "ShapeSet");
+    shapeCB.addItemList(oscSetNames, 1);
+    shapeCB.setSelectedItemIndex(set->convertFrom0to1(set->getValue()));
+    shapeCB.setLookAndFeel(&laf);
+    addAndMakeVisible(shapeCB);
+    comboBoxAttachments.add(new ComboBoxAttachment(vts, ac.name + "ShapeSet", shapeCB));
+    
     syncToggle.setButtonText("Sync to note-on");
     addAndMakeVisible(syncToggle);
     buttonAttachments.add(new ButtonAttachment(vts, ac.name + "Sync", syncToggle));
@@ -554,29 +885,94 @@ LFOModule::~LFOModule()
 void LFOModule::resized()
 {
     ESModule::resized();
-    
-    Rectangle<int> area = getLocalBounds();
-    
-    float w = area.getWidth();
-    float h = area.getHeight();
-    float x = 2 * area.getWidth() / 3.f;
-    
-    syncToggle.setBounds(x, dials.getLast()->getY(), w * 0.25f, h * 0.2f);
+
+    rateLabel.setBoundsRelative(relLeftMargin-0.3*relDialSpacing, 0.f,
+                                relDialWidth+0.6f*relDialSpacing, 0.16f);
+    shapeCB.setBoundsRelative(relLeftMargin+relDialWidth+0.7f*relDialSpacing, 0.f,
+                              relDialWidth+0.6f*relDialSpacing, 0.16f);
+    syncToggle.setBoundsRelative(relLeftMargin+2*relDialWidth+1.7f*relDialSpacing, 0.f,
+                                 relDialWidth+0.6f*relDialSpacing, 0.16f);
+}
+
+void LFOModule::sliderValueChanged(Slider* slider)
+{
+    if (slider == &getDial(LowFreqRate)->getSlider())
+    {
+        displayRate();
+    }
+    else if (MappingTarget* mt = dynamic_cast<MappingTarget*>(slider))
+    {
+        displayRateMapping(mt);
+    }
+}
+
+void LFOModule::labelTextChanged(Label* label)
+{
+    if (label == &rateLabel)
+    {
+        auto value = rateLabel.getText().getDoubleValue();
+        getDial(LowFreqRate)->getSlider().setValue(value);
+    }
+}
+
+void LFOModule::mouseEnter(const MouseEvent& e)
+{
+    if (MappingTarget* mt = dynamic_cast<MappingTarget*>(e.originalComponent->getParentComponent()))
+    {
+        displayRateMapping(mt);
+    }
+}
+
+void LFOModule::mouseExit(const MouseEvent& e)
+{
+    displayRate();
+}
+
+void LFOModule::displayRate()
+{
+    double rate = getDial(LowFreqRate)->getSlider().getValue();
+    rateLabel.setColour(Label::textColourId, Colours::gold.withBrightness(0.95f));
+    rateLabel.setText(String(rate, 2) + " Hz", dontSendNotification);
+}
+
+void LFOModule::displayRateMapping(MappingTarget* mt)
+{
+    if (!mt->isActive()) displayRate();
+    else if (mt->getParentComponent() == getDial(LowFreqRate))
+    {
+        auto value = fabs(mt->getValue());
+        rateLabel.setColour(Label::textColourId, mt->getColour());
+        String text;
+        if (mt->isBipolar()) text = String::charToString(0xb1);
+        else text = (value >= 0 ? "+" : "");
+        text += String(value, 2) + " Hz";
+        rateLabel.setText(text, dontSendNotification);
+    }
 }
 
 //==============================================================================
 //==============================================================================
 
-OscModule::OscModule(ESAudioProcessorEditor& editor, AudioProcessorValueTreeState& vts,
-                     AudioComponent& ac) :
-ESModule(editor, vts, ac, 0.12f, 0.04f)
+OutputModule::OutputModule(ESAudioProcessorEditor& editor, AudioProcessorValueTreeState& vts,
+                           AudioComponent& ac) :
+ESModule(editor, vts, ac, 0.1f, 0.2f, 0.1f, 0.125f, 0.75f)
 {
-    // All oscs should have pitch as the first param,
-    // and the pitch slider should snap to ints
-    getDial(ac.paramNames[0])->getSlider().setRange(-24., 24., 1.);
+    outlineColour = Colours::darkgrey;
+    
+    masterDial = std::make_unique<ESDial>(editor, "Master");
+    sliderAttachments.add(new SliderAttachment(vts, "Master", masterDial->getSlider()));
+    addAndMakeVisible(masterDial.get());
 }
 
-OscModule::~OscModule()
+OutputModule::~OutputModule()
 {
     
 }
+
+void OutputModule::resized()
+{
+    ESModule::resized();
+    
+    masterDial->setBoundsRelative(0.7f, relTopMargin, 0.2f, relDialHeight);
+}
+

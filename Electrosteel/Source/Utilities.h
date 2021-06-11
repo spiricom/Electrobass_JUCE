@@ -30,7 +30,7 @@ public:
     ParameterHook() :
     hook(&value0),
     min(0.0f),
-    max(0.0f),
+    length(0.0f),
     operation(HookAdd)
     {
     }
@@ -38,7 +38,7 @@ public:
     ParameterHook(float* hook, float min, float max, HookOperation op) :
     hook(hook),
     min(min),
-    max(max),
+    length(max-min),
     operation(op)
     {
     }
@@ -47,7 +47,7 @@ public:
     //==============================================================================
     float apply(float input)
     {
-        float hookValue = (*hook * (max - min) + min);
+        float hookValue = (*hook * length + min);
 //        if (operation == HookAdd)
 //        {
             return input + hookValue;
@@ -61,11 +61,11 @@ public:
     
     float getValue()
     {
-        return (*hook * (max - min) + min);
+        return (*hook * length + min);
     }
 
     float* hook;
-    float min, max;
+    float min, length;
     HookOperation operation;
     float value0 = 0.0f;
 };
@@ -109,7 +109,7 @@ public:
     {
         hooks[index].hook = hook;
         hooks[index].min = min;
-        hooks[index].max = max;
+        hooks[index].length = max-min;
         hooks[index].operation = op;
     }
     
@@ -117,14 +117,14 @@ public:
     {
         hooks[index].hook = &value0;
         hooks[index].min = 0.0f;
-        hooks[index].max = 0.0f;
+        hooks[index].length = 0.0f;
         hooks[index].operation = HookAdd;
     }
     
     void setRange(int index, float min, float max)
     {
         hooks[index].min = min;
-        hooks[index].max = max;
+        hooks[index].length = max-min;
     }
     
     float getStart() { return parameter->getNormalisableRange().start; }
@@ -154,7 +154,7 @@ class AudioComponent
 {
 public:
     //==============================================================================
-    AudioComponent(const String&, ESAudioProcessor&, AudioProcessorValueTreeState&, StringArray);
+    AudioComponent(const String&, ESAudioProcessor&, AudioProcessorValueTreeState&, StringArray, bool);
     ~AudioComponent();
     
     //==============================================================================
@@ -162,6 +162,8 @@ public:
     
     //==============================================================================
     OwnedArray<SmoothedParameter>& getParameter(int p);
+    
+    bool isEnabled();
         
     ESAudioProcessor& processor;
     AudioProcessorValueTreeState& vts;
@@ -169,8 +171,35 @@ public:
     String name;
     StringArray paramNames;
     
+    std::atomic<float>* afpEnabled;
+    
     float passTick(float sample) { return sample; }
     
     double currentSampleRate;
     int currentSamplesPerBlock;
+    
+    bool toggleable;
 };
+
+//==============================================================================
+//==============================================================================
+
+class Output : public AudioComponent
+{
+public:
+    //==============================================================================
+    Output(const String&, ESAudioProcessor&, AudioProcessorValueTreeState&);
+    ~Output();
+    
+    //==============================================================================
+    void prepareToPlay (double sampleRate, int samplesPerBlock);
+    
+    //==============================================================================
+    void tick(int v, float input, float* output, int numChannels);
+    
+private:
+    
+    SmoothedParameter* ref[OutputParamNil][NUM_STRINGS];
+    std::unique_ptr<SmoothedParameter> master;
+};
+

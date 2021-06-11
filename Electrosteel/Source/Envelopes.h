@@ -19,7 +19,7 @@ class Envelope : public AudioComponent
 {
 public:
     //==============================================================================
-    Envelope(const String&, ESAudioProcessor&, AudioProcessorValueTreeState&, StringArray);
+    Envelope(const String&, ESAudioProcessor&, AudioProcessorValueTreeState&);
     ~Envelope();
     
     //==============================================================================
@@ -36,10 +36,11 @@ public:
     
 private:
     
-    SmoothedParameter* ref[EnvelopeParamNil][NUM_VOICES];
+    SmoothedParameter* ref[EnvelopeParamNil][NUM_STRINGS];
+    RangedAudioParameter* useVelocity;
 
-    tADSRT envs[NUM_VOICES];
-    float value[NUM_VOICES];
+    tADSRT envs[NUM_STRINGS];
+    float value[NUM_STRINGS];
     
     float expBuffer[EXP_BUFFER_SIZE];
     float expBufferSizeMinusOne;

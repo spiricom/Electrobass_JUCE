@@ -15,22 +15,25 @@
 
 class ESAudioProcessor;
 
-class LowpassFilter : public AudioComponent
+class Filter : public AudioComponent
 {
 public:
     //==============================================================================
-    LowpassFilter(const String&, ESAudioProcessor&, AudioProcessorValueTreeState&, StringArray);
-    ~LowpassFilter();
+    Filter(const String&, ESAudioProcessor&, AudioProcessorValueTreeState&);
+    ~Filter();
     
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock);
     
     //==============================================================================
+    void frame();
     float tick(int v, float input);
     
 private:
     
-    SmoothedParameter* ref[LowpassParamNil][NUM_VOICES];
+    SmoothedParameter* ref[FilterParamNil][NUM_STRINGS];
     
-    tEfficientSVF lowpass[NUM_VOICES];
+    tEfficientSVF svf[NUM_STRINGS];
+    
+    bool enabled;
 };

@@ -12,47 +12,54 @@
 #include "PluginProcessor.h"
 
 //==============================================================================
-LowpassFilter::LowpassFilter(const String& n, ESAudioProcessor& p,
-                             AudioProcessorValueTreeState& vts, StringArray s) :
-AudioComponent(n, p, vts, s)
+Filter::Filter(const String& n, ESAudioProcessor& p,
+                             AudioProcessorValueTreeState& vts) :
+AudioComponent(n, p, vts, cFilterParams, true)
 {
-    for (int i = 0; i < LowpassParamNil; ++i)
+    for (int i = 0; i < FilterParamNil; ++i)
     {
-        for (int v = 0; v < NUM_VOICES; ++v)
+        for (int v = 0; v < NUM_STRINGS; ++v)
         {
             ref[i][v] = params[i]->getUnchecked(v);
         }
     }
     
-    for (int i = 0; i < NUM_VOICES; i++)
+    for (int i = 0; i < NUM_STRINGS; i++)
     {
-        tEfficientSVF_init(&lowpass[i], SVFTypeLowpass, 2000.f, 0.4f, &processor.leaf);
+        tEfficientSVF_init(&svf[i], SVFTypeLowpass, 2000.f, 0.4f, &processor.leaf);
     }
 }
 
-LowpassFilter::~LowpassFilter()
+Filter::~Filter()
 {
     
 }
 
-void LowpassFilter::prepareToPlay (double sampleRate, int samplesPerBlock)
+void Filter::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     AudioComponent::prepareToPlay(sampleRate, samplesPerBlock);
 }
 
-float LowpassFilter::tick(int v, float input)
+void Filter::frame()
 {
-    float midiCutoff = LEAF_frequencyToMidi(ref[LowpassCutoff][v]->tick());
-    float keyFollow = ref[LowpassKeyFollow][v]->tick();
-    float q = ref[LowpassResonance][v]->tick();
+    enabled = *afpEnabled > 0;
+}
+
+float Filter::tick(int v, float input)
+{
+    if (!enabled) return input;
+    
+    float midiCutoff = LEAF_frequencyToMidi(ref[FilterCutoff][v]->tick());
+    float keyFollow = ref[FilterKeyFollow][v]->tick();
+    float q = ref[FilterResonance][v]->tick();
     
     float follow = processor.voiceNote[v] - 60.f;
     float adjustedMidiCutoff = (midiCutoff * (1.f - keyFollow)) + ((midiCutoff + follow) * keyFollow);
     float cutoff = LEAF_midiToFrequency(adjustedMidiCutoff);
     
     cutoff = LEAF_clip(0.0f, cutoff, 4095.f);
-    tEfficientSVF_setFreq(&lowpass[v], cutoff);
-    tEfficientSVF_setQ(&lowpass[v], q);
+    tEfficientSVF_setFreq(&svf[v], cutoff);
+    tEfficientSVF_setQ(&svf[v], q);
     
-    return tEfficientSVF_tick(&lowpass[v], input);
+    return tEfficientSVF_tick(&svf[v], input);
 }

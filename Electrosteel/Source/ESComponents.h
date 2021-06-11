@@ -63,6 +63,7 @@ public:
     String getTextFromValue(double value) override { return text; }
     Colour getColour() { return colour; }
     bool isBipolar() { return bipolar; }
+    bool isActive() { return sliderEnabled; }
     
     bool isInterestedInDragSource(const SourceDetails &dragSourceDetails) override;
     void itemDropped(const SourceDetails &dragSourceDetails) override;
@@ -71,6 +72,8 @@ public:
     
     void mouseDown(const MouseEvent& event) override;
     void mouseDrag(const MouseEvent& event) override;
+    
+    void updateRange();
 
     void setText(String s);
     void setTextColour(Colour colour);
@@ -113,14 +116,17 @@ public:
     void paint(Graphics& g) override;
     void resized() override;
     
+    void sliderValueChanged(Slider* slider) override;
+    
     void mouseDown(const MouseEvent& event) override;
     
-    void sliderValueChanged(Slider* slider) override;
+    void setRange(double newMin, double newMax, double newInt);
     
     void setText (const String& newText, NotificationType notification);
     void setFont (const Font& newFont);
     
     MappingTarget* getTarget(int index);
+    OwnedArray<MappingTarget>& getTargets();
     MappingSource* getSource();
     
     Slider& getSlider() { return slider; }
@@ -140,51 +146,6 @@ private:
 };
 
 //==============================================================================
-
-class ConnectionsContainer : public Component,
-                             public Timer
-{
-public:
-    ConnectionsContainer()
-    {
-        cursor = Drawable::createFromImageData(BinaryData::mappingtargeticon_svg,
-                                               BinaryData::mappingtargeticon_svgSize);
-        addChildComponent(cursor.get());
-        
-        setInterceptsMouseClicks(false, false);
-        
-        startTimer(10);
-    }
-    ~ConnectionsContainer() override {};
-    
-    void paint(Graphics &g) override
-    {
-        Point<float> mousePos = getMouseXYRelative().toFloat();
-        cursor->drawWithin(g, Rectangle<float>(10.f, 10.f).withCentre(mousePos),
-                           RectanglePlacement::fillDestination, 1.0f);
-        if (incompleteConnection) connections.getLast()->setEnd(mousePos);
-        g.setColour(Colours::gold);
-        for (auto line : connections) g.drawLine(*line);
-    }
-    
-    void timerCallback() override
-    {
-        repaint();
-    }
-    
-    void startConnection(float x, float y)
-    {
-        connections.add(new Line<float>(x, y, x, y));
-        incompleteConnection = true;
-    }
-
-    std::unique_ptr<Drawable> cursor;
-    OwnedArray<Line<float>> connections;
-    
-private:
-
-    bool incompleteConnection;
-};
 
 class ESTabbedComponent : public TabbedComponent
 {
@@ -631,31 +592,6 @@ public:
         rightTable.setRowHeight(h);
     }
     
-private:
-    
-    ESAudioProcessor& processor;
-    
-    TableListBox stringTable;
-    TableListBox leftTable;
-    TableListBox pedalTable;
-    TableListBox rightTable;
-    
-    TextButton exportButton;
-    TextButton importButton;
-    TextButton sendOutButton;
-    
-    static const int numColumns = CopedentColumnNil;
-    static const int numRows = NUM_VOICES;        // Number of strings
-    
-    StringArray columnList;
-    Array<Array<float>>& copedentArray;
-    RangedAudioParameter* fundamental;
-    
-    FileChooser exportChooser;
-    FileChooser importChooser;
-    
-    ESLookAndFeel laf;
-    
     //==============================================================================
     // This is a custom Label component, which we use for the table's editable text columns.
     class EditableTextCustomComponent : public Label
@@ -671,9 +607,9 @@ private:
         
         void mouseDown (const MouseEvent& event) override
         {
-//            // single click on the label should simply select the row
-//            owner.table.selectRowsBasedOnModifierKeys (row, event.mods, false);
-//
+            //            // single click on the label should simply select the row
+            //            owner.table.selectRowsBasedOnModifierKeys (row, event.mods, false);
+            //
             Label::mouseDown (event);
         }
         
@@ -713,6 +649,31 @@ private:
         int row, columnId;
         Colour textColour;
     };
+    
+private:
+    
+    ESAudioProcessor& processor;
+    
+    TableListBox stringTable;
+    TableListBox leftTable;
+    TableListBox pedalTable;
+    TableListBox rightTable;
+    
+    TextButton exportButton;
+    TextButton importButton;
+    TextButton sendOutButton;
+    
+    static const int numColumns = CopedentColumnNil;
+    static const int numRows = NUM_STRINGS;        // Number of strings
+    
+    StringArray columnList;
+    Array<Array<float>>& copedentArray;
+    RangedAudioParameter* fundamental;
+    
+    FileChooser exportChooser;
+    FileChooser importChooser;
+    
+    ESLookAndFeel laf;
     
     EditableTextCustomComponent fundamentalField;
     Label fundamentalLabel;

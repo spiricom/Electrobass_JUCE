@@ -13,18 +13,20 @@
 
 //==============================================================================
 Envelope::Envelope(const String& n, ESAudioProcessor& p,
-                   AudioProcessorValueTreeState& vts, StringArray s) :
-AudioComponent(n, p, vts, s)
+                   AudioProcessorValueTreeState& vts) :
+AudioComponent(n, p, vts, cEnvelopeParams, false)
 {
     // Trying to make it as fast as possible to access the SmoothedParameters
     // so we'll put pointers to them in a plain array instead of the OwnedArrays
     for (int i = 0; i < EnvelopeParamNil; ++i)
     {
-        for (int v = 0; v < NUM_VOICES; ++v)
+        for (int v = 0; v < NUM_STRINGS; ++v)
         {
             ref[i][v] = params[i]->getUnchecked(v);
         }
     }
+    
+    useVelocity = vts.getParameter(n + "Velocity");
     
     //exponential buffer rising from 0 to 1
     LEAF_generate_exp(expBuffer, 1000.0f, -1.0f, 0.0f, -0.0008f, EXP_BUFFER_SIZE);
@@ -35,7 +37,7 @@ AudioComponent(n, p, vts, s)
     expBufferSizeMinusOne = EXP_BUFFER_SIZE - 1;
     decayExpBufferSizeMinusOne = DECAY_EXP_BUFFER_SIZE - 1;
     
-    for (int i = 0; i < NUM_VOICES; i++)
+    for (int i = 0; i < NUM_STRINGS; i++)
     {
         tADSRT_init(&envs[i], expBuffer[0] * 8192.0f,
                     expBuffer[(int)(0.06f * expBufferSizeMinusOne)] * 8192.0f,
@@ -55,7 +57,7 @@ Envelope::~Envelope()
 void Envelope::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     AudioComponent::prepareToPlay(sampleRate, samplesPerBlock);
-    for (int i = 0; i < NUM_VOICES; i++)
+    for (int i = 0; i < NUM_STRINGS; i++)
     {
         tADSRT_setSampleRate(&envs[i], sampleRate);
     }
@@ -63,7 +65,7 @@ void Envelope::prepareToPlay (double sampleRate, int samplesPerBlock)
 
 void Envelope::frame()
 {
-    for (int v = 0; v < NUM_VOICES; v++)
+    for (int v = 0; v < NUM_STRINGS; v++)
     {
         float attack = ref[EnvelopeAttack][v]->skip(currentSamplesPerBlock);
         float decay = ref[EnvelopeDecay][v]->skip(currentSamplesPerBlock);
@@ -81,7 +83,7 @@ void Envelope::frame()
 
 void Envelope::tick()
 {
-    for (int v = 0; v < NUM_VOICES; v++)
+    for (int v = 0; v < NUM_STRINGS; v++)
     {
 //        float attack = ref[EnvelopeAttack][v]->tick();
 //        float decay = ref[EnvelopeDecay][v]->tick();
@@ -101,6 +103,7 @@ void Envelope::tick()
 
 void Envelope::noteOn(int voice, float velocity)
 {
+    if (useVelocity->getValue() == 0) velocity = 1.f;
     tADSRT_on(&envs[voice], velocity);
 }
 

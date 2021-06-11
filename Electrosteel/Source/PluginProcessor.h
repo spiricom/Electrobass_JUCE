@@ -76,6 +76,13 @@ public:
     void toggleSustain();
     
     //==============================================================================
+    bool midiChannelIsActive(int channel);
+    
+    //==============================================================================
+    bool getMPEMode();
+    void setMPEMode(bool enabled);
+    
+    //==============================================================================
     void sendCopedentMidiMessage();
     
     //==============================================================================
@@ -92,17 +99,15 @@ public:
     std::unique_ptr<juce::AudioFormatReaderSource> readerSource;
     
     LEAF leaf;
-    float voiceNote[NUM_VOICES];
-    float voiceFreq[NUM_VOICES];
+    float voiceNote[NUM_STRINGS];
+    float voiceFreq[NUM_STRINGS];
     
-    std::unique_ptr<SmoothedParameter> masterVolume;
-    
-    OwnedArray<SawPulseOscillator> sposcs;
-    OwnedArray<LowpassFilter> lps;
+    OwnedArray<Oscillator> oscs;
+    OwnedArray<Filter> filt;
     OwnedArray<Envelope> envs;
     OwnedArray<LowFreqOscillator> lfos;
+    std::unique_ptr<Output> output;
     
-    OwnedArray<SmoothedParameter> voiceAmpParams;
     OwnedArray<SmoothedParameter> pitchBendParams;
     OwnedArray<SmoothedParameter> ccParams;
     
@@ -110,18 +115,28 @@ public:
     
     Array<Array<float>> copedentArray;
     
+    int channelToString[NUM_CHANNELS+1];
+    
 private:
     
     AudioProcessorValueTreeState vts;
     
     char dummy_memory[1];
-    tSimplePoly voice[NUM_VOICES];
+    tSimplePoly strings[NUM_STRINGS];
     
     float centsDeviation[12];
     int currentTuning;
     int keyCenter;
     
     bool waitingToSendCopedent = false;
+    
+    bool mpeMode = true;
+    
+    int midiChannelNoteCount[NUM_CHANNELS+1];
+    int midiChannelActivity[NUM_CHANNELS+1];
+    int midiChannelActivityTimeout;
+    
+    std::atomic<float>* afpSeriesParallel;
     
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ESAudioProcessor)
