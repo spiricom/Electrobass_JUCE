@@ -17,28 +17,31 @@ class ESAudioProcessor;
 
 //==============================================================================
 
-class SawPulseOscillator : public AudioComponent
+class Oscillator : public AudioComponent
 {
 public:
     //==============================================================================
-    SawPulseOscillator(const String&, ESAudioProcessor&, AudioProcessorValueTreeState&, StringArray);
-    ~SawPulseOscillator();
+    Oscillator(const String&, ESAudioProcessor&, AudioProcessorValueTreeState&);
+    ~Oscillator();
     
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock);
     
     //==============================================================================
-//    void frame() override;
-    float tick(int v);
+    void frame();
+    void tick(int v, float* output);
     
 private:
     
-    SmoothedParameter* ref[SawPulseParamNil][NUM_VOICES];
+    SmoothedParameter* ref[OscParamNil][NUM_STRINGS];
     
-    tSawtooth saw[NUM_VOICES][NUM_OSC_PER_VOICE];
-    tRosenbergGlottalPulse pulse[NUM_VOICES][NUM_OSC_PER_VOICE];
+    tSawtooth saw[NUM_STRINGS];
+    tRosenbergGlottalPulse pulse[NUM_STRINGS];
     
-    float detune[NUM_VOICES][NUM_OSC_PER_VOICE];
+    bool enabled;
+    
+    std::atomic<float>* afpFilterSend;
+    
 //    tCycle pwmLFO1;
 //    tCycle pwmLFO2;
 };
@@ -49,14 +52,14 @@ class LowFreqOscillator : public AudioComponent
 {
 public:
     //==============================================================================
-    LowFreqOscillator(const String&, ESAudioProcessor&, AudioProcessorValueTreeState&, StringArray);
+    LowFreqOscillator(const String&, ESAudioProcessor&, AudioProcessorValueTreeState&);
     ~LowFreqOscillator();
     
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock);
     
     //==============================================================================
-    //    void frame() override;
+    void frame();
     void tick();
     
     void noteOn(int voice, float velocity);
@@ -66,10 +69,10 @@ public:
     
 private:
     
-    SmoothedParameter* ref[LowFreqParamNil][NUM_VOICES];
+    SmoothedParameter* ref[LowFreqParamNil][NUM_STRINGS];
     RangedAudioParameter* sync;
     
-    tCycle lfo[NUM_VOICES];
+    tCycle lfo[NUM_STRINGS];
     float phaseReset;
-    float value[NUM_VOICES];
+    float value[NUM_STRINGS];
 };

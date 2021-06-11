@@ -73,11 +73,11 @@ sliderEnabled(false),
 colour(Colours::transparentBlack)
 {
     setLookAndFeel(&laf);
-    setRange(-1., 1.);
+    setDoubleClickReturnValue(true, 0.);
     setSliderStyle(SliderStyle::LinearBarVertical);
     setTextBoxIsEditable(false);
     setVelocityBasedMode(true);
-    setVelocityModeParameters(1.0, 1, 0.08);
+    setVelocityModeParameters(1.0, 1, 0.075);
     setColour(trackColourId, Colours::black);
     setColour(backgroundColourId, Colours::black);
     setColour(textBoxTextColourId, colour);
@@ -126,6 +126,19 @@ void MappingTarget::mouseDrag(const MouseEvent& event)
     }
 }
 
+void MappingTarget::updateRange()
+{
+    ESDial* dial = dynamic_cast<ESDial*>(getParentComponent());
+    
+    auto value = dial->getSlider().getValue();
+    auto min = dial->getSlider().getMinimum();
+    auto max = dial->getSlider().getMaximum();
+    auto interval = dial->getSlider().getInterval();
+    
+    if (isBipolar()) setRange(-max, max, interval);
+    else setRange(min-value, max-value, interval);
+}
+
 void MappingTarget::setText(String s)
 {
     text = s;
@@ -141,6 +154,9 @@ void MappingTarget::setTextColour(Colour c)
 void MappingTarget::setMapping(MappingSource* source, float end, HookOperation op)
 {
     if (source == nullptr) return;
+    
+    updateRange();
+    
     sliderEnabled = true;
     String name = source->getName();
     setTextColour(source->getColour());
@@ -155,8 +171,7 @@ void MappingTarget::setMapping(MappingSource* source, float end, HookOperation o
         t->setHook(index, &(source->getValuePointer()[i]), start, end, op);
         if (i < n-1) i++;
     }
-    ESDial* attached = dynamic_cast<ESDial*>(getParentComponent());
-    setValue(end / attached->getSlider().getRange().getLength());
+    setValue(end, dontSendNotification);
 }
 
 void MappingTarget::removeMapping()
@@ -168,19 +183,21 @@ void MappingTarget::removeMapping()
     {
         t->resetHook(index);
     }
+    // Guarantee a change event is sent to listeners
+    setValue(getValue() != getMinimum() ? getMinimum() : getMaximum());
     getParentComponent()->repaint();
-    setValue(0.0);
 }
 
 void MappingTarget::setMappingRange(float end)
 {
+    updateRange();
+    
     float start = bipolar ? -end : 0.f;
     for (auto t : target)
     {
         t->setRange(index, start, end);
     }
-    ESDial* attached = dynamic_cast<ESDial*>(getParentComponent());
-    setValue(end / attached->getSlider().getRange().getLength());
+    setValue(end);
     DBG(String(start) + " " + String(end));
 }
 
@@ -259,68 +276,85 @@ ESDial::~ESDial()
 void ESDial::paint(Graphics& g)
 {
     Rectangle<int> area = getLocalBounds();
-    int w = area.getWidth();
     int h = area.getHeight();
     area.removeFromTop(h * 0.225f);
     
-    if (!t.isEmpty())
+    int ringWidth = h * 0.05f;
+    for (int i = 0; i <= t.size(); ++i)
     {
-        int ringWidth = h * 0.05f;
-        for (int i = 0; i < t.size(); ++i)
+        int expand = ringWidth*i;
+        if (i == t.size()) expand -= ringWidth/2;
+        Rectangle<int> outer = slider.getBounds().expanded(expand, expand);
+        
+        int x = outer.getX();
+        int y = outer.getY();
+        int width = outer.getWidth();
+        int height = outer.getHeight();
+        
+        auto radius = jmin(width / 2, height / 2) - width*0.15f;
+        auto centreX = x + width * 0.5f;
+        auto centreY = y + height * 0.5f;
+        auto rx = centreX - radius;
+        auto ry = centreY - radius;
+        auto rw = radius * 2.0f;
+        auto b = rw * 0.04f;
+        
+        auto startAngle = slider.getRotaryParameters().startAngleRadians;
+        auto endAngle = slider.getRotaryParameters().endAngleRadians;
+        
+        if (i == t.size())
         {
-            Rectangle<int> outer = slider.getBounds().expanded(ringWidth * (i), ringWidth * (i));
-            
-            int x = outer.getX();
-            int y = outer.getY();
-            int width = outer.getWidth();
-            int height = outer.getHeight();
-            
-            auto radius = jmin(width / 2, height / 2) - width*0.15f;
-            auto centreX = x + width * 0.5f;
-            auto centreY = y + height * 0.5f;
-            auto rx = centreX - radius;
-            auto ry = centreY - radius;
-            auto rw = radius * 2.0f;
-            auto b = rw * 0.05f;
-            
-            auto startAngle = slider.getRotaryParameters().startAngleRadians;
-            auto endAngle = slider.getRotaryParameters().endAngleRadians;
-            auto currentAngle = startAngle +
-            slider.valueToProportionOfLength(slider.getValue()) * (endAngle - startAngle);
-            auto angle = currentAngle + (t[i]->getValue() * (endAngle - startAngle));
+            Path marks;
+            marks.addArc(rx - b*4, ry - b*4, rw + b*8, rw + b*8, startAngle, endAngle, true);
+            float lengths[2];
+            lengths[0] = 1.f;
+            lengths[1] = 2.f;
+            PathStrokeType(h * 0.025f).createDashedStroke(marks, marks, lengths, 2);
+            g.setColour(Colours::grey);
+            g.fillPath(marks);
+            continue;
+        }
+        
+        // Should not reflect negative values
+        auto sliderNorm = slider.valueToProportionOfLength(slider.getValue());
+        // Should reflect negative values
+        auto targetNorm = t[i]->getValue() / t[i]->getRange().getLength();
+        auto currentAngle = startAngle + (sliderNorm * (endAngle - startAngle));
+        auto angle = currentAngle + (targetNorm * (endAngle - startAngle));
+        angle = fmax(startAngle, fmin(angle, endAngle));
+        
+        Path arc;
+        arc.addArc(rx - b*4, ry - b*4, rw + b*8, rw + b*8, currentAngle, angle, true);
+        
+        Rectangle<int> inner = slider.getBounds().expanded(ringWidth*(i-1) + 1, ringWidth*(i-1) + 1);
+        
+        x = inner.getX();
+        y = inner.getY();
+        width = inner.getWidth();
+        height = inner.getHeight();
+        
+        radius = jmin(width / 2, height / 2) - width*0.15f;
+        centreX = x + width * 0.5f;
+        centreY = y + height * 0.5f;
+        auto rx2 = centreX - radius;
+        auto ry2 = centreY - radius;
+        auto rw2 = radius * 2.0f;
+        auto b2 = rw2 * 0.04f;
+        
+        arc.addArc(rx2 - b2*4, ry2 - b2*4, rw2 + b2*8, rw2 + b2*8, angle, currentAngle, false);
+        g.setColour(t[i]->getColour());
+        g.fillPath(arc);
+        
+        if (t[i]->isBipolar())
+        {
+            angle = currentAngle - (targetNorm * (endAngle - startAngle));
+            currentAngle = fmax(startAngle, fmin(currentAngle, endAngle));
             angle = fmax(startAngle, fmin(angle, endAngle));
-            
-            Path arc;
-            arc.addArc(rx - b*4, ry - b*4, rw + b*8, rw + b*8, currentAngle, angle, true);
-            
-            Rectangle<int> inner = slider.getBounds().expanded(ringWidth * (i-1)+1, ringWidth * (i-1)+1);
-            
-            x = inner.getX();
-            y = inner.getY();
-            width = inner.getWidth();
-            height = inner.getHeight();
-            
-            radius = jmin(width / 2, height / 2) - width*0.15f;
-            centreX = x + width * 0.5f;
-            centreY = y + height * 0.5f;
-            auto rx2 = centreX - radius;
-            auto ry2 = centreY - radius;
-            auto rw2 = radius * 2.0f;
-            auto b2 = rw * 0.05f;
-
-            arc.addArc(rx2 - b2*4, ry2 - b*4, rw2 + b*8, rw2 + b2*8, angle, currentAngle, false);
-            g.setColour(t[i]->getColour());
-            g.fillPath(arc);
-            
-            if (t[i]->isBipolar())
-            {
-                angle = currentAngle - (t[i]->getValue() * (endAngle - startAngle));
-                Path oppArc;
-                oppArc.addArc(rx - b*4, ry - b*4, rw + b*8, rw + b*8, currentAngle, angle, true);
-                oppArc.addArc(rx2 - b2*4, ry2 - b2*4, rw2 + b2*8, rw2 + b2*8, angle, currentAngle, false);
-                g.setColour(t[i]->getColour().withSaturation(0.1));
-                g.fillPath(oppArc);
-            }
+            Path oppArc;
+            oppArc.addArc(rx - b*4, ry - b*4, rw + b*8, rw + b*8, currentAngle, angle, true);
+            oppArc.addArc(rx2 - b2*4, ry2 - b2*4, rw2 + b2*8, rw2 + b2*8, angle, currentAngle, false);
+            g.setColour(t[i]->getColour().withSaturation(0.1));
+            g.fillPath(oppArc);
         }
     }
 }
@@ -343,7 +377,7 @@ void ESDial::resized()
     {
         slider.setBounds(area.removeFromTop(h * 0.6f)
                          .withSizeKeepingCentre(h * 0.6f, h * 0.6f)
-                         .reduced(h * 0.09f, h * 0.09f));
+                         .reduced(h * 0.11f, h * 0.11f));
         area.removeFromTop(h * 0.025f);
         
         int r = area.getWidth() % 3;
@@ -360,15 +394,9 @@ void ESDial::resized()
 
 void ESDial::mouseDown(const MouseEvent& event)
 {
-    if (MappingTarget* mt = dynamic_cast<MappingTarget*>(event.originalComponent))
+    if (MappingTarget* mt = dynamic_cast<MappingTarget*>(event.originalComponent->getParentComponent()))
     {
-        float pos = slider.valueToProportionOfLength(slider.getValue());
-        mt->setRange(-pos, 1.f-pos);
-    }
-    else if (MappingTarget* mt = dynamic_cast<MappingTarget*>(event.originalComponent->getParentComponent()))
-    {
-        float pos = slider.valueToProportionOfLength(slider.getValue());
-        mt->setRange(-pos, 1.f-pos);
+        mt->updateRange();
     }
 }
 
@@ -376,10 +404,14 @@ void ESDial::sliderValueChanged(Slider* s)
 {
     if (MappingTarget* mt = dynamic_cast<MappingTarget*>(s))
     {
-        float v = mt->getValue();
-        mt->setMappingRange(v*slider.getRange().getLength());
+        mt->setMappingRange(mt->getValue());
     }
     repaint();
+}
+
+void ESDial::setRange(double newMin, double newMax, double newInt)
+{
+    slider.setRange(newMin, newMax, newInt);
 }
 
 void ESDial::setText (const String& newText, NotificationType notification)
@@ -395,6 +427,11 @@ void ESDial::setFont (const Font& newFont)
 MappingTarget* ESDial::getTarget(int index)
 {
     return t[index];
+}
+
+OwnedArray<MappingTarget>& ESDial::getTargets()
+{
+    return t;
 }
 
 MappingSource* ESDial::getSource()
