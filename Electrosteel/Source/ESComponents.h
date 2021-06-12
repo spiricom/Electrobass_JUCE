@@ -344,7 +344,7 @@ public:
         
         // Not really important since tuning shouldn't matter much at precision this high,
         // but this will stop any potential ugly numbers from displaying
-        value = round( value * 10000. ) / 10000.;
+        value = round( value * 1000. ) / 1000.;
         
         String text = String();
         bool displayAsDestination = columnNumber <= 1 || asDestination;
@@ -355,6 +355,7 @@ public:
 //                if (value > 0.0f) for (int i = 0; i < value; ++i) text += String("+");
 //                else for (int i = 0; i < -value; ++i) text += String("-");
                 value += copedentArray[0][rowNumber];
+                value = round( value * 1000. ) / 1000.;
             }
             int n = round(value);
             double f = value - n;
@@ -387,8 +388,12 @@ public:
         else if (!text.containsAnyOf("CDEFGAB"))
         {
             value = text.getDoubleValue();
+            
             if (text.contains("/"))
             {
+                int whereIsDivide = text.indexOf("/");
+                String denominator = text.substring(whereIsDivide+1);
+                value = value / denominator.getDoubleValue();
                 float f = fundamental->convertFrom0to1(fundamental->getValue());
                 float h = mtof(f);
                 value = ftom(value * h);
