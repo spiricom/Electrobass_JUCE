@@ -59,6 +59,9 @@ public:
     void getAllChildren(Component* component, Array<Component*> &children);
     Array<Component*> getAllChildren();
     
+    void addMappingSource(String name, MappingSource* source);
+    void addMappingTarget(String name, MappingTarget* source);
+    
     ESAudioProcessor& processor;
     AudioProcessorValueTreeState& vts;
     
@@ -89,6 +92,9 @@ private:
     std::unique_ptr<Drawable> logo;
     Label synderphonicsLabel;
     Label electrosteelLabel;
+    
+    HashMap<String, MappingSource*> sourceMap;
+    HashMap<String, MappingTarget*> targetMap;
     
     OwnedArray<SliderAttachment> sliderAttachments;
     OwnedArray<ButtonAttachment> buttonAttachments;

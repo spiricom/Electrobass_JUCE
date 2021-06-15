@@ -128,8 +128,8 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
         layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
     }
     
-    layout.add (std::make_unique<AudioParameterFloat> ("Master", "Master",
-                                                       0., 2., 1.));
+//    layout.add (std::make_unique<AudioParameterFloat> ("Master", "Master",
+//                                                       0., 2., 1.));
     
     //==============================================================================
     for (int i = 1; i < CopedentColumnNil; ++i)
@@ -170,10 +170,11 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
     
     tSimplePoly_init(&strings[0], 12, &leaf);
     tSimplePoly_setNumVoices(&strings[0], 1);
+    voiceNote[0] = 0;
     for (int i = 1; i < NUM_STRINGS; i++)
     {
         tSimplePoly_init(&strings[i], 1, &leaf);
-        voiceFreq[i] = 220.0f;
+        voiceNote[i] = 0;
     }
 
     leaf.clearOnAllocation = 0;
@@ -206,10 +207,15 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
     // to allow for env mapping
     for (int i = 0; i < NUM_STRINGS; ++i)
     {
-        output->getParameter(OutputAmp)[i]->setHook(2, &(envs[NUM_ENVS-1]->getValuePointer()[i]),
-                                                    0.0, 1.0, HookAdd);
-        filt[0]->getParameter(FilterCutoff)[i]->setHook(2, envs[NUM_ENVS-1]->getValuePointer(),
-                                                       0.f, 5000.f, HookAdd);
+        String name = envs[NUM_ENVS-1]->name;
+        output->getParameterArray(OutputAmp)[i]
+        ->setHook(name, 2, &(envs[NUM_ENVS-1]->getValuePointer()[i]),
+                  0.0, 1.0, HookAdd);
+        
+        name = envs[NUM_ENVS-2]->name;
+        filt[0]->getParameterArray(FilterCutoff)[i]
+        ->setHook(name, 2, &(envs[NUM_ENVS-2]->getValuePointer()[i]),
+                  0.f, 24.f, HookAdd);
     }
     
     for (int i = 0; i < NUM_MACROS; ++i)
@@ -436,8 +442,6 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
             float tempPitchClass = ((((int)tempNote) - keyCenter) % 12 );
             float tunedNote = tempNote + centsDeviation[(int)tempPitchClass];
             voiceNote[v] = tunedNote;
-            voiceFreq[v] = LEAF_midiToFrequency(tunedNote);
-            if (voiceFreq[v] < 10.0f) voiceFreq[v] = 0.0f;
             
             filterSamples[0] = 0.f;
             filterSamples[1] = 0.f;
@@ -446,8 +450,8 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
                 oscs[i]->tick(v, filterSamples);
             }
             
-            float filter1 = filt[0]->tick(v, filterSamples[0]);
-            float sample = filt[1]->tick(v, filterSamples[1] + filter1*(1.f-parallel))
+            float filter1 = filt[0]->tick(v, filterSamples[0]*INV_NUM_OSCS);
+            float sample = filt[1]->tick(v, filterSamples[1]*INV_NUM_OSCS + filter1*(1.f-parallel))
             + filter1*parallel;
             output->tick(v, sample, samples, totalNumOutputChannels);
         }

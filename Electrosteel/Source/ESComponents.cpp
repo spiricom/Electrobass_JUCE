@@ -14,16 +14,18 @@
 //==============================================================================
 //==============================================================================
 
-MappingSource::MappingSource(ESAudioProcessorEditor& editor, const String &name, float* source,
-                             int n, bool bipolar, Colour colour) :
-Component(name),
-label(name, name),
-button(name, DrawableButton::ButtonStyle::ImageFitted),
+MappingSource::MappingSource(ESAudioProcessorEditor& editor,
+                             const String &paramName, const String &displayName,
+                             float* source, int n, bool bipolar, Colour colour) :
+Component(paramName),
+label(displayName, displayName),
+button(displayName, DrawableButton::ButtonStyle::ImageFitted),
 source(source),
 numSourcePointers(n),
 bipolar(bipolar),
 colour(colour)
 {
+    editor.addMappingSource(paramName, this);
     addMouseListener(&editor, true);
     
     label.setLookAndFeel(&laf);
@@ -64,14 +66,18 @@ int MappingSource::getNumSourcePointers()
 //==============================================================================
 //==============================================================================
 
-MappingTarget::MappingTarget(const String &name, OwnedArray<SmoothedParameter>& target, int index) :
+MappingTarget::MappingTarget(ESAudioProcessorEditor& editor, const String &name,
+                             OwnedArray<SmoothedParameter>& targetParameters,
+                             int index) :
 Slider(name),
 text(""),
-target(target),
+targetParameters(targetParameters),
 index(index),
 sliderEnabled(false),
 colour(Colours::transparentBlack)
 {
+    editor.addMappingTarget(name, this);
+    
     setLookAndFeel(&laf);
     setDoubleClickReturnValue(true, 0.);
     setSliderStyle(SliderStyle::LinearBarVertical);
@@ -107,14 +113,17 @@ void MappingTarget::resized()
 
 void MappingTarget::mouseDown(const MouseEvent& event)
 {
-    if (sliderEnabled) Slider::mouseDown(event);
-    if (event.mods.isCtrlDown() || event.mods.isRightButtonDown())
+    if (sliderEnabled)
     {
-        PopupMenu menu;
-        menu.setLookAndFeel(&laf);
-        menu.addItem(1, "Remove");        
-        menu.showMenuAsync(PopupMenu::Options(),
-                           ModalCallbackFunction::forComponent (menuCallback, this) );
+        Slider::mouseDown(event);
+        if (event.mods.isCtrlDown() || event.mods.isRightButtonDown())
+        {
+            PopupMenu menu;
+            menu.setLookAndFeel(&laf);
+            menu.addItem(1, "Remove");
+            menu.showMenuAsync(PopupMenu::Options(),
+                               ModalCallbackFunction::forComponent (menuCallback, this) );
+        }
     }
 }
 
@@ -123,6 +132,16 @@ void MappingTarget::mouseDrag(const MouseEvent& event)
     if (sliderEnabled)
     {
         Slider::mouseDrag(event);
+    }
+}
+
+void MappingTarget::updateMapping(HashMap<String, MappingSource*>& sourceMap)
+{
+    ParameterHook& hook = targetParameters[0]->getHook(index);
+    if (hook.sourceName.isNotEmpty())
+    {
+        MappingSource* source = sourceMap[hook.sourceName];
+        setMapping(source, hook.min+hook.length, hook.operation);
     }
 }
 
@@ -166,9 +185,9 @@ void MappingTarget::setMapping(MappingSource* source, float end, HookOperation o
     int i = 0;
     int n = source->getNumSourcePointers();
     float start = bipolar ? -end : 0.f;
-    for (auto t : target)
+    for (auto param : targetParameters)
     {
-        t->setHook(index, &(source->getValuePointer()[i]), start, end, op);
+        param->setHook(source->getName(), index, &(source->getValuePointer()[i]), start, end, op);
         if (i < n-1) i++;
     }
     setValue(end, dontSendNotification);
@@ -179,12 +198,14 @@ void MappingTarget::removeMapping()
     sliderEnabled = false;
     setTextColour(Colours::transparentBlack);
     setText("");
-    for (auto t : target)
+    for (auto param : targetParameters)
     {
-        t->resetHook(index);
+        param->resetHook(index);
     }
-    // Guarantee a change event is sent to listeners
+    // Guarantee a change event is sent to listeners and set to 0
+    // Feels like there should be a better way to do this...
     setValue(getValue() != getMinimum() ? getMinimum() : getMaximum());
+    setValue(0.f);
     getParentComponent()->repaint();
 }
 
@@ -193,9 +214,9 @@ void MappingTarget::setMappingRange(float end)
     updateRange();
     
     float start = bipolar ? -end : 0.f;
-    for (auto t : target)
+    for (auto param : targetParameters)
     {
-        t->setRange(index, start, end);
+        param->setRange(index, start, end);
     }
     setValue(end);
     DBG(String(start) + " " + String(end));
@@ -227,9 +248,9 @@ label(name, name)
     addAndMakeVisible(&label);
 }
 
-ESDial::ESDial(ESAudioProcessorEditor& editor, const String& name,
+ESDial::ESDial(ESAudioProcessorEditor& editor, const String& paramName, const String& displayName,
                Colour colour, float* source, int n, bool bipolar) :
-label(name, name)
+label(displayName, displayName)
 {
     slider.setLookAndFeel(&laf);
     slider.setSliderStyle(Slider::RotaryVerticalDrag);
@@ -238,13 +259,13 @@ label(name, name)
     slider.addListener(this);
     addAndMakeVisible(&slider);
 
-    s = std::make_unique<MappingSource>(editor, name, source, n, bipolar, colour);
+    s = std::make_unique<MappingSource>(editor, paramName, displayName, source, n, bipolar, colour);
     addAndMakeVisible(s.get());
 }
 
-ESDial::ESDial(ESAudioProcessorEditor& editor, const String& name,
+ESDial::ESDial(ESAudioProcessorEditor& editor, const String& paramName, const String& displayName,
                OwnedArray<SmoothedParameter>& target) :
-label(name, name)
+label(displayName, displayName)
 {
     slider.setLookAndFeel(&laf);
     slider.setSliderStyle(Slider::RotaryVerticalDrag);
@@ -260,7 +281,7 @@ label(name, name)
 
     for (int i = 0; i < numTargets; ++i)
     {
-        t.add(new MappingTarget("T" + String(i+1), target, i));
+        t.add(new MappingTarget(editor, paramName + "T" + String(i+1), target, i));
         t[i]->addListener(this);
         t[i]->addMouseListener(this, true);
         addAndMakeVisible(t[i]);

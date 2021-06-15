@@ -50,7 +50,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     
     for (int i = 0; i < NUM_MACROS; ++i)
     {
-        macroDials.add(new ESDial(*this, "M" + String(i+1), Colours::red,
+        macroDials.add(new ESDial(*this, "M" + String(i+1), "M" + String(i+1), Colours::red,
                                   processor.ccParams[i]->getValuePointer(), 1, false));
         sliderAttachments.add(new SliderAttachment(vts, "M" + String(i+1), macroDials[i]->getSlider()));
         tab1.addAndMakeVisible(macroDials[i]);
@@ -130,13 +130,15 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     envsAndLFOs.setLookAndFeel(&laf);
     for (int i = 0; i < NUM_ENVS; ++i)
     {
-        String name = "Env" + String(i+1);
+        String paramName = "Envelope" + String(i+1);
+        String displayName = "Env" + String(i+1);
         envsAndLFOs.addTab(" ", Colours::black, new EnvModule(*this, vts, *processor.envs[i]), true);
         envsAndLFOs.setColour(TabbedComponent::outlineColourId, Colours::darkgrey);
         
         TabbedButtonBar& bar = envsAndLFOs.getTabbedButtonBar();
         bar.getTabButton(i)
-        ->setExtraComponent(new MappingSource(*this, name, processor.envs[i]->getValuePointer(),
+        ->setExtraComponent(new MappingSource(*this, paramName, displayName,
+                                              processor.envs[i]->getValuePointer(),
                                               NUM_STRINGS, false, Colours::cyan),
                             TabBarButton::ExtraComponentPlacement::afterText);
         bar.setColour(TabbedButtonBar::tabOutlineColourId, Colours::darkgrey);
@@ -148,14 +150,16 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     }
     for (int i = 0; i < NUM_LFOS; ++i)
     {
-        String name = "LFO" + String(i+1);
+        String paramName = "LFO" + String(i+1);
+        String displayName = paramName;
         envsAndLFOs.addTab(" ", Colours::black,
                            new LFOModule(*this, vts, *processor.lfos[i]), true);
         envsAndLFOs.setColour(TabbedComponent::outlineColourId, Colours::darkgrey);
         
         TabbedButtonBar& bar = envsAndLFOs.getTabbedButtonBar();
         bar.getTabButton(i + NUM_ENVS)
-        ->setExtraComponent(new MappingSource(*this, name, processor.lfos[i]->getValuePointer(),
+        ->setExtraComponent(new MappingSource(*this, paramName, displayName,
+                                              processor.lfos[i]->getValuePointer(),
                                               NUM_STRINGS, true, Colours::lime),
                             TabBarButton::ExtraComponentPlacement::afterText);
         bar.setColour(TabbedButtonBar::tabOutlineColourId, Colours::darkgrey);
@@ -165,12 +169,6 @@ chooser("Select a .wav file to load...", {}, "*.wav")
             bar.getTabButton(i)->setAlpha(i == 0 ? 1.0f : 0.5f);
         }
     }
-    
-    MappingSource* env4 =
-    dynamic_cast<MappingSource*>(envsAndLFOs.getTabbedButtonBar().getTabButton(3)->getExtraComponent());
-    
-    outputModule->getDial(OutputAmp)->getTarget(2)->setMapping(env4, 1.0f, HookAdd);
-    filterModules[0]->getDial(FilterCutoff)->getTarget(2)->setMapping(env4, 5000.0f, HookAdd);
     
     for (int i = 0; i < CopedentColumnNil; ++i)
     {
@@ -212,6 +210,11 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     
     //    addAndMakeVisible(&container);
     
+    for (auto target : targetMap)
+    {
+        target->updateMapping(sourceMap);
+    }
+    
     startTimerHz(30);
 }
 
@@ -228,9 +231,15 @@ ESAudioProcessorEditor::~ESAudioProcessorEditor()
         channelStringButtons[i]->setLookAndFeel(nullptr);
         pitchBendSliders[i]->setLookAndFeel(nullptr);
     }
+    
+    seriesLabel.setLookAndFeel(nullptr);
+    parallelLabel.setLookAndFeel(nullptr);
     envsAndLFOs.setLookAndFeel(nullptr);
     for (int i = 0; i < CopedentColumnNil; ++i)
     copedentButtons[i]->setLookAndFeel(nullptr);
+    
+    sliderAttachments.clear();
+    buttonAttachments.clear();
 }
 
 //==============================================================================
@@ -269,7 +278,7 @@ void ESAudioProcessorEditor::resized()
     
     for (int i = 0; i < NUM_MACROS; ++i)
     {
-        macroDials[i]->setBounds(6*s + 56*s*i, 525*s, knobSize, knobSize*1.4f);
+        macroDials[i]->setBounds(6*s + 56*s*i, 527*s, knobSize, knobSize*1.4f);
     }
     
     for (int i = 0; i < NUM_OSCS; ++i)
@@ -327,7 +336,7 @@ void ESAudioProcessorEditor::resized()
     //==============================================================================
     // TAB2 ========================================================================
     
-    copedentTable.setBoundsRelative(0.05f, 0.1f, 0.9f, 0.8f);
+    copedentTable.setBoundsRelative(0.05f, 0.08f, 0.9f, 0.84f);
     
     //==============================================================================
     
@@ -491,6 +500,16 @@ Array<Component*> ESAudioProcessorEditor::getAllChildren()
     return children;
 }
 
+void ESAudioProcessorEditor::addMappingSource(String name, MappingSource* source)
+{
+    sourceMap.set(name, source);
+}
+
+void ESAudioProcessorEditor::addMappingTarget(String name, MappingTarget* target)
+{
+    targetMap.set(name, target);
+}
+
 //==============================================================================
 //==============================================================================
 
@@ -511,7 +530,9 @@ outlineColour(Colours::transparentBlack)
     
     for (int i = 0; i < ac.paramNames.size(); i++)
     {
-        dials.add(new ESDial(editor, ac.paramNames[i], ac.getParameter(i)));
+        String paramName = ac.name + ac.paramNames[i];
+        String displayName = ac.paramNames[i];
+        dials.add(new ESDial(editor, paramName, displayName, ac.getParameterArray(i)));
         addAndMakeVisible(dials[i]);
         sliderAttachments.add(new SliderAttachment(vts, ac.name + ac.paramNames[i], dials[i]->getSlider()));
         dials[i]->getSlider().addListener(this);
@@ -531,7 +552,9 @@ outlineColour(Colours::transparentBlack)
 
 ESModule::~ESModule()
 {
-    
+    sliderAttachments.clear();
+    buttonAttachments.clear();
+    comboBoxAttachments.clear();
 }
 
 void ESModule::paint(Graphics &g)
@@ -590,7 +613,7 @@ ESModule(editor, vts, ac, 0.05f, 0.132f, 0.05f, 0.18f, 0.78f)
     
     double pitch = getDial(OscPitch)->getSlider().getValue();
     double fine = getDial(OscFine)->getSlider().getValue()*0.01; // Fine is in cents for better precision
-    pitchLabel.setText(String(pitch+fine, 4), dontSendNotification);
+    pitchLabel.setText(String(pitch+fine, 3), dontSendNotification);
     pitchLabel.setLookAndFeel(&laf);
     pitchLabel.setEditable(true);
     pitchLabel.setJustificationType(Justification::centred);
@@ -623,7 +646,9 @@ ESModule(editor, vts, ac, 0.05f, 0.132f, 0.05f, 0.18f, 0.78f)
 
 OscModule::~OscModule()
 {
-    
+    sliderAttachments.clear();
+    buttonAttachments.clear();
+    comboBoxAttachments.clear();
 }
 
 void OscModule::resized()
@@ -690,7 +715,7 @@ void OscModule::displayPitch()
     auto pitch = getDial(OscPitch)->getSlider().getValue();
     auto fine = getDial(OscFine)->getSlider().getValue()*0.01;
     pitchLabel.setColour(Label::textColourId, Colours::gold.withBrightness(0.95f));
-    pitchLabel.setText(String(pitch+fine, 4), dontSendNotification);
+    pitchLabel.setText(String(pitch+fine, 3), dontSendNotification);
 }
 
 void OscModule::displayPitchMapping(MappingTarget* mt)
@@ -707,7 +732,7 @@ void OscModule::displayPitchMapping(MappingTarget* mt)
         String text;
         if (mt->isBipolar()) text = String::charToString(0xb1);
         else text = (value >= 0 ? "+" : "-");
-        text += String(value, 4);
+        text += String(value, 3);
         pitchLabel.setText(text, dontSendNotification);
     }
     else if (mt->getParentComponent() == getDial(OscFine))
@@ -716,7 +741,7 @@ void OscModule::displayPitchMapping(MappingTarget* mt)
         String text;
         if (mt->isBipolar()) text = String::charToString(0xb1);
         else text = (value >= 0 ? "+" : "-");
-        text += String(value*0.01, 4);
+        text += String(value*0.01, 3);
         pitchLabel.setText(text, dontSendNotification);
     }
 }
@@ -731,7 +756,7 @@ ESModule(editor, vts, ac, 0.05f, 0.2f, 0.05f, 0.2f, 0.7f)
     outlineColour = Colours::darkgrey;
     
     double cutoff = getDial(FilterCutoff)->getSlider().getValue();
-    cutoffLabel.setText(String(cutoff, 1), dontSendNotification);
+    cutoffLabel.setText(String(cutoff, 2), dontSendNotification);
     cutoffLabel.setLookAndFeel(&laf);
     cutoffLabel.setEditable(true);
     cutoffLabel.setJustificationType(Justification::centred);
@@ -749,7 +774,9 @@ ESModule(editor, vts, ac, 0.05f, 0.2f, 0.05f, 0.2f, 0.7f)
 
 FilterModule::~FilterModule()
 {
-    
+    sliderAttachments.clear();
+    buttonAttachments.clear();
+    comboBoxAttachments.clear();
 }
 
 void FilterModule::resized()
@@ -807,7 +834,7 @@ void FilterModule::displayCutoff()
 {
     double cutoff = getDial(FilterCutoff)->getSlider().getValue();
     cutoffLabel.setColour(Label::textColourId, Colours::gold.withBrightness(0.95f));
-    cutoffLabel.setText(String(cutoff, 1), dontSendNotification);
+    cutoffLabel.setText(String(cutoff, 2), dontSendNotification);
 }
 
 void FilterModule::displayCutoffMapping(MappingTarget* mt)
@@ -820,7 +847,7 @@ void FilterModule::displayCutoffMapping(MappingTarget* mt)
         String text;
         if (mt->isBipolar()) text = String::charToString(0xb1);
         else text = (value >= 0 ? "+" : "-");
-        text += String(value, 1);
+        text += String(value, 2);
         cutoffLabel.setText(text, dontSendNotification);
     }
 }
@@ -839,7 +866,9 @@ ESModule(editor, vts, ac, 0.04f, 0.13f, 0.0675f, 0.16f, 0.84f)
 
 EnvModule::~EnvModule()
 {
-    
+    sliderAttachments.clear();
+    buttonAttachments.clear();
+    comboBoxAttachments.clear();
 }
 
 void EnvModule::resized()
@@ -879,7 +908,9 @@ ESModule(editor, vts, ac, 0.12f, 0.13f, 0.185f, 0.16f, 0.84f)
 
 LFOModule::~LFOModule()
 {
-    
+    sliderAttachments.clear();
+    buttonAttachments.clear();
+    comboBoxAttachments.clear();
 }
 
 void LFOModule::resized()
@@ -960,13 +991,15 @@ ESModule(editor, vts, ac, 0.1f, 0.2f, 0.1f, 0.125f, 0.75f)
     outlineColour = Colours::darkgrey;
     
     masterDial = std::make_unique<ESDial>(editor, "Master");
-    sliderAttachments.add(new SliderAttachment(vts, "Master", masterDial->getSlider()));
+//    sliderAttachments.add(new SliderAttachment(vts, "Master", masterDial->getSlider()));
     addAndMakeVisible(masterDial.get());
 }
 
 OutputModule::~OutputModule()
 {
-    
+    sliderAttachments.clear();
+    buttonAttachments.clear();
+    comboBoxAttachments.clear();
 }
 
 void OutputModule::resized()

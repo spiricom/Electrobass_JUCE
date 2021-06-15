@@ -16,7 +16,7 @@ processor(processor)
 {
     raw = vts.getRawParameterValue(paramId);
     parameter = vts.getParameter(paramId);
-    for (int i = 0; i < 3; ++i) hooks[i] = ParameterHook(&value0, 0.0f, 0.0f, HookAdd);
+    for (int i = 0; i < 3; ++i) hooks[i] = ParameterHook("", &value0, 0.0f, 0.0f, HookAdd);
     processor.params.add(this);
 }
 
@@ -25,9 +25,9 @@ processor(processor)
 AudioComponent::AudioComponent(const String& n, ESAudioProcessor& p,
                                AudioProcessorValueTreeState& vts, StringArray s,
                                bool toggleable) :
+name(n),
 processor(p),
 vts(vts),
-name(n),
 paramNames(s),
 toggleable(toggleable)
 {
@@ -60,7 +60,7 @@ void AudioComponent::prepareToPlay (double sampleRate, int samplesPerBlock)
     currentSamplesPerBlock = samplesPerBlock;
 }
 
-OwnedArray<SmoothedParameter>& AudioComponent::getParameter(int p)
+OwnedArray<SmoothedParameter>& AudioComponent::getParameterArray(int p)
 {
     return *params[p];
 }
@@ -101,12 +101,12 @@ void Output::tick(int v, float input, float* output, int numChannels)
     float amp = ref[OutputAmp][v]->tick();
     float pan = ref[OutputPan][v]->tick();
     
-    input *= amp * master->tick();;
+    input *= amp;// * master->tick();
     
     if (numChannels > 1)
     {
-        output[0] += 2.f*input*(1.f-pan);
-        output[1] += 2.f*input*pan;
+        output[0] += input*(1.f-pan);
+        output[1] += input*pan;
     }
     else output[0] += input;
 }

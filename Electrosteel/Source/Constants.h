@@ -16,12 +16,11 @@
 #define NUM_MACROS 16
 
 #define NUM_STRINGS 12
-#define NUM_OSC_PER_VOICE 3
-#define INV_NUM_OSC_PER_VOICE 0.333333f
 
 #define NUM_CHANNELS (NUM_STRINGS+1)
 
 #define NUM_OSCS 3
+#define INV_NUM_OSCS 0.333333f
 #define NUM_FILT 2
 #define NUM_ENVS 4
 #define NUM_LFOS 4
@@ -77,7 +76,7 @@ static const StringArray cLowFreqParams = {
     "Sync Phase"
 };
 static const std::vector<std::vector<float>> vLowFreqInit = {
-    { 0.0f, 20.f, 1.0f },  //Rate
+    { 0.0f, 30.f, 1.0f },  //Rate
     { 0.0f, 1.0f, 0.0f },  //Shape
     { 0.0f, 1.0f, 0.0f} // Phase Offset
 };
@@ -97,7 +96,7 @@ static const StringArray cFilterParams = {
     "KeyFollow"
 };
 static const std::vector<std::vector<float>> vFilterInit = {
-    { 0.0f, 10000.f, 2500.f },   //Cutoff
+    { 0.0f, 127.f, 72.f },   //Cutoff
     { 0.1f, 2.f, 0.4f },   //Resonance
     { 0.0f, 1.f, 0.5f }   //KeyFollow
 };

@@ -100,7 +100,6 @@ public:
     
     LEAF leaf;
     float voiceNote[NUM_STRINGS];
-    float voiceFreq[NUM_STRINGS];
     
     OwnedArray<Oscillator> oscs;
     OwnedArray<Filter> filt;
@@ -114,6 +113,8 @@ public:
     OwnedArray<SmoothedParameter> params;
     
     Array<Array<float>> copedentArray;
+    String copedentName = "";
+    int copedentNumber = 0;
     
     int channelToString[NUM_CHANNELS+1];
     

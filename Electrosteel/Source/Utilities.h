@@ -28,6 +28,7 @@ class ParameterHook
 public:
     //==============================================================================
     ParameterHook() :
+    sourceName(""),
     hook(&value0),
     min(0.0f),
     length(0.0f),
@@ -35,7 +36,8 @@ public:
     {
     }
     
-    ParameterHook(float* hook, float min, float max, HookOperation op) :
+    ParameterHook(String sourceName, float* hook, float min, float max, HookOperation op) :
+    sourceName(sourceName),
     hook(hook),
     min(min),
     length(max-min),
@@ -61,12 +63,15 @@ public:
     
     float getValue()
     {
-        return (*hook * length + min);
+        return ((*hook * length) + min);
     }
 
+    String sourceName;
     float* hook;
     float min, length;
     HookOperation operation;
+
+private:
     float value0 = 0.0f;
 };
 
@@ -105,8 +110,14 @@ public:
         return &value;
     }
     
-    void setHook(int index, float* hook, float min, float max, HookOperation op)
+    ParameterHook& getHook(int index)
     {
+        return hooks[index];
+    }
+    
+    void setHook(const String& sourceName, int index, float* hook, float min, float max, HookOperation op)
+    {
+        hooks[index].sourceName = sourceName;
         hooks[index].hook = hook;
         hooks[index].min = min;
         hooks[index].length = max-min;
@@ -115,6 +126,7 @@ public:
     
     void resetHook(int index)
     {
+        hooks[index].sourceName = "";
         hooks[index].hook = &value0;
         hooks[index].min = 0.0f;
         hooks[index].length = 0.0f;
@@ -161,14 +173,15 @@ public:
     void prepareToPlay (double sampleRate, int samplesPerBlock);
     
     //==============================================================================
-    OwnedArray<SmoothedParameter>& getParameter(int p);
+    OwnedArray<SmoothedParameter>& getParameterArray(int p);
     
     bool isEnabled();
+    
+    String name;
         
     ESAudioProcessor& processor;
     AudioProcessorValueTreeState& vts;
     OwnedArray<OwnedArray<SmoothedParameter>> params;
-    String name;
     StringArray paramNames;
     
     std::atomic<float>* afpEnabled;

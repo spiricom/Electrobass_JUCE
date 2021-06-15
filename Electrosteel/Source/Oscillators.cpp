@@ -70,10 +70,10 @@ void Oscillator::tick(int v, float* output)
 //    float tempLFO1 = (tCycle_tick(&pwmLFO1) * 0.25f) + 0.5f; // pulse length
 //    float tempLFO2 = ((tCycle_tick(&pwmLFO2) * 0.25f) + 0.5f) * tempLFO1; // open length
     
-    float tempFreq = processor.voiceFreq[v];
-    tempFreq = mtof((ftom(tempFreq) + pitch + fine));
-    tSawtooth_setFreq(&saw[v], tempFreq);
-    tRosenbergGlottalPulse_setFreq(&pulse[v], tempFreq);
+    float note = processor.voiceNote[v];
+    float freq = mtof(note + pitch + fine);
+    tSawtooth_setFreq(&saw[v], freq);
+    tRosenbergGlottalPulse_setFreq(&pulse[v], freq);
 //        tRosenbergGlottalPulse_setPulseLength(&glottal[v][i], tempLFO1);
 //        tRosenbergGlottalPulse_setOpenLength(&glottal[v][i], tempLFO2);
     
@@ -82,8 +82,7 @@ void Oscillator::tick(int v, float* output)
     sample += tSawtooth_tick(&saw[v]) * (1.0f - shape);
     sample += tRosenbergGlottalPulse_tickHQ(&pulse[v]) * shape;
     
-    sample *= INV_NUM_OSC_PER_VOICE * volume;
-    sample = tanhf(sample);
+    sample *= volume;
     
     float f = *afpFilterSend;
     output[0] += sample*f;

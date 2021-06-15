@@ -49,17 +49,15 @@ float Filter::tick(int v, float input)
 {
     if (!enabled) return input;
     
-    float midiCutoff = LEAF_frequencyToMidi(ref[FilterCutoff][v]->tick());
+    float midiCutoff = ref[FilterCutoff][v]->tick();
     float keyFollow = ref[FilterKeyFollow][v]->tick();
     float q = ref[FilterResonance][v]->tick();
     
     float follow = processor.voiceNote[v] - 60.f;
-    float adjustedMidiCutoff = (midiCutoff * (1.f - keyFollow)) + ((midiCutoff + follow) * keyFollow);
-    float cutoff = LEAF_midiToFrequency(adjustedMidiCutoff);
+    float cutoff = (midiCutoff * (1.f - keyFollow)) + ((midiCutoff + follow) * keyFollow);
     
-    cutoff = LEAF_clip(0.0f, cutoff, 4095.f);
-    tEfficientSVF_setFreq(&svf[v], cutoff);
-    tEfficientSVF_setQ(&svf[v], q);
+    cutoff = LEAF_clip(0.0f, cutoff*32.f, 4095.f);
+    tEfficientSVF_setFreqAndQ(&svf[v], cutoff, q);
     
     return tEfficientSVF_tick(&svf[v], input);
 }

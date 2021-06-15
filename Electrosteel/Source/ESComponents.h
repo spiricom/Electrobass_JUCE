@@ -21,8 +21,9 @@ class ESAudioProcessorEditor;
 class MappingSource : public Component
 {
 public:
-    MappingSource(ESAudioProcessorEditor& editor, const String &name, float* sources,
-                  int n, bool bipolar, Colour colour);
+    MappingSource(ESAudioProcessorEditor& editor,
+                  const String &paramName, const String &displayName,
+                  float* sources, int n, bool bipolar, Colour colour);
     ~MappingSource() override;
     
     Colour getColour() { return colour; }
@@ -57,7 +58,8 @@ class MappingTarget : public Slider,
 {
 public:
     
-    MappingTarget(const String &name, OwnedArray<SmoothedParameter>& target, int index);
+    MappingTarget(ESAudioProcessorEditor& editor, const String &name,
+                  OwnedArray<SmoothedParameter>& targetParameters, int index);
     ~MappingTarget() override;
     
     String getTextFromValue(double value) override { return text; }
@@ -72,6 +74,8 @@ public:
     
     void mouseDown(const MouseEvent& event) override;
     void mouseDrag(const MouseEvent& event) override;
+    
+    void updateMapping(HashMap<String, MappingSource*>& sourceMap);
     
     void updateRange();
 
@@ -88,7 +92,7 @@ public:
 private:
     
     String text;
-    OwnedArray<SmoothedParameter>& target;
+    OwnedArray<SmoothedParameter>& targetParameters;
     int index;
     bool sliderEnabled;
     bool bipolar;
@@ -108,9 +112,10 @@ class ESDial : public Component,
 public:
     
     ESDial(ESAudioProcessorEditor& editor, const String& name);
-    ESDial(ESAudioProcessorEditor& editor, const String& name, Colour colour,
-           float* source, int n, bool bipolar);
-    ESDial(ESAudioProcessorEditor& editor, const String& name, OwnedArray<SmoothedParameter>& target);
+    ESDial(ESAudioProcessorEditor& editor, const String& paramName, const String& displayName,
+           Colour colour, float* source, int n, bool bipolar);
+    ESDial(ESAudioProcessorEditor& editor, const String& paramName, const String& displayName,
+           OwnedArray<SmoothedParameter>& target);
     ~ESDial() override;
     
     void paint(Graphics& g) override;
@@ -172,13 +177,15 @@ public:
     processor(p),
     copedentArray(processor.copedentArray),
     fundamental(vts.getParameter("Copedent Fundamental")),
+    fundamentalField(*this),
+    numberField(*this),
+    nameField(*this),
     exportChooser("Export copedent to .xml...",
                   File::getSpecialLocation(File::userDocumentsDirectory),
                   "*.xml"),
     importChooser("Import copedent .xml...",
                   File::getSpecialLocation(File::userDocumentsDirectory),
-                  "*.xml"),
-    fundamentalField(*this)
+                  "*.xml")
     {
         for (int i = 0; i < CopedentColumnNil; ++i)
         {
@@ -234,6 +241,7 @@ public:
         addAndMakeVisible (fundamentalField);
         
         fundamentalLabel.setText("Fundamental", dontSendNotification);
+        fundamentalLabel.setJustificationType(Justification::centred);
         fundamentalLabel.setLookAndFeel(&laf);
         addAndMakeVisible (fundamentalLabel);
         
@@ -246,6 +254,24 @@ public:
         importButton.setLookAndFeel(&laf);
         importButton.onClick = [this] { importXml(); };
         addAndMakeVisible(importButton);
+        
+        numberLabel.setText("#", dontSendNotification);
+        numberLabel.setJustificationType(Justification::centred);
+        numberLabel.setLookAndFeel(&laf);
+        addAndMakeVisible (numberLabel);
+        
+        numberField.setRowAndColumn(0, -1);
+        numberField.setLookAndFeel(&laf);
+        addAndMakeVisible (numberField);
+        
+        nameLabel.setText("Name", dontSendNotification);
+        nameLabel.setJustificationType(Justification::centred);
+        nameLabel.setLookAndFeel(&laf);
+        addAndMakeVisible (nameLabel);
+        
+        nameField.setRowAndColumn(0, -2);
+        nameField.setLookAndFeel(&laf);
+        addAndMakeVisible (nameField);
         
         sendOutButton.setButtonText("Send via MIDI");
         sendOutButton.setLookAndFeel(&laf);
@@ -260,8 +286,13 @@ public:
         pedalTable.setLookAndFeel(nullptr);
         rightTable.setLookAndFeel(nullptr);
         fundamentalField.setLookAndFeel(nullptr);
+        fundamentalLabel.setLookAndFeel(nullptr);
         exportButton.setLookAndFeel(nullptr);
         importButton.setLookAndFeel(nullptr);
+        numberField.setLookAndFeel(nullptr);
+        nameField.setLookAndFeel(nullptr);
+        numberLabel.setLookAndFeel(nullptr);
+        nameLabel.setLookAndFeel(nullptr);
         sendOutButton.setLookAndFeel(nullptr);
     }
     
@@ -335,6 +366,10 @@ public:
     String getTextFromData (const int columnNumber, const int rowNumber, bool asDestination) const
     {
         double value;
+        
+        if (columnNumber == -1) return String(processor.copedentNumber);
+        else if (columnNumber == -2) return processor.copedentName;
+        
         if (columnNumber == 0)
             value = fundamental->convertFrom0to1(fundamental->getValue());
         else
@@ -382,6 +417,18 @@ public:
     void setDataFromText (const int columnNumber, const int rowNumber, const String& newText)
     {
         String text = newText.toUpperCase().removeCharacters(" ");
+        
+        if (columnNumber == -1)
+        {
+            int n = text.getIntValue();
+            processor.copedentNumber = jmin(jmax(n, 0), 6);
+            return;
+        }
+        else if (columnNumber == -2)
+        {
+            processor.copedentName = text;
+            return;
+        }
         
         double value;
         if (text.isEmpty()) value = 0.0f;
@@ -549,17 +596,29 @@ public:
         int w = area.getWidth() / n;
         int r = area.getWidth() - (w*n) - 2;
         
-        Rectangle<int> bottomArea = area.removeFromBottom(h*0.125);
-        bottomArea.removeFromTop(h*0.05);
-        fundamentalLabel.setBounds(bottomArea.removeFromLeft(w*3).reduced(0, h*0.012));
+        Rectangle<int> bottomArea = area.removeFromBottom(h*0.15);
+        bottomArea.removeFromTop(h*0.03);
+        Rectangle<int> upperBottomArea = bottomArea.removeFromTop(h*0.06);
+        
+        fundamentalLabel.setBounds(upperBottomArea.removeFromLeft(w*4).reduced(0.f, h*0.01f));
         fundamentalField.setBounds(bottomArea.removeFromLeft(w*4));
         
-        bottomArea.removeFromRight(1);
-        sendOutButton.setBounds(bottomArea.removeFromRight(w*4));
-        bottomArea.removeFromRight(w);
+        upperBottomArea.removeFromRight(2);
+        bottomArea.removeFromRight(2);
+        
+        exportButton.setBounds(upperBottomArea.removeFromRight(w*4));
         importButton.setBounds(bottomArea.removeFromRight(w*4));
-        bottomArea.removeFromRight(w);
-        exportButton.setBounds(bottomArea.removeFromRight(w*4));
+        
+        upperBottomArea.removeFromRight(w*4.5);
+        bottomArea.removeFromRight(w*4.5);
+        
+        nameField.setBounds(upperBottomArea.removeFromRight(w*4.2));
+        nameLabel.setBounds(upperBottomArea.removeFromRight(w*1.5).reduced(0.f, h*0.01f));
+        upperBottomArea.removeFromRight(w*0.5);
+        numberField.setBounds(upperBottomArea.removeFromRight(w*1.8));
+        numberLabel.setBounds(upperBottomArea.removeFromRight(w*0.7).reduced(0.f, h*0.01f));
+        
+        sendOutButton.setBounds(bottomArea.removeFromRight(w*8));
 
         stringTable.setBounds(area.removeFromLeft(w*2+r));
         area.removeFromLeft(w);
@@ -640,10 +699,14 @@ public:
             
             Label::paint (g);
             g.setColour(Colours::lightgrey);
-            g.fillRect(0, getHeight()-1, getWidth(), 1);
-            if (columnId != 0 && columnId != 1 && columnId != 4 &&
-                columnId != 9 && columnId != 11)
-                g.fillRect(getWidth()-1, 0, 1, getHeight());
+            
+            if (columnId > 0)
+            {
+                g.fillRect(0, getHeight()-1, getWidth(), 1);
+                if (columnId != 1 && columnId != 4 &&
+                    columnId != 9 && columnId != 11)
+                    g.fillRect(getWidth()-1, 0, 1, getHeight());
+            }
             
             if (TextEditor* editor = getCurrentTextEditor())
                 editor->setJustification(Justification::centredLeft);
@@ -659,15 +722,6 @@ private:
     
     ESAudioProcessor& processor;
     
-    TableListBox stringTable;
-    TableListBox leftTable;
-    TableListBox pedalTable;
-    TableListBox rightTable;
-    
-    TextButton exportButton;
-    TextButton importButton;
-    TextButton sendOutButton;
-    
     static const int numColumns = CopedentColumnNil;
     static const int numRows = NUM_STRINGS;        // Number of strings
     
@@ -675,13 +729,26 @@ private:
     Array<Array<float>>& copedentArray;
     RangedAudioParameter* fundamental;
     
+    TableListBox stringTable;
+    TableListBox leftTable;
+    TableListBox pedalTable;
+    TableListBox rightTable;
+    
+    TextButton exportButton;
+    TextButton importButton;
+    
+    EditableTextCustomComponent fundamentalField;
+    Label fundamentalLabel;
+    EditableTextCustomComponent numberField;
+    Label numberLabel;
+    EditableTextCustomComponent nameField;
+    Label nameLabel;
+    TextButton sendOutButton;
+    
     FileChooser exportChooser;
     FileChooser importChooser;
     
     ESLookAndFeel laf;
-    
-    EditableTextCustomComponent fundamentalField;
-    Label fundamentalLabel;
-    
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (CopedentTable)
 };
