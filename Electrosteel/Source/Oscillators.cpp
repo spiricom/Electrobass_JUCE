@@ -70,7 +70,7 @@ void Oscillator::tick(float output[][NUM_STRINGS])
         amp = amp < 0.f ? 0.f : amp;
         
         float note = processor.voiceNote[v];
-        float freq = mtof(LEAF_clip(0, note + pitch + fine, 127));
+        float freq = mtof(LEAF_clip(0, note + pitch + fine*0.01f, 127));
         freq = freq < 10.f ? 0.f : freq;
         tMBSaw_setFreq(&saw[v], freq);
         tMBPulse_setFreq(&pulse[v], freq);
