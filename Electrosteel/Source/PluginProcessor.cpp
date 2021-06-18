@@ -138,10 +138,6 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
                                                            StringArray("Off", "On"), 0));
     }
     
-    layout.add (std::make_unique<AudioParameterFloat>("Copedent Fundamental",
-                                                      "Copedent Fundamental",
-                                                      0.f, 60.f, 21.f));
-    
     return layout;
 }
 
@@ -233,6 +229,7 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
             copedentArray.getReference(i).add(cCopedentArrayInit[i][v]);
         }
     }
+    copedentFundamental = 21.f;
     
     // A couple of default mappings that will be used if nothing has been saved
     Mapping defaultFilter1Cutoff;
@@ -350,9 +347,9 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
     {
         Array<float> flat;
     
-        for (auto column : copedentArray)
+        for (int i = 0; i < copedentArray.size(); ++i)
         {
-            for (auto value : column)
+            for (auto value : copedentArray.getReference(i))
             {
                 flat.add(value);
             }
@@ -750,6 +747,20 @@ void ESAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     ValueTree state = vts.copyState();
     root.addChild(state, -1, nullptr);
     
+    // Copedent
+    ValueTree copedent ("Copedent");
+    copedent.setProperty("fundamental", copedentFundamental, nullptr);
+    for (int c = 0; c < copedentArray.size(); ++c)
+    {
+        ValueTree column ("c" + String(c));
+        for (int r = 0; r < copedentArray.getReference(c).size(); ++r)
+        {
+            column.setProperty("r" + String(r), copedentArray.getReference(c)[r], nullptr);
+        }
+        copedent.addChild(column, -1, nullptr);
+    }
+    root.addChild(copedent, -1, nullptr);
+    
     // Mappings
     ValueTree mappings ("Mappings");
     int i = 0;
@@ -776,6 +787,7 @@ void ESAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
     
     if (xml.get() != nullptr)
     {
+        // Top level settings
         editorScale = xml->getDoubleAttribute("editorScale", 1.05);
         setMPEMode(xml->getBoolAttribute("mpeMode", true));
         
@@ -784,10 +796,26 @@ void ESAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
             channelToString[i+1] = xml->getIntAttribute("Ch" + String(i+1) + "String", i);
         }
         
+        // Audio processor value tree state
         if (XmlElement* state = xml->getChildByName(vts.state.getType()))
             vts.replaceState (juce::ValueTree::fromXml (*state));
         
-        // Look for mappings
+        // Copedent
+        if (XmlElement* copedent = xml->getChildByName("Copedent"))
+        {
+            copedentFundamental = copedent->getDoubleAttribute("fundamental");
+            for (int c = 0; c < copedentArray.size(); ++c)
+            {
+                XmlElement* column = copedent->getChildByName("c" + String(c));
+                for (int r = 0; r < copedentArray.getReference(c).size(); ++r)
+                {
+                    float value = column->getDoubleAttribute("r" + String(r));
+                    copedentArray.getReference(c).set(r, value);
+                }
+            }
+        }
+        
+        // Mappings
         if (XmlElement* mappings = xml->getChildByName("Mappings"))
         {
             initialMappings.clear();

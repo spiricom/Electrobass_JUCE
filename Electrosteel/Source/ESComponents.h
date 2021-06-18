@@ -167,7 +167,7 @@ public:
     CopedentTable(ESAudioProcessor& p, AudioProcessorValueTreeState& vts) :
     processor(p),
     copedentArray(processor.copedentArray),
-    fundamental(vts.getParameter("Copedent Fundamental")),
+    fundamental(processor.copedentFundamental),
     fundamentalField(*this),
     numberField(*this),
     nameField(*this),
@@ -314,8 +314,7 @@ public:
                 copedentVT.addChild(child, -1, nullptr);
             }
             
-            float f = fundamental->convertFrom0to1(fundamental->getValue());
-            copedentVT.setProperty("Fundamental", f, nullptr);
+            copedentVT.setProperty("Fundamental", fundamental, nullptr);
             
             std::unique_ptr<XmlElement> xml = copedentVT.createXml();
             
@@ -349,8 +348,7 @@ public:
                 copedentArray.getReference(c).set(r, value);
             }
         }
-        float f = fundamental->convertTo0to1(xml->getDoubleAttribute("Fundamental"));
-        fundamental->setValueNotifyingHost(f);
+        fundamental = xml->getDoubleAttribute("Fundamental");
         resized();
     }
     
@@ -362,7 +360,7 @@ public:
         else if (columnNumber == -2) return processor.copedentName;
         
         if (columnNumber == 0)
-            value = fundamental->convertFrom0to1(fundamental->getValue());
+            value = fundamental;
         else
             value = copedentArray[columnNumber-1][rowNumber];
         
@@ -432,8 +430,7 @@ public:
                 int whereIsDivide = text.indexOf("/");
                 String denominator = text.substring(whereIsDivide+1);
                 value = value / denominator.getDoubleValue();
-                float f = fundamental->convertFrom0to1(fundamental->getValue());
-                float h = mtof(f);
+                float h = mtof(fundamental);
                 value = ftom(value * h);
             }
 
@@ -515,8 +512,7 @@ public:
         }
         if (columnNumber == 0)
         {
-            float f = fundamental->convertTo0to1(value);
-            fundamental->setValueNotifyingHost(f);
+            fundamental = value;
         }
         else
             copedentArray.getReference(columnNumber-1).set(rowNumber, value);
@@ -718,7 +714,7 @@ private:
     
     StringArray columnList;
     Array<Array<float>>& copedentArray;
-    RangedAudioParameter* fundamental;
+    float& fundamental;
     
     TableListBox stringTable;
     TableListBox leftTable;

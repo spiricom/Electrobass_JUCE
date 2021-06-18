@@ -135,6 +135,7 @@ public:
     Array<Mapping> initialMappings;
     
     Array<Array<float>> copedentArray;
+    float copedentFundamental;
     String copedentName = "";
     int copedentNumber = 0;
     
