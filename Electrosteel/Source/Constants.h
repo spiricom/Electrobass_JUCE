@@ -48,7 +48,7 @@ static const std::vector<std::vector<float>> vOscInit = {
     { -24.0f, 24.0f, 0.0f }, //Pitch
     { -100.f, 100.f, 0.0f }, //Fine
     { 0.0f, 1.0f, 0.06f },  //Shape
-    { 0.0f, 1.0f, 0.5f },   //Volume
+    { 0.0f, 1.0f, 1.0f },   //Volume
 };
 
 typedef enum _OscSet

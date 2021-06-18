@@ -32,6 +32,9 @@ ESLookAndFeel::ESLookAndFeel()
     setColour(TextButton::textColourOnId, Colours::gold.withBrightness(0.95f));
     setColour(TextButton::buttonColourId, Colour(40, 40, 40));
     setColour(TextButton::buttonOnColourId, Colour(30, 30, 30));
+    
+    tp = Typeface::createSystemTypefaceFor(BinaryData::EuphemiaCAS_ttf,
+                                           BinaryData::EuphemiaCAS_ttfSize);
 }
 
 ESLookAndFeel::~ESLookAndFeel()
@@ -40,16 +43,12 @@ ESLookAndFeel::~ESLookAndFeel()
 
 Font ESLookAndFeel::getPopupMenuFont (void)
 {
-    Typeface::Ptr tp = Typeface::createSystemTypefaceFor(BinaryData::EuphemiaCAS_ttf,
-                                                         BinaryData::EuphemiaCAS_ttfSize);
     Font font (tp);
     return font;
 }
 
 Font ESLookAndFeel::getTextButtonFont (TextButton& b, int buttonHeight)
 {
-    Typeface::Ptr tp = Typeface::createSystemTypefaceFor(BinaryData::EuphemiaCAS_ttf,
-                                                         BinaryData::EuphemiaCAS_ttfSize);
     Font font (tp);
     float h = buttonHeight * 0.4f;
     if (b.getToggleState()) h *= 1.1f;
@@ -60,8 +59,6 @@ Font ESLookAndFeel::getTextButtonFont (TextButton& b, int buttonHeight)
 
 Font ESLookAndFeel::getLabelFont (Label& label)
 {
-    Typeface::Ptr tp = Typeface::createSystemTypefaceFor(BinaryData::EuphemiaCAS_ttf,
-                                                         BinaryData::EuphemiaCAS_ttfSize);
     Font font (tp);
     if (label.isEditable() && dynamic_cast<CopedentTable::EditableTextCustomComponent*>(&label) != nullptr)
         font.setHeight(label.getHeight() * 0.5f);

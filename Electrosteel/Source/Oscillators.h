@@ -26,29 +26,20 @@ public:
     
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock);
-    
-    //==============================================================================
     void frame();
-    void tick(int v, float* output);
+    void tick(float output[][NUM_STRINGS]);
     
 private:
-    
-    SmoothedParameter* ref[OscParamNil][NUM_STRINGS];
-    
-    tSawtooth saw[NUM_STRINGS];
-    tRosenbergGlottalPulse pulse[NUM_STRINGS];
-    
-    bool enabled;
-    
-    std::atomic<float>* afpFilterSend;
-    
-//    tCycle pwmLFO1;
-//    tCycle pwmLFO2;
+    tMBSaw saw[NUM_STRINGS];
+    tMBPulse pulse[NUM_STRINGS];
+
+    std::unique_ptr<SmoothedParameter> filterSend;
 };
 
 //==============================================================================
 
-class LowFreqOscillator : public AudioComponent
+class LowFreqOscillator : public AudioComponent,
+                          public MappingSourceModel
 {
 public:
     //==============================================================================
@@ -57,22 +48,18 @@ public:
     
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock);
-    
-    //==============================================================================
     void frame();
     void tick();
     
+    //==============================================================================
     void noteOn(int voice, float velocity);
     void noteOff(int voice, float velocity);
     
-    float* getValuePointer();
-    
 private:
-    
-    SmoothedParameter* ref[LowFreqParamNil][NUM_STRINGS];
     RangedAudioParameter* sync;
     
     tCycle lfo[NUM_STRINGS];
+    float* lfoValues[NUM_STRINGS];
+    
     float phaseReset;
-    float value[NUM_STRINGS];
 };

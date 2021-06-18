@@ -14,24 +14,20 @@
 //==============================================================================
 //==============================================================================
 
-MappingSource::MappingSource(ESAudioProcessorEditor& editor,
-                             const String &paramName, const String &displayName,
-                             float* source, int n, bool bipolar, Colour colour) :
-Component(paramName),
+MappingSource::MappingSource(ESAudioProcessorEditor& editor, MappingSourceModel& m,
+                             const String &displayName) :
+Component(m.name),
 label(displayName, displayName),
 button(displayName, DrawableButton::ButtonStyle::ImageFitted),
-source(source),
-numSourcePointers(n),
-bipolar(bipolar),
-colour(colour)
+processor(editor.processor),
+model(m)
 {
-    editor.addMappingSource(paramName, this);
     addMouseListener(&editor, true);
     
     label.setLookAndFeel(&laf);
     label.setJustificationType(Justification::centredLeft);
-    label.setColour(Label::outlineColourId, colour);
-    label.setColour(Label::textColourId, colour);
+    label.setColour(Label::outlineColourId, model.colour);
+    label.setColour(Label::textColourId, model.colour);
     addAndMakeVisible(&label);
     
     image = Drawable::createFromImageData(BinaryData::mappingsourceicon_svg,
@@ -42,7 +38,6 @@ colour(colour)
 
 MappingSource::~MappingSource()
 {
-    source = nullptr;
     label.setLookAndFeel(nullptr);
 }
 
@@ -53,31 +48,16 @@ void MappingSource::resized()
     button.setBounds(area.removeFromRight(getHeight()));
 }
 
-float* MappingSource::getValuePointer()
-{
-    return source;
-}
-
-int MappingSource::getNumSourcePointers()
-{
-    return numSourcePointers;
-}
-
 //==============================================================================
 //==============================================================================
 
-MappingTarget::MappingTarget(ESAudioProcessorEditor& editor, const String &name,
-                             OwnedArray<SmoothedParameter>& targetParameters,
-                             int index) :
-Slider(name),
+MappingTarget::MappingTarget(ESAudioProcessorEditor& editor, MappingTargetModel& m) :
+Slider(m.name),
+processor(editor.processor),
+model(m),
 text(""),
-targetParameters(targetParameters),
-index(index),
-sliderEnabled(false),
-colour(Colours::transparentBlack)
-{
-    editor.addMappingTarget(name, this);
-    
+sliderEnabled(false)
+{    
     setLookAndFeel(&laf);
     setDoubleClickReturnValue(true, 0.);
     setSliderStyle(SliderStyle::LinearBarVertical);
@@ -86,12 +66,18 @@ colour(Colours::transparentBlack)
     setVelocityModeParameters(1.0, 1, 0.075);
     setColour(trackColourId, Colours::black);
     setColour(backgroundColourId, Colours::black);
-    setColour(textBoxTextColourId, colour);
+    setTextColour(Colours::transparentBlack);
     updateText();
+    
+    model.onMappingChange = [this] {
+        updateRange();
+        updateValue();
+    };
 }
 
 MappingTarget::~MappingTarget()
 {
+    model.onMappingChange = nullptr;
     setLookAndFeel(nullptr);
 }
 
@@ -103,7 +89,7 @@ bool MappingTarget::isInterestedInDragSource(const SourceDetails &dragSourceDeta
 void MappingTarget::itemDropped(const SourceDetails &dragSourceDetails)
 {
     MappingSource* source = dynamic_cast<MappingSource*>(dragSourceDetails.sourceComponent.get());
-    setMapping(source, 0.f, HookAdd);
+    setMapping(source, 0.f);
 }
 
 void MappingTarget::resized()
@@ -135,13 +121,16 @@ void MappingTarget::mouseDrag(const MouseEvent& event)
     }
 }
 
-void MappingTarget::updateMapping(HashMap<String, MappingSource*>& sourceMap)
+void MappingTarget::updateValue()
 {
-    ParameterHook& hook = targetParameters[0]->getHook(index);
-    if (hook.sourceName.isNotEmpty())
+    if (model.currentSource != nullptr)
     {
-        MappingSource* source = sourceMap[hook.sourceName];
-        setMapping(source, hook.min+hook.length, hook.operation);
+        sliderEnabled = true;
+        String name = model.currentSource->name;
+        setTextColour(model.currentSource->colour);
+        setText(String(name.getTrailingIntValue()));
+        
+        setValue(model.value, dontSendNotification);
     }
 }
 
@@ -154,7 +143,7 @@ void MappingTarget::updateRange()
     auto max = dial->getSlider().getMaximum();
     auto interval = dial->getSlider().getInterval();
     
-    if (isBipolar()) setRange(-max, max, interval);
+    if (model.isBipolar()) setRange((min-max)*0.5, (max-min)*0.5, interval);
     else setRange(min-value, max-value, interval);
 }
 
@@ -166,42 +155,31 @@ void MappingTarget::setText(String s)
 
 void MappingTarget::setTextColour(Colour c)
 {
-    colour = c;
-    setColour(textBoxTextColourId, colour);
+    setColour(textBoxTextColourId, c);
 }
 
-void MappingTarget::setMapping(MappingSource* source, float end, HookOperation op)
+void MappingTarget::setMapping(MappingSource* source, float end)
 {
-    if (source == nullptr) return;
-    
+    if (!model.setMapping(&source->getModel(), end, false)) return;
+
     updateRange();
     
     sliderEnabled = true;
     String name = source->getName();
     setTextColour(source->getColour());
     setText(String(name.getTrailingIntValue()));
-    bipolar = source->isBipolar();
     
-    int i = 0;
-    int n = source->getNumSourcePointers();
-    float start = bipolar ? -end : 0.f;
-    for (auto param : targetParameters)
-    {
-        param->setHook(source->getName(), index, &(source->getValuePointer()[i]), start, end, op);
-        if (i < n-1) i++;
-    }
     setValue(end, dontSendNotification);
 }
 
 void MappingTarget::removeMapping()
 {
+    model.removeMapping(false);
+    
     sliderEnabled = false;
     setTextColour(Colours::transparentBlack);
     setText("");
-    for (auto param : targetParameters)
-    {
-        param->resetHook(index);
-    }
+    
     // Guarantee a change event is sent to listeners and set to 0
     // Feels like there should be a better way to do this...
     setValue(getValue() != getMinimum() ? getMinimum() : getMaximum());
@@ -211,15 +189,9 @@ void MappingTarget::removeMapping()
 
 void MappingTarget::setMappingRange(float end)
 {
+    model.setMappingRange(end, false);
     updateRange();
-    
-    float start = bipolar ? -end : 0.f;
-    for (auto param : targetParameters)
-    {
-        param->setRange(index, start, end);
-    }
     setValue(end);
-    DBG(String(start) + " " + String(end));
 }
 
 void MappingTarget::menuCallback(int result, MappingTarget* target)
@@ -232,24 +204,7 @@ void MappingTarget::menuCallback(int result, MappingTarget* target)
 
 //==============================================================================
 //==============================================================================
-
-ESDial::ESDial(ESAudioProcessorEditor& editor, const String& name) :
-label(name, name)
-{
-    slider.setLookAndFeel(&laf);
-    slider.setSliderStyle(Slider::RotaryVerticalDrag);
-    slider.setTextBoxStyle(Slider::NoTextBox, false, 4, 4);
-    slider.setRange(0., 1.);
-    slider.addListener(this);
-    addAndMakeVisible(&slider);
-    
-    label.setJustificationType(Justification::centred);
-    label.setLookAndFeel(&laf);
-    addAndMakeVisible(&label);
-}
-
-ESDial::ESDial(ESAudioProcessorEditor& editor, const String& paramName, const String& displayName,
-               Colour colour, float* source, int n, bool bipolar) :
+ESDial::ESDial(ESAudioProcessorEditor& editor, const String& paramName, const String& displayName, bool isSource, bool isTarget) :
 label(displayName, displayName)
 {
     slider.setLookAndFeel(&laf);
@@ -259,32 +214,32 @@ label(displayName, displayName)
     slider.addListener(this);
     addAndMakeVisible(&slider);
 
-    s = std::make_unique<MappingSource>(editor, paramName, displayName, source, n, bipolar, colour);
-    addAndMakeVisible(s.get());
-}
-
-ESDial::ESDial(ESAudioProcessorEditor& editor, const String& paramName, const String& displayName,
-               OwnedArray<SmoothedParameter>& target) :
-label(displayName, displayName)
-{
-    slider.setLookAndFeel(&laf);
-    slider.setSliderStyle(Slider::RotaryVerticalDrag);
-    slider.setTextBoxStyle(Slider::NoTextBox, false, 4, 4);
-    slider.setRange(0., 1.);
-    slider.addListener(this);
-    addAndMakeVisible(&slider);
-
-    label.setJustificationType(Justification::centred);
-    label.setBorderSize(BorderSize<int>(0));
-    label.setLookAndFeel(&laf);
-    addAndMakeVisible(&label);
-
-    for (int i = 0; i < numTargets; ++i)
+    if (isSource)
     {
-        t.add(new MappingTarget(editor, paramName + "T" + String(i+1), target, i));
-        t[i]->addListener(this);
-        t[i]->addMouseListener(this, true);
-        addAndMakeVisible(t[i]);
+    s = std::make_unique<MappingSource>
+    (editor, *editor.processor.getMappingSource(paramName), displayName);
+    addAndMakeVisible(s.get());
+    }
+    else if (isTarget)
+    {
+        label.setJustificationType(Justification::centred);
+        label.setBorderSize(BorderSize<int>(0));
+        label.setLookAndFeel(&laf);
+        addAndMakeVisible(&label);
+        
+        for (int i = 0; i < numTargets; ++i)
+        {
+            t.add(new MappingTarget(editor, *editor.processor.getMappingTarget(paramName + "T" + String(i+1))));
+            t[i]->addListener(this);
+            t[i]->addMouseListener(this, true);
+            addAndMakeVisible(t[i]);
+        }
+    }
+    else
+    {
+        label.setJustificationType(Justification::centred);
+        label.setLookAndFeel(&laf);
+        addAndMakeVisible(&label);
     }
 }
 

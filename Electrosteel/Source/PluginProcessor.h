@@ -16,6 +16,7 @@
 #include "Oscillators.h"
 #include "Filters.h"
 #include "Envelopes.h"
+#include "Output.h"
 
 class StandalonePluginHolder;
 
@@ -86,6 +87,13 @@ public:
     void sendCopedentMidiMessage();
     
     //==============================================================================
+    void addMappingSource(MappingSourceModel* source);
+    void addMappingTarget(MappingTargetModel* source);
+    
+    MappingSourceModel* getMappingSource(const String& name);
+    MappingTargetModel* getMappingTarget(const String& name);
+    
+    //==============================================================================
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
@@ -109,8 +117,22 @@ public:
     
     OwnedArray<SmoothedParameter> pitchBendParams;
     OwnedArray<SmoothedParameter> ccParams;
-    
+    OwnedArray<MappingSourceModel> ccSources;
+    std::unique_ptr<SmoothedParameter> seriesParallel;
+
     OwnedArray<SmoothedParameter> params;
+    
+    HashMap<String, MappingSourceModel*> sourceMap;
+    HashMap<String, MappingTargetModel*> targetMap;
+    
+    struct Mapping
+    {
+        String sourceName;
+        String targetName;
+        float value;
+    };
+    
+    Array<Mapping> initialMappings;
     
     Array<Array<float>> copedentArray;
     String copedentName = "";
@@ -130,14 +152,11 @@ private:
     int keyCenter;
     
     bool waitingToSendCopedent = false;
-    
     bool mpeMode = true;
     
     int midiChannelNoteCount[NUM_CHANNELS+1];
     int midiChannelActivity[NUM_CHANNELS+1];
     int midiChannelActivityTimeout;
-    
-    std::atomic<float>* afpSeriesParallel;
     
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ESAudioProcessor)

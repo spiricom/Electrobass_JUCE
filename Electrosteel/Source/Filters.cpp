@@ -15,15 +15,7 @@
 Filter::Filter(const String& n, ESAudioProcessor& p,
                              AudioProcessorValueTreeState& vts) :
 AudioComponent(n, p, vts, cFilterParams, true)
-{
-    for (int i = 0; i < FilterParamNil; ++i)
-    {
-        for (int v = 0; v < NUM_STRINGS; ++v)
-        {
-            ref[i][v] = params[i]->getUnchecked(v);
-        }
-    }
-    
+{    
     for (int i = 0; i < NUM_STRINGS; i++)
     {
         tEfficientSVF_init(&svf[i], SVFTypeLowpass, 2000.f, 0.4f, &processor.leaf);
@@ -42,22 +34,43 @@ void Filter::prepareToPlay (double sampleRate, int samplesPerBlock)
 
 void Filter::frame()
 {
-    enabled = *afpEnabled > 0;
+    for (int i = 0; i < params.size(); ++i)
+    {
+        for (int v = 0; v < NUM_STRINGS; ++v)
+        {
+            lastValues[i][v] = values[i][v];
+            values[i][v] = ref[i][v]->skip(currentBlockSize);
+        }
+    }
+    sampleInBlock = 0;
+    enabled = afpEnabled == nullptr || *afpEnabled > 0;
 }
 
-float Filter::tick(int v, float input)
+void Filter::tick(float* samples)
 {
-    if (!enabled) return input;
+    if (!enabled) return;
     
-    float midiCutoff = ref[FilterCutoff][v]->tick();
-    float keyFollow = ref[FilterKeyFollow][v]->tick();
-    float q = ref[FilterResonance][v]->tick();
+    float a = sampleInBlock * invBlockSize;
     
-    float follow = processor.voiceNote[v] - 60.f;
-    float cutoff = (midiCutoff * (1.f - keyFollow)) + ((midiCutoff + follow) * keyFollow);
+    for (int v = 0; v < NUM_STRINGS; ++v)
+    {
+        float midiCutoff = values[FilterCutoff][v]*a + lastValues[FilterCutoff][v]*(1.f-a);
+        float keyFollow = values[FilterKeyFollow][v]*a + lastValues[FilterKeyFollow][v]*(1.f-a);
+        float q = values[FilterResonance][v]*a + lastValues[FilterResonance][v]*(1.f-a);
+        
+        LEAF_clip(0.f, keyFollow, 1.f);
+        
+        float follow = processor.voiceNote[v] - 60.f;
+        float cutoff = (midiCutoff * (1.f - keyFollow)) + ((midiCutoff + follow) * keyFollow);
+        
+        cutoff = LEAF_clip(0.0f, cutoff*32.f, 4095.f);
+        q = q < 0.f ? 0.f : q;
+        
+        tEfficientSVF_setFreqAndQ(&svf[v], cutoff, q);
+        samples[v] = tEfficientSVF_tick(&svf[v], samples[v]);
+    }
     
-    cutoff = LEAF_clip(0.0f, cutoff*32.f, 4095.f);
-    tEfficientSVF_setFreqAndQ(&svf[v], cutoff, q);
+    sampleInBlock++;
     
-    return tEfficientSVF_tick(&svf[v], input);
+
 }

@@ -21,19 +21,21 @@
         <FILE id="o0yFfN" name="snyderphonics-whitelogo.svg" compile="0" resource="1"
               file="Source/Resources/snyderphonics-whitelogo.svg"/>
       </GROUP>
-      <FILE id="r0cRLa" name="Constants.h" compile="0" resource="0" file="Source/Constants.h"/>
-      <FILE id="xafAzu" name="Utilities.h" compile="0" resource="0" file="Source/Utilities.h"/>
-      <FILE id="j7bHW3" name="Utilities.cpp" compile="1" resource="0" file="Source/Utilities.cpp"/>
       <FILE id="BngWPn" name="PluginProcessor.h" compile="0" resource="0"
             file="Source/PluginProcessor.h"/>
       <FILE id="tL2Sdi" name="PluginProcessor.cpp" compile="1" resource="0"
             file="Source/PluginProcessor.cpp"/>
+      <FILE id="r0cRLa" name="Constants.h" compile="0" resource="0" file="Source/Constants.h"/>
+      <FILE id="xafAzu" name="Utilities.h" compile="0" resource="0" file="Source/Utilities.h"/>
+      <FILE id="j7bHW3" name="Utilities.cpp" compile="1" resource="0" file="Source/Utilities.cpp"/>
       <FILE id="dVL0WD" name="Oscillators.h" compile="0" resource="0" file="Source/Oscillators.h"/>
       <FILE id="CTbYAl" name="Oscillators.cpp" compile="1" resource="0" file="Source/Oscillators.cpp"/>
       <FILE id="kLS9uq" name="Filters.h" compile="0" resource="0" file="Source/Filters.h"/>
       <FILE id="D9KM3j" name="Filters.cpp" compile="1" resource="0" file="Source/Filters.cpp"/>
       <FILE id="upvWmy" name="Envelopes.h" compile="0" resource="0" file="Source/Envelopes.h"/>
       <FILE id="WRRhDC" name="Envelopes.cpp" compile="1" resource="0" file="Source/Envelopes.cpp"/>
+      <FILE id="xcCToD" name="Output.h" compile="0" resource="0" file="Source/Output.h"/>
+      <FILE id="nJZl7M" name="Output.cpp" compile="1" resource="0" file="Source/Output.cpp"/>
       <FILE id="AALJ5R" name="PluginEditor.h" compile="0" resource="0" file="Source/PluginEditor.h"/>
       <FILE id="Fh069E" name="PluginEditor.cpp" compile="1" resource="0"
             file="Source/PluginEditor.cpp"/>

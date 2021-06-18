@@ -56,4 +56,8 @@ public:
                                 const String& columnName, int /*columnId*/,
                                 int width, int height, bool isMouseOver, bool isMouseDown,
                                 int columnFlags) override;
+    
+private:
+    
+    Typeface::Ptr tp;
 };

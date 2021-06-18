@@ -50,8 +50,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     
     for (int i = 0; i < NUM_MACROS; ++i)
     {
-        macroDials.add(new ESDial(*this, "M" + String(i+1), "M" + String(i+1), Colours::red,
-                                  processor.ccParams[i]->getValuePointer(), 1, false));
+        macroDials.add(new ESDial(*this, "M" + String(i+1), "M" + String(i+1), true, false));
         sliderAttachments.add(new SliderAttachment(vts, "M" + String(i+1), macroDials[i]->getSlider()));
         tab1.addAndMakeVisible(macroDials[i]);
     }
@@ -86,10 +85,16 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     }
     tab1.addAndMakeVisible(pitchBendSliders[0]);
     
+    bool state = processor.getMPEMode();
     mpeToggle.setButtonText("MPE");
     mpeToggle.setToggleState(processor.getMPEMode(), dontSendNotification);
     mpeToggle.addListener(this);
     tab1.addAndMakeVisible(mpeToggle);
+    for (auto b : channelStringButtons)
+    {
+        b->setAlpha(state ? 1.f : 0.5f);
+        b->setInterceptsMouseClicks(state, state);
+    }
     
     keyboard.setAvailableRange(21, 108);
     keyboard.setOctaveForMiddleC(4);
@@ -137,9 +142,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
         
         TabbedButtonBar& bar = envsAndLFOs.getTabbedButtonBar();
         bar.getTabButton(i)
-        ->setExtraComponent(new MappingSource(*this, paramName, displayName,
-                                              processor.envs[i]->getValuePointer(),
-                                              NUM_STRINGS, false, Colours::cyan),
+        ->setExtraComponent(new MappingSource(*this, *processor.getMappingSource(paramName), displayName),
                             TabBarButton::ExtraComponentPlacement::afterText);
         bar.setColour(TabbedButtonBar::tabOutlineColourId, Colours::darkgrey);
         bar.setColour(TabbedButtonBar::frontOutlineColourId, Colours::darkgrey);
@@ -158,9 +161,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
         
         TabbedButtonBar& bar = envsAndLFOs.getTabbedButtonBar();
         bar.getTabButton(i + NUM_ENVS)
-        ->setExtraComponent(new MappingSource(*this, paramName, displayName,
-                                              processor.lfos[i]->getValuePointer(),
-                                              NUM_STRINGS, true, Colours::lime),
+        ->setExtraComponent(new MappingSource(*this, *processor.getMappingSource(paramName), displayName),
                             TabBarButton::ExtraComponentPlacement::afterText);
         bar.setColour(TabbedButtonBar::tabOutlineColourId, Colours::darkgrey);
         bar.setColour(TabbedButtonBar::frontOutlineColourId, Colours::darkgrey);
@@ -209,11 +210,6 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     addAndMakeVisible(versionLabel);
     
     //    addAndMakeVisible(&container);
-    
-    for (auto target : targetMap)
-    {
-        target->updateMapping(sourceMap);
-    }
     
     startTimerHz(30);
 }
@@ -500,16 +496,6 @@ Array<Component*> ESAudioProcessorEditor::getAllChildren()
     return children;
 }
 
-void ESAudioProcessorEditor::addMappingSource(String name, MappingSource* source)
-{
-    sourceMap.set(name, source);
-}
-
-void ESAudioProcessorEditor::addMappingTarget(String name, MappingTarget* target)
-{
-    targetMap.set(name, target);
-}
-
 //==============================================================================
 //==============================================================================
 
@@ -528,25 +514,29 @@ outlineColour(Colours::transparentBlack)
 {
     setInterceptsMouseClicks(false, true);
     
-    for (int i = 0; i < ac.paramNames.size(); i++)
+    String& name = ac.getName();
+    StringArray& paramNames = ac.getParamNames();
+    for (int i = 0; i < paramNames.size(); i++)
     {
-        String paramName = ac.name + ac.paramNames[i];
-        String displayName = ac.paramNames[i];
-        dials.add(new ESDial(editor, paramName, displayName, ac.getParameterArray(i)));
+        String paramName = name + paramNames[i];
+        String displayName = paramNames[i];
+        dials.add(new ESDial(editor, paramName, displayName, false, true));
         addAndMakeVisible(dials[i]);
-        sliderAttachments.add(new SliderAttachment(vts, ac.name + ac.paramNames[i], dials[i]->getSlider()));
+        sliderAttachments.add(new SliderAttachment(vts, name + paramNames[i], dials[i]->getSlider()));
         dials[i]->getSlider().addListener(this);
         for (auto t : dials[i]->getTargets())
         {
             t->addListener(this);
             t->addMouseListener(this, true);
+            t->updateRange();
+            t->updateValue();
         }
     }
     
-    if (ac.toggleable)
+    if (ac.isToggleable())
     {
         addAndMakeVisible(enabledToggle);
-        buttonAttachments.add(new ButtonAttachment(vts, ac.name, enabledToggle));
+        buttonAttachments.add(new ButtonAttachment(vts, name, enabledToggle));
     }
 }
 
@@ -571,13 +561,13 @@ void ESModule::resized()
     
     float h = area.getHeight();
     
-    for (int i = 0; i < ac.paramNames.size(); ++i)
+    for (int i = 0; i < ac.getParamNames().size(); ++i)
     {
         dials[i]->setBoundsRelative(relLeftMargin + (relDialWidth+relDialSpacing)*i, relTopMargin,
                             relDialWidth, relDialHeight);
     }
     
-    if (ac.toggleable)
+    if (ac.isToggleable())
     {
         enabledToggle.setBounds(0, 0, h*0.2f, h*0.2f);
     }
@@ -621,17 +611,17 @@ ESModule(editor, vts, ac, 0.05f, 0.132f, 0.05f, 0.18f, 0.78f)
     pitchLabel.addListener(this);
     addAndMakeVisible(pitchLabel);
     
-    RangedAudioParameter* set = vts.getParameter(ac.name + "ShapeSet");
+    RangedAudioParameter* set = vts.getParameter(ac.getName() + "ShapeSet");
     shapeCB.addItemList(oscSetNames, 1);
     shapeCB.setSelectedItemIndex(set->convertFrom0to1(set->getValue()));
     shapeCB.setLookAndFeel(&laf);
     addAndMakeVisible(shapeCB);
-    comboBoxAttachments.add(new ComboBoxAttachment(vts, ac.name + "ShapeSet", shapeCB));
+    comboBoxAttachments.add(new ComboBoxAttachment(vts, ac.getName() + "ShapeSet", shapeCB));
     
     sendSlider.setSliderStyle(Slider::SliderStyle::LinearVertical);
     sendSlider.setTextBoxStyle(Slider::TextEntryBoxPosition::NoTextBox, false, 10, 10);
     addAndMakeVisible(sendSlider);
-    sliderAttachments.add(new SliderAttachment(vts, ac.name + "FilterSend", sendSlider));
+    sliderAttachments.add(new SliderAttachment(vts, ac.getName() + "FilterSend", sendSlider));
     
     f1Label.setText("F1", dontSendNotification);
     f1Label.setJustificationType(Justification::bottomRight);
@@ -655,7 +645,7 @@ void OscModule::resized()
 {
     ESModule::resized();
     
-    for (int i = 1; i < ac.paramNames.size(); ++i)
+    for (int i = 1; i < ac.getParamNames().size(); ++i)
     {
         dials[i]->setBoundsRelative(relLeftMargin + (relDialWidth*(i+1))+(relDialSpacing*i),
                                     relTopMargin, relDialWidth, relDialHeight);
@@ -764,12 +754,12 @@ ESModule(editor, vts, ac, 0.05f, 0.2f, 0.05f, 0.2f, 0.7f)
     cutoffLabel.addListener(this);
     addAndMakeVisible(cutoffLabel);
     
-    RangedAudioParameter* set = vts.getParameter(ac.name + "Type");
+    RangedAudioParameter* set = vts.getParameter(ac.getName() + "Type");
     typeCB.addItemList(filterTypeNames, 1);
     typeCB.setSelectedItemIndex(set->convertFrom0to1(set->getValue()));
     typeCB.setLookAndFeel(&laf);
     addAndMakeVisible(typeCB);
-    comboBoxAttachments.add(new ComboBoxAttachment(vts, ac.name + "Type", typeCB));
+    comboBoxAttachments.add(new ComboBoxAttachment(vts, ac.getName() + "Type", typeCB));
 }
 
 FilterModule::~FilterModule()
@@ -783,7 +773,7 @@ void FilterModule::resized()
 {
     ESModule::resized();
     
-    for (int i = 1; i < ac.paramNames.size(); ++i)
+    for (int i = 1; i < ac.getParamNames().size(); ++i)
     {
         dials[i]->setBoundsRelative(relLeftMargin + (relDialWidth*(i+1))+(relDialSpacing*i),
                                     relTopMargin, relDialWidth, relDialHeight);
@@ -861,7 +851,7 @@ ESModule(editor, vts, ac, 0.04f, 0.13f, 0.0675f, 0.16f, 0.84f)
 {
     velocityToggle.setButtonText("Scale to velocity");
     addAndMakeVisible(velocityToggle);
-    buttonAttachments.add(new ButtonAttachment(vts, ac.name + "Velocity", velocityToggle));
+    buttonAttachments.add(new ButtonAttachment(vts, ac.getName() + "Velocity", velocityToggle));
 }
 
 EnvModule::~EnvModule()
@@ -894,16 +884,16 @@ ESModule(editor, vts, ac, 0.12f, 0.13f, 0.185f, 0.16f, 0.84f)
     rateLabel.addListener(this);
     addAndMakeVisible(rateLabel);
     
-    RangedAudioParameter* set = vts.getParameter(ac.name + "ShapeSet");
+    RangedAudioParameter* set = vts.getParameter(ac.getName() + "ShapeSet");
     shapeCB.addItemList(oscSetNames, 1);
     shapeCB.setSelectedItemIndex(set->convertFrom0to1(set->getValue()));
     shapeCB.setLookAndFeel(&laf);
     addAndMakeVisible(shapeCB);
-    comboBoxAttachments.add(new ComboBoxAttachment(vts, ac.name + "ShapeSet", shapeCB));
+    comboBoxAttachments.add(new ComboBoxAttachment(vts, ac.getName() + "ShapeSet", shapeCB));
     
     syncToggle.setButtonText("Sync to note-on");
     addAndMakeVisible(syncToggle);
-    buttonAttachments.add(new ButtonAttachment(vts, ac.name + "Sync", syncToggle));
+    buttonAttachments.add(new ButtonAttachment(vts, ac.getName() + "Sync", syncToggle));
 }
 
 LFOModule::~LFOModule()
@@ -990,8 +980,8 @@ ESModule(editor, vts, ac, 0.1f, 0.2f, 0.1f, 0.125f, 0.75f)
 {
     outlineColour = Colours::darkgrey;
     
-    masterDial = std::make_unique<ESDial>(editor, "Master");
-//    sliderAttachments.add(new SliderAttachment(vts, "Master", masterDial->getSlider()));
+    masterDial = std::make_unique<ESDial>(editor, "Master", "Master", false, false);
+    sliderAttachments.add(new SliderAttachment(vts, "Master", masterDial->getSlider()));
     addAndMakeVisible(masterDial.get());
 }
 

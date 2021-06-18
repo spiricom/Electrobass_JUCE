@@ -21,30 +21,24 @@ class ESAudioProcessorEditor;
 class MappingSource : public Component
 {
 public:
-    MappingSource(ESAudioProcessorEditor& editor,
-                  const String &paramName, const String &displayName,
-                  float* sources, int n, bool bipolar, Colour colour);
+    MappingSource(ESAudioProcessorEditor& editor, MappingSourceModel& model,
+                  const String &displayName);
     ~MappingSource() override;
     
-    Colour getColour() { return colour; }
-    bool isBipolar() { return bipolar; }
+    Colour getColour() { return model.colour; }
+    
+    MappingSourceModel& getModel() { return model; }
     
     void resized() override;
-    
-    float* getValuePointer();
-    int getNumSourcePointers();
     
     Label label;
     DrawableButton button;
     
 private:
+    ESAudioProcessor& processor;
+    MappingSourceModel& model;
 
     std::unique_ptr<Drawable> image;
-    float* source;
-    int numSourcePointers;
-    bool bipolar;
-    
-    Colour colour;
     
     ESLookAndFeel laf;
     
@@ -58,13 +52,18 @@ class MappingTarget : public Slider,
 {
 public:
     
-    MappingTarget(ESAudioProcessorEditor& editor, const String &name,
-                  OwnedArray<SmoothedParameter>& targetParameters, int index);
+    MappingTarget(ESAudioProcessorEditor& editor, MappingTargetModel& model);
     ~MappingTarget() override;
     
     String getTextFromValue(double value) override { return text; }
-    Colour getColour() { return colour; }
-    bool isBipolar() { return bipolar; }
+    Colour getColour()
+    {
+        if (model.currentSource == nullptr) return Colours::transparentBlack;
+        else return model.currentSource->colour;
+    }
+    
+    MappingTargetModel& getModel() { return model; }
+    bool isBipolar() { return model.bipolar; }
     bool isActive() { return sliderEnabled; }
     
     bool isInterestedInDragSource(const SourceDetails &dragSourceDetails) override;
@@ -75,14 +74,13 @@ public:
     void mouseDown(const MouseEvent& event) override;
     void mouseDrag(const MouseEvent& event) override;
     
-    void updateMapping(HashMap<String, MappingSource*>& sourceMap);
-    
+    void updateValue();
     void updateRange();
 
     void setText(String s);
     void setTextColour(Colour colour);
     
-    void setMapping(MappingSource* source, float end, HookOperation op);
+    void setMapping(MappingSource* source, float end);
     void removeMapping();
     
     void setMappingRange(float end);
@@ -90,14 +88,11 @@ public:
     static void menuCallback(int result, MappingTarget* target);
     
 private:
+    ESAudioProcessor& processor;
+    MappingTargetModel& model;
     
     String text;
-    OwnedArray<SmoothedParameter>& targetParameters;
-    int index;
     bool sliderEnabled;
-    bool bipolar;
-    
-    Colour colour;
     
     ESLookAndFeel laf;
     
@@ -111,11 +106,7 @@ class ESDial : public Component,
 {
 public:
     
-    ESDial(ESAudioProcessorEditor& editor, const String& name);
-    ESDial(ESAudioProcessorEditor& editor, const String& paramName, const String& displayName,
-           Colour colour, float* source, int n, bool bipolar);
-    ESDial(ESAudioProcessorEditor& editor, const String& paramName, const String& displayName,
-           OwnedArray<SmoothedParameter>& target);
+    ESDial(ESAudioProcessorEditor& editor, const String& paramName, const String& displayName, bool isSource, bool isTarget);
     ~ESDial() override;
     
     void paint(Graphics& g) override;

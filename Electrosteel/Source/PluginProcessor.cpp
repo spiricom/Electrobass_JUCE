@@ -128,8 +128,7 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
         layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
     }
     
-//    layout.add (std::make_unique<AudioParameterFloat> ("Master", "Master",
-//                                                       0., 2., 1.));
+    layout.add (std::make_unique<AudioParameterFloat> ("Master", "Master", 0., 2., 1.));
     
     //==============================================================================
     for (int i = 1; i < CopedentColumnNil; ++i)
@@ -189,43 +188,36 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
         filt.add(new Filter("Filter" + String(i+1), *this, vts));
     }
     
-    afpSeriesParallel = vts.getRawParameterValue("Filter Series-Parallel Mix");
+    seriesParallel = std::make_unique<SmoothedParameter>(*this, vts, "Filter Series-Parallel Mix", -1);
     
     for (int i = 0; i < NUM_ENVS; ++i)
     {
-        envs.add(new Envelope("Envelope" + String(i+1), *this, vts));
+        String n = "Envelope" + String(i+1);
+        envs.add(new Envelope(n, *this, vts));
+        addMappingSource(envs.getLast());
     }
     
     for (int i = 0; i < NUM_LFOS; ++i)
     {
-        lfos.add(new LowFreqOscillator("LFO" + String(i+1), *this, vts));
+        String n = "LFO" + String(i+1);
+        lfos.add(new LowFreqOscillator(n, *this, vts));
+        addMappingSource(lfos.getLast());
     }
     
     output = std::make_unique<Output>("Output", *this, vts);
     
-    // Make a SmoothedParameter for each voice from the single AudioParameter
-    // to allow for env mapping
-    for (int i = 0; i < NUM_STRINGS; ++i)
-    {
-        String name = envs[NUM_ENVS-1]->name;
-        output->getParameterArray(OutputAmp)[i]
-        ->setHook(name, 2, &(envs[NUM_ENVS-1]->getValuePointer()[i]),
-                  0.0, 1.0, HookAdd);
-        
-        name = envs[NUM_ENVS-2]->name;
-        filt[0]->getParameterArray(FilterCutoff)[i]
-        ->setHook(name, 2, &(envs[NUM_ENVS-2]->getValuePointer()[i]),
-                  0.f, 24.f, HookAdd);
-    }
-    
     for (int i = 0; i < NUM_MACROS; ++i)
     {
-        ccParams.add(new SmoothedParameter(*this, vts, "M" + String(i+1)));
+        String n = "M" + String(i+1);
+        ccParams.add(new SmoothedParameter(*this, vts, n, -1));
+        ccSources.add(new MappingSourceModel(*this, n, ccParams.getLast()->getValuePointerArray(),
+                                             false, false, false, Colours::red));
+        addMappingSource(ccSources.getLast());
     }
     
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
-        pitchBendParams.add(new SmoothedParameter(*this, vts, "PitchBend" + String(i)));
+        pitchBendParams.add(new SmoothedParameter(*this, vts, "PitchBend" + String(i), i-1));
         midiChannelNoteCount[i+1] = 0;
         midiChannelActivity[i+1] = 0;
         channelToString[i+1] = i;
@@ -241,6 +233,20 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
             copedentArray.getReference(i).add(cCopedentArrayInit[i][v]);
         }
     }
+    
+    // A couple of default mappings that will be used if nothing has been saved
+    Mapping defaultFilter1Cutoff;
+    defaultFilter1Cutoff.sourceName = "Envelope3";
+    defaultFilter1Cutoff.targetName = "Filter1CutoffT3";
+    defaultFilter1Cutoff.value = 24.f;
+    
+    Mapping defaultOutputAmp;
+    defaultOutputAmp.sourceName = "Envelope4";
+    defaultOutputAmp.targetName = "OutputAmpT3";
+    defaultOutputAmp.value = 1.f;
+    
+    initialMappings.add(defaultFilter1Cutoff);
+    initialMappings.add(defaultOutputAmp);
 }
 
 ESAudioProcessor::~ESAudioProcessor()
@@ -253,18 +259,7 @@ void ESAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     midiChannelActivityTimeout = sampleRate/samplesPerBlock/2;
     LEAF_setSampleRate(&leaf, sampleRate);
-    for (auto param : params)
-    {
-        param->setSampleRate(sampleRate);
-    }
-    for (auto sposc : oscs)
-    {
-        sposc->prepareToPlay(sampleRate, samplesPerBlock);
-    }
-    for (auto lp : filt)
-    {
-        lp->prepareToPlay(sampleRate, samplesPerBlock);
-    }
+    
     for (auto env : envs)
     {
         env->prepareToPlay(sampleRate, samplesPerBlock);
@@ -272,6 +267,29 @@ void ESAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     for (auto lfo : lfos)
     {
         lfo->prepareToPlay(sampleRate, samplesPerBlock);
+    }
+    for (auto osc : oscs)
+    {
+        osc->prepareToPlay(sampleRate, samplesPerBlock);
+    }
+    for (auto f : filt)
+    {
+        f->prepareToPlay(sampleRate, samplesPerBlock);
+    }
+    output->prepareToPlay(sampleRate, samplesPerBlock);
+    
+    for (auto param : params)
+    {
+        param->prepareToPlay(sampleRate, samplesPerBlock);
+    }
+    
+    if (!initialMappings.isEmpty())
+    {
+        for (Mapping m : initialMappings)
+        {
+            targetMap[m.targetName]->setMapping(sourceMap[m.sourceName], m.value);
+        }
+        initialMappings.clear();
     }
 }
 
@@ -393,14 +411,6 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
         resolvedCopedent.add(minBelowZero + maxAboveZero);
     }
     
-    for (int i = 0; i < oscs.size(); ++i)
-    {
-        oscs[i]->frame();
-    }
-    for (int i = 0; i < filt.size(); ++i)
-    {
-        filt[i]->frame();
-    }
     for (int i = 0; i < envs.size(); ++i)
     {
         envs[i]->frame();
@@ -409,19 +419,48 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
     {
         lfos[i]->frame();
     }
+    for (int i = 0; i < oscs.size(); ++i)
+    {
+        oscs[i]->frame();
+    }
+    for (int i = 0; i < filt.size(); ++i)
+    {
+        filt[i]->frame();
+    }
+    output->frame();
 
-    float parallel = *afpSeriesParallel;
+    float parallel = seriesParallel->tickNoHooks();
     
     int mpe = mpeMode ? 1 : 0;
     int impe = 1-mpe;
     
-    float samples[2], filterSamples[2];
-    for (int i = 0; i < buffer.getNumSamples(); i++)
+    for (int s = 0; s < buffer.getNumSamples(); s++)
     {
-        for (int p = 0; p < NUM_MACROS; ++p)
+        for (int i = 0; i < ccParams.size(); ++i)
         {
-            ccParams[p]->tick();
+            ccParams[i]->tickNoHooks();
         }
+        
+        float globalPitchBend = pitchBendParams[0]->tick(s);
+        
+        float samples[2][NUM_STRINGS];
+        float outputSamples[2];
+        outputSamples[0] = 0.f;
+        outputSamples[1] = 0.f;
+        
+        for (int v = 0; v < NUM_STRINGS; ++v)
+        {
+            float pitchBend = globalPitchBend + pitchBendParams[v+1]->tickNoHooks();
+            float tempNote = (float)tSimplePoly_getPitch(&strings[v*mpe], v*impe);
+            tempNote += resolvedCopedent[v];
+            tempNote += pitchBend;
+            float tempPitchClass = ((((int)tempNote) - keyCenter) % 12 );
+            float tunedNote = tempNote + centsDeviation[(int)tempPitchClass];
+            voiceNote[v] = tunedNote;
+            samples[0][v] = 0.f;
+            samples[1][v] = 0.f;
+        }
+        
         for (int i = 0; i < envs.size(); ++i)
         {
             envs[i]->tick();
@@ -430,35 +469,30 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
         {
             lfos[i]->tick();
         }
-        samples[0] = 0.f;
-        samples[1] = 0.f;
-        float globalPitchBend = pitchBendParams[0]->tick();
+        for (int i = 0; i < oscs.size(); ++i)
+        {
+            oscs[i]->tick(samples);
+        }
+
+        filt[0]->tick(samples[0]);
+        
         for (int v = 0; v < NUM_STRINGS; ++v)
         {
-            float pitchBend = globalPitchBend + pitchBendParams[v+1]->tick();
-            float tempNote = (float)tSimplePoly_getPitch(&strings[v*mpe], v*impe);
-            tempNote += resolvedCopedent[v];
-            tempNote += pitchBend;
-            float tempPitchClass = ((((int)tempNote) - keyCenter) % 12 );
-            float tunedNote = tempNote + centsDeviation[(int)tempPitchClass];
-            voiceNote[v] = tunedNote;
-            
-            filterSamples[0] = 0.f;
-            filterSamples[1] = 0.f;
-            for (int i = 0; i < oscs.size(); ++i)
-            {
-                oscs[i]->tick(v, filterSamples);
-            }
-            
-            float filter1 = filt[0]->tick(v, filterSamples[0]*INV_NUM_OSCS);
-            float sample = filt[1]->tick(v, filterSamples[1]*INV_NUM_OSCS + filter1*(1.f-parallel))
-            + filter1*parallel;
-            output->tick(v, sample, samples, totalNumOutputChannels);
+            samples[1][v] += samples[0][v]*(1.f-parallel);
         }
+        
+        filt[1]->tick(samples[1]);
+        
+        for (int v = 0; v < NUM_STRINGS; ++v)
+        {
+            samples[1][v] += samples[0][v]*parallel;
+        }
+        
+        output->tick(samples[1], outputSamples, totalNumOutputChannels);
     
         for (int channel = 0; channel < totalNumOutputChannels; ++channel)
         {
-            buffer.setSample(channel, i, samples[channel]);
+            buffer.setSample(channel, s, outputSamples[channel]);
         }
     }
     
@@ -679,37 +713,92 @@ void ESAudioProcessor::changeProgramName (int index, const juce::String& newName
 }
 
 //==============================================================================
+void ESAudioProcessor::addMappingSource(MappingSourceModel* source)
+{
+    sourceMap.set(source->name, source);
+}
+
+void ESAudioProcessor::addMappingTarget(MappingTargetModel* target)
+{
+    targetMap.set(target->name, target);
+}
+
+MappingSourceModel* ESAudioProcessor::getMappingSource(const String& name)
+{
+    return sourceMap.getReference(name);
+}
+
+MappingTargetModel* ESAudioProcessor::getMappingTarget(const String& name)
+{
+    return targetMap.getReference(name);
+}
+
+//==============================================================================
 void ESAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
-    auto state = vts.copyState();
-    std::unique_ptr<juce::XmlElement> xml (state.createXml());
+    ValueTree root ("Electrosteel");
     
-    xml->setAttribute("editorScale", editorScale);
-    xml->setAttribute("mpeMode", mpeMode);
-    
+    // Top level settings
+    root.setProperty("editorScale", editorScale, nullptr);
+    root.setProperty("mpeMode", editorScale, nullptr);
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
-        xml->setAttribute("Ch" + String(i+1) + "String", channelToString[i+1]);
+        root.setProperty("Ch" + String(i+1) + "String", channelToString[i+1], nullptr);
     }
     
+    // Audio processor value tree state
+    ValueTree state = vts.copyState();
+    root.addChild(state, -1, nullptr);
+    
+    // Mappings
+    ValueTree mappings ("Mappings");
+    int i = 0;
+    for (auto target : targetMap)
+    {
+        if (MappingSourceModel* source = target->currentSource)
+        {
+            ValueTree mapping ("m" + String(i++));
+            mapping.setProperty("s", source->name, nullptr);
+            mapping.setProperty("t", target->name, nullptr);
+            mapping.setProperty("v", target->value, nullptr);
+            mappings.addChild(mapping, -1, nullptr);
+        }
+    }
+    root.addChild(mappings, -1, nullptr);
+    
+    std::unique_ptr<XmlElement> xml = root.createXml();
     copyXmlToBinary (*xml, destData);
 }
 
 void ESAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
-    std::unique_ptr<juce::XmlElement> xmlState(getXmlFromBinary(data, sizeInBytes));
+    std::unique_ptr<juce::XmlElement> xml(getXmlFromBinary(data, sizeInBytes));
     
-    if (xmlState.get() != nullptr)
+    if (xml.get() != nullptr)
     {
-        if (xmlState->hasTagName (vts.state.getType()))
-            vts.replaceState (juce::ValueTree::fromXml (*xmlState));
-        
-        editorScale = xmlState->getDoubleAttribute("editorScale", 1.05);
-        mpeMode = xmlState->getBoolAttribute("mpeMode", true);
+        editorScale = xml->getDoubleAttribute("editorScale", 1.05);
+        setMPEMode(xml->getBoolAttribute("mpeMode", true));
         
         for (int i = 0; i < NUM_CHANNELS; ++i)
         {
-            channelToString[i+1] = xmlState->getIntAttribute("Ch" + String(i+1) + "String", i);
+            channelToString[i+1] = xml->getIntAttribute("Ch" + String(i+1) + "String", i);
+        }
+        
+        if (XmlElement* state = xml->getChildByName(vts.state.getType()))
+            vts.replaceState (juce::ValueTree::fromXml (*state));
+        
+        // Look for mappings
+        if (XmlElement* mappings = xml->getChildByName("Mappings"))
+        {
+            initialMappings.clear();
+            for (auto child : mappings->getChildIterator())
+            {
+                Mapping m;
+                m.sourceName = child->getStringAttribute("s");
+                m.targetName = child->getStringAttribute("t");
+                m.value = child->getDoubleAttribute("v");
+                initialMappings.add(m);
+            }
         }
     }
 }

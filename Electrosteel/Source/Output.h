@@ -1,8 +1,8 @@
 /*
   ==============================================================================
 
-    Filters.h
-    Created: 17 Mar 2021 3:10:49pm
+    Output.h
+    Created: 17 Jun 2021 10:57:13pm
     Author:  Matthew Wang
 
   ==============================================================================
@@ -13,20 +13,22 @@
 #include "Constants.h"
 #include "Utilities.h"
 
-class ESAudioProcessor;
+//==============================================================================
 
-class Filter : public AudioComponent
+class Output : public AudioComponent
 {
 public:
     //==============================================================================
-    Filter(const String&, ESAudioProcessor&, AudioProcessorValueTreeState&);
-    ~Filter();
+    Output(const String&, ESAudioProcessor&, AudioProcessorValueTreeState&);
+    ~Output();
     
     //==============================================================================
     void prepareToPlay (double sampleRate, int samplesPerBlock);
     void frame();
-    void tick(float* samples);
+    void tick(float input[NUM_STRINGS], float output[2], int numChannels);
     
 private:
-    tEfficientSVF svf[NUM_STRINGS];
+    
+    std::unique_ptr<SmoothedParameter> master;
 };
+
