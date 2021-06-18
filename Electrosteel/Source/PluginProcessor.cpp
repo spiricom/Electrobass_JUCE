@@ -749,6 +749,8 @@ void ESAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     
     // Copedent
     ValueTree copedent ("Copedent");
+    copedent.setProperty("number", copedentNumber, nullptr);
+    copedent.setProperty("name", copedentName, nullptr);
     copedent.setProperty("fundamental", copedentFundamental, nullptr);
     for (int c = 0; c < copedentArray.size(); ++c)
     {
@@ -803,6 +805,8 @@ void ESAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
         // Copedent
         if (XmlElement* copedent = xml->getChildByName("Copedent"))
         {
+            copedentNumber = copedent->getIntAttribute("number");
+            copedentName = copedent->getStringAttribute("name");
             copedentFundamental = copedent->getDoubleAttribute("fundamental");
             for (int c = 0; c < copedentArray.size(); ++c)
             {

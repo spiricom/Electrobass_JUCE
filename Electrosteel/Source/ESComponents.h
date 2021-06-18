@@ -410,7 +410,7 @@ public:
         if (columnNumber == -1)
         {
             int n = text.getIntValue();
-            processor.copedentNumber = jmin(jmax(n, 0), 6);
+            processor.copedentNumber = n < 0 ? 0 : n;
             return;
         }
         else if (columnNumber == -2)
