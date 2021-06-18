@@ -150,7 +150,7 @@ private:
     
     float centsDeviation[12];
     int currentTuning;
-    int keyCenter;
+    int keyCenter = 0;
     
     bool waitingToSendCopedent = false;
     bool mpeMode = true;
