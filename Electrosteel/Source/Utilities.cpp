@@ -171,11 +171,11 @@ void MappingTargetModel::prepareToPlay()
     {
         // Remake the hook in case the block size has changed
         MappingSourceModel* source = processor.sourceMap[hook.sourceName];
-        setMapping(source, hook.min+hook.length);
+        setMapping(source, hook.min+hook.length, false);
     }
 }
 
-bool MappingTargetModel::setMapping(MappingSourceModel* source, float end)
+bool MappingTargetModel::setMapping(MappingSourceModel* source, float end, bool sendChangeEvent)
 {
     if (source == nullptr) return false;
     if (currentSource != nullptr && currentSource == source) return false;
@@ -195,12 +195,12 @@ bool MappingTargetModel::setMapping(MappingSourceModel* source, float end)
         i++;
     }
     
-    if (onMappingChange != nullptr) onMappingChange();
+    if (onMappingChange != nullptr) onMappingChange(sendChangeEvent);
     
     return true;
 }
 
-void MappingTargetModel::removeMapping()
+void MappingTargetModel::removeMapping(bool sendChangeEvent)
 {
     currentSource = nullptr;
     
@@ -211,10 +211,10 @@ void MappingTargetModel::removeMapping()
         param->resetHook(index);
     }
     
-    if (onMappingChange != nullptr) onMappingChange();
+    if (onMappingChange != nullptr) onMappingChange(sendChangeEvent);
 }
 
-void MappingTargetModel::setMappingRange(float end)
+void MappingTargetModel::setMappingRange(float end, bool sendChangeEvent)
 {
     value = end;
     float start = 0.f;
@@ -224,7 +224,7 @@ void MappingTargetModel::setMappingRange(float end)
     }
     DBG(String(start) + " " + String(end));
     
-    if (onMappingChange != nullptr) onMappingChange();
+    if (onMappingChange != nullptr) onMappingChange(sendChangeEvent);
 }
 
 //==============================================================================

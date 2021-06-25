@@ -529,7 +529,7 @@ outlineColour(Colours::transparentBlack)
             t->addListener(this);
             t->addMouseListener(this, true);
             t->updateRange();
-            t->updateValue();
+            t->updateValue(false);
         }
     }
     

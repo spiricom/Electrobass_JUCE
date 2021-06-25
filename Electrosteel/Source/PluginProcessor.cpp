@@ -290,7 +290,7 @@ void ESAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     {
         for (Mapping m : initialMappings)
         {
-            targetMap[m.targetName]->setMapping(sourceMap[m.sourceName], m.value);
+            targetMap[m.targetName]->setMapping(sourceMap[m.sourceName], m.value, false);
         }
         initialMappings.clear();
     }

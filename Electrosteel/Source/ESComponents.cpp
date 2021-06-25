@@ -69,9 +69,9 @@ sliderEnabled(false)
     setTextColour(Colours::transparentBlack);
     updateText();
     
-    model.onMappingChange = [this] {
+    model.onMappingChange = [this](bool sendChangeEvent) {
         updateRange();
-        updateValue();
+        updateValue(sendChangeEvent);
     };
 }
 
@@ -101,7 +101,6 @@ void MappingTarget::mouseDown(const MouseEvent& event)
 {
     if (sliderEnabled)
     {
-        Slider::mouseDown(event);
         if (event.mods.isCtrlDown() || event.mods.isRightButtonDown())
         {
             PopupMenu menu;
@@ -109,6 +108,10 @@ void MappingTarget::mouseDown(const MouseEvent& event)
             menu.addItem(1, "Remove");
             menu.showMenuAsync(PopupMenu::Options(),
                                ModalCallbackFunction::forComponent (menuCallback, this) );
+        }
+        else
+        {
+            Slider::mouseDown(event);
         }
     }
 }
@@ -121,7 +124,7 @@ void MappingTarget::mouseDrag(const MouseEvent& event)
     }
 }
 
-void MappingTarget::updateValue()
+void MappingTarget::updateValue(bool sendChangeEvent)
 {
     if (model.currentSource != nullptr)
     {
@@ -130,7 +133,7 @@ void MappingTarget::updateValue()
         setTextColour(model.currentSource->colour);
         setText(String(name.getTrailingIntValue()));
         
-        setValue(model.value);
+        setValue(model.value, sendChangeEvent ? sendNotification : dontSendNotification);
     }
     else
     {
@@ -140,7 +143,7 @@ void MappingTarget::updateValue()
         
         // Guarantee a change event is sent to listeners and set to 0
         // Feels like there should be a better way to do this...
-        setValue(0.f);
+        setValue(0.f, sendChangeEvent ? sendNotification : dontSendNotification);
 //        getParentComponent()->repaint();
     }
 }
@@ -171,17 +174,17 @@ void MappingTarget::setTextColour(Colour c)
 
 void MappingTarget::setMapping(MappingSource* source, float end)
 {
-    model.setMapping(&source->getModel(), end);
+    model.setMapping(&source->getModel(), end, true);
 }
 
 void MappingTarget::removeMapping()
 {
-    model.removeMapping();
+    model.removeMapping(true);
 }
 
 void MappingTarget::setMappingRange(float end)
 {
-    model.setMappingRange(end);
+    model.setMappingRange(end, true);
 }
 
 void MappingTarget::menuCallback(int result, MappingTarget* target)

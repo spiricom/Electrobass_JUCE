@@ -147,13 +147,13 @@ public:
     
     void prepareToPlay();
 
-    bool setMapping(MappingSourceModel* source, float end);
-    void removeMapping();
-    void setMappingRange(float end);
+    bool setMapping(MappingSourceModel* source, float end, bool sendChangeEvent);
+    void removeMapping(bool sendChangeEvent);
+    void setMappingRange(float end, bool sendChangeEvent);
     
     bool isBipolar() { return bipolar; }
     
-    std::function<void()> onMappingChange = nullptr;
+    std::function<void(bool)> onMappingChange = nullptr;
 
     ESAudioProcessor& processor;
     

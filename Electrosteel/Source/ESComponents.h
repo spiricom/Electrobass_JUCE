@@ -74,7 +74,7 @@ public:
     void mouseDown(const MouseEvent& event) override;
     void mouseDrag(const MouseEvent& event) override;
     
-    void updateValue();
+    void updateValue(bool sendChangeEvent);
     void updateRange();
 
     void setText(String s);
