@@ -715,14 +715,14 @@ void OscModule::displayPitchMapping(MappingTarget* mt)
         displayPitch();
         return;
     }
-    auto value = fabs(mt->getValue());
+    auto value = mt->getValue();
     if (mt->getParentComponent() == getDial(OscPitch))
     {
         pitchLabel.setColour(Label::textColourId, mt->getColour());
         String text;
         if (mt->isBipolar()) text = String::charToString(0xb1);
         else text = (value >= 0 ? "+" : "-");
-        text += String(value, 3);
+        text += String(fabs(value), 3);
         pitchLabel.setText(text, dontSendNotification);
     }
     else if (mt->getParentComponent() == getDial(OscFine))
@@ -731,7 +731,7 @@ void OscModule::displayPitchMapping(MappingTarget* mt)
         String text;
         if (mt->isBipolar()) text = String::charToString(0xb1);
         else text = (value >= 0 ? "+" : "-");
-        text += String(value*0.01, 3);
+        text += String(fabs(value*0.01), 3);
         pitchLabel.setText(text, dontSendNotification);
     }
 }
@@ -832,12 +832,12 @@ void FilterModule::displayCutoffMapping(MappingTarget* mt)
     if (!mt->isActive()) displayCutoff();
     else if (mt->getParentComponent() == getDial(FilterCutoff))
     {
-        auto value = fabs(mt->getValue());
+        auto value = mt->getValue();
         cutoffLabel.setColour(Label::textColourId, mt->getColour());
         String text;
         if (mt->isBipolar()) text = String::charToString(0xb1);
         else text = (value >= 0 ? "+" : "-");
-        text += String(value, 2);
+        text += String(fabs(value), 2);
         cutoffLabel.setText(text, dontSendNotification);
     }
 }
@@ -961,12 +961,12 @@ void LFOModule::displayRateMapping(MappingTarget* mt)
     if (!mt->isActive()) displayRate();
     else if (mt->getParentComponent() == getDial(LowFreqRate))
     {
-        auto value = fabs(mt->getValue());
+        auto value = mt->getValue();
         rateLabel.setColour(Label::textColourId, mt->getColour());
         String text;
         if (mt->isBipolar()) text = String::charToString(0xb1);
         else text = (value >= 0 ? "+" : "");
-        text += String(value, 2) + " Hz";
+        text += String(fabs(value), 2) + " Hz";
         rateLabel.setText(text, dontSendNotification);
     }
 }
