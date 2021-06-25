@@ -96,7 +96,7 @@ void Envelope::tick()
         tADSRT_setDecay(&envs[v], expBuffer[(int)(decay * expBufferSizeMinusOne)] * 8192.0f);
         tADSRT_setSustain(&envs[v], sustain);
         tADSRT_setRelease(&envs[v], expBuffer[(int)(release * expBufferSizeMinusOne)] * 8192.0f);
-        tADSRT_setLeakFactor(&envs[v], 0.99995f*leak + (1.f-leak));
+        tADSRT_setLeakFactor(&envs[v], 0.99995f + 0.00005f*(1.f-leak));
         envValues[v][sampleInBlock] = tADSRT_tickNoInterp(&envs[v]);
     }
     sampleInBlock++;

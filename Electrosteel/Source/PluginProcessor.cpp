@@ -165,11 +165,17 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
     
     tSimplePoly_init(&strings[0], 12, &leaf);
     tSimplePoly_setNumVoices(&strings[0], 1);
+    
     voiceNote[0] = 0;
-    for (int i = 1; i < NUM_STRINGS; i++)
+    for (int i = 1; i < NUM_STRINGS; ++i)
     {
         tSimplePoly_init(&strings[i], 1, &leaf);
         voiceNote[i] = 0;
+    }
+    
+    for (int i = 0; i < 12; ++i)
+    {
+        centsDeviation[i] = 0.f;
     }
 
     leaf.clearOnAllocation = 0;
@@ -737,7 +743,7 @@ void ESAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     
     // Top level settings
     root.setProperty("editorScale", editorScale, nullptr);
-    root.setProperty("mpeMode", editorScale, nullptr);
+    root.setProperty("mpeMode", mpeMode, nullptr);
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
         root.setProperty("Ch" + String(i+1) + "String", channelToString[i+1], nullptr);

@@ -56,8 +56,16 @@ public:
                                 const String& columnName, int /*columnId*/,
                                 int width, int height, bool isMouseOver, bool isMouseDown,
                                 int columnFlags) override;
-    
-private:
+protected:
     
     Typeface::Ptr tp;
+};
+
+class ESLookAndFeel2 : public ESLookAndFeel
+{
+public:
+    using ESLookAndFeel::ESLookAndFeel;
+    
+    Font getTextButtonFont (TextButton& b, int buttonHeight);
+    Font getLabelFont (Label& label);
 };

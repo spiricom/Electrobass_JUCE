@@ -175,7 +175,7 @@ void MappingTargetModel::prepareToPlay()
     }
 }
 
-bool MappingTargetModel::setMapping(MappingSourceModel* source, float end, bool sendChangeEvent)
+bool MappingTargetModel::setMapping(MappingSourceModel* source, float end)
 {
     if (source == nullptr) return false;
     if (currentSource != nullptr && currentSource == source) return false;
@@ -200,7 +200,7 @@ bool MappingTargetModel::setMapping(MappingSourceModel* source, float end, bool 
     return true;
 }
 
-void MappingTargetModel::removeMapping(bool sendChangeEvent)
+void MappingTargetModel::removeMapping()
 {
     currentSource = nullptr;
     
@@ -214,7 +214,7 @@ void MappingTargetModel::removeMapping(bool sendChangeEvent)
     if (onMappingChange != nullptr) onMappingChange();
 }
 
-void MappingTargetModel::setMappingRange(float end, bool sendChangeEvent)
+void MappingTargetModel::setMappingRange(float end)
 {
     value = end;
     float start = 0.f;

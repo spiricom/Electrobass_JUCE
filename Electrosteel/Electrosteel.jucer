@@ -21,6 +21,9 @@
         <FILE id="o0yFfN" name="snyderphonics-whitelogo.svg" compile="0" resource="1"
               file="Source/Resources/snyderphonics-whitelogo.svg"/>
       </GROUP>
+      <FILE id="Sx7wsj" name="ESStandalone.h" compile="0" resource="0" file="Source/ESStandalone.h"/>
+      <FILE id="chMv6B" name="ESStandalone.cpp" compile="1" resource="0"
+            file="Source/ESStandalone.cpp"/>
       <FILE id="BngWPn" name="PluginProcessor.h" compile="0" resource="0"
             file="Source/PluginProcessor.h"/>
       <FILE id="tL2Sdi" name="PluginProcessor.cpp" compile="1" resource="0"
@@ -42,9 +45,6 @@
       <FILE id="DXzM9o" name="ESComponents.h" compile="0" resource="0" file="Source/ESComponents.h"/>
       <FILE id="UeMlIm" name="ESComponents.cpp" compile="1" resource="0"
             file="Source/ESComponents.cpp"/>
-      <FILE id="Sx7wsj" name="ESStandalone.h" compile="0" resource="0" file="Source/ESStandalone.h"/>
-      <FILE id="chMv6B" name="ESStandalone.cpp" compile="1" resource="0"
-            file="Source/ESStandalone.cpp"/>
       <FILE id="JX3DDk" name="ESLookAndFeel.h" compile="0" resource="0" file="Source/ESLookAndFeel.h"/>
       <FILE id="HwxJiy" name="ESLookAndFeel.cpp" compile="1" resource="0"
             file="Source/ESLookAndFeel.cpp"/>

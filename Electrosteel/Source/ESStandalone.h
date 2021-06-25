@@ -19,6 +19,7 @@
 #endif
 
 #include "PluginProcessor.h"
+#include "ESLookAndFeel.h"
 
 //==============================================================================
 /**
@@ -266,7 +267,10 @@ public:
         o.useNativeTitleBar             = true;
         o.resizable                     = false;
         
-        o.launchAsync();
+        DialogWindow* window = o.launchAsync();
+        window->setLookAndFeel(&laf);
+        window->setTitleBarButtonsRequired(DocumentWindow::TitleBarButtons::closeButton, false);
+        window->setTitleBarTextCentred(false);
     }
     
     void saveAudioDeviceState()
@@ -388,6 +392,8 @@ public:
     
     std::unique_ptr<AudioDeviceManager::AudioDeviceSetup> options;
     Array<MidiDeviceInfo> lastMidiDevices;
+    
+    ESLookAndFeel2 laf;
     
 private:
     //==============================================================================
@@ -569,16 +575,31 @@ public:
 #endif
     )
     : DocumentWindow (title, backgroundColour, DocumentWindow::minimiseButton | DocumentWindow::closeButton),
-    optionsButton ("Options")
+    audioSettingsButton ("Audio/MIDI Settings"),
+    saveStateButton ("Save"),
+    loadStateButton ("Load"),
+    resetStateButton ("Reset to default")
     {
 #if JUCE_IOS || JUCE_ANDROID
         setTitleBarHeight (0);
 #else
         setTitleBarButtonsRequired (DocumentWindow::minimiseButton | DocumentWindow::closeButton, false);
         
-        Component::addAndMakeVisible (optionsButton);
-        optionsButton.addListener (this);
-        optionsButton.setTriggeredOnMouseDown (true);
+        Component::addAndMakeVisible (audioSettingsButton);
+        audioSettingsButton.addListener (this);
+        audioSettingsButton.setTriggeredOnMouseDown (true);
+        
+        Component::addAndMakeVisible (saveStateButton);
+        saveStateButton.addListener (this);
+        saveStateButton.setTriggeredOnMouseDown (true);
+        
+        Component::addAndMakeVisible (loadStateButton);
+        loadStateButton.addListener (this);
+        loadStateButton.setTriggeredOnMouseDown (true);
+        
+        Component::addAndMakeVisible (resetStateButton);
+        resetStateButton.addListener (this);
+        resetStateButton.setTriggeredOnMouseDown (true);
 #endif
         
         pluginHolder.reset (new StandalonePluginHolder (settingsToUse, takeOwnershipOfSettings,
@@ -671,7 +692,10 @@ public:
     void resized() override
     {
         DocumentWindow::resized();
-        optionsButton.setBounds (8, 6, 60, getTitleBarHeight() - 8);
+        audioSettingsButton.setBounds (8, 6, 100, getTitleBarHeight() - 8);
+        saveStateButton.setBounds (116, 6, 50, getTitleBarHeight() - 8);
+        loadStateButton.setBounds (174, 6, 50, getTitleBarHeight() - 8);
+        resetStateButton.setBounds (232, 6, 100, getTitleBarHeight() - 8);
     }
     
     virtual StandalonePluginHolder* getPluginHolder()    { return pluginHolder.get(); }
@@ -679,18 +703,24 @@ public:
     std::unique_ptr<StandalonePluginHolder> pluginHolder;
     
 private:
-    void buttonClicked (Button*) override
+    void buttonClicked (Button* b) override
     {
-        PopupMenu m;
-        m.addItem (1, TRANS("Audio/MIDI Settings..."));
-        m.addSeparator();
-        m.addItem (2, TRANS("Save current state..."));
-        m.addItem (3, TRANS("Load a saved state..."));
-        m.addSeparator();
-        m.addItem (4, TRANS("Reset to default state"));
-        
-        m.showMenuAsync (PopupMenu::Options(),
-                         ModalCallbackFunction::forComponent (menuCallback, this));
+        if (b == &audioSettingsButton)
+        {
+            pluginHolder->showAudioSettingsDialog();
+        }
+        else if (b == &saveStateButton)
+        {
+            pluginHolder->askUserToSaveState();
+        }
+        else if (b == &loadStateButton)
+        {
+            pluginHolder->askUserToLoadState();
+        }
+        else if (b == &resetStateButton)
+        {
+            resetToDefaultState();
+        }
     }
     
     //==============================================================================
@@ -856,7 +886,10 @@ private:
     };
     
     //==============================================================================
-    TextButton optionsButton;
+    TextButton audioSettingsButton;
+    TextButton saveStateButton;
+    TextButton loadStateButton;
+    TextButton resetStateButton;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (StandaloneFilterWindow)
 };

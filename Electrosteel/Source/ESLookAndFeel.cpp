@@ -56,14 +56,29 @@ Font ESLookAndFeel::getTextButtonFont (TextButton& b, int buttonHeight)
     return font;
 }
 
+Font ESLookAndFeel2::getTextButtonFont (TextButton& b, int buttonHeight)
+{
+    Font font (tp);
+    font.setHeight(14);
+    return font;
+}
 
 Font ESLookAndFeel::getLabelFont (Label& label)
 {
     Font font (tp);
+    float height = label.getHeight() * 0.8f;
     if (label.isEditable() && dynamic_cast<CopedentTable::EditableTextCustomComponent*>(&label) != nullptr)
-        font.setHeight(label.getHeight() * 0.5f);
-    else
-        font.setHeight(label.getHeight() * 0.8f);
+        height = label.getHeight() * 0.5f;
+    
+    font.setHeight(height);
+    font.setDefaultMinimumHorizontalScaleFactor(0.01f);
+    return font;
+}
+
+Font ESLookAndFeel2::getLabelFont (Label& label)
+{
+    Font font (tp);
+    font.setHeight(18);
     font.setDefaultMinimumHorizontalScaleFactor(0.01f);
     return font;
 }

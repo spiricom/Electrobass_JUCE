@@ -130,7 +130,18 @@ void MappingTarget::updateValue()
         setTextColour(model.currentSource->colour);
         setText(String(name.getTrailingIntValue()));
         
-        setValue(model.value, dontSendNotification);
+        setValue(model.value);
+    }
+    else
+    {
+        sliderEnabled = false;
+        setTextColour(Colours::transparentBlack);
+        setText("");
+        
+        // Guarantee a change event is sent to listeners and set to 0
+        // Feels like there should be a better way to do this...
+        setValue(0.f);
+//        getParentComponent()->repaint();
     }
 }
 
@@ -160,38 +171,17 @@ void MappingTarget::setTextColour(Colour c)
 
 void MappingTarget::setMapping(MappingSource* source, float end)
 {
-    if (!model.setMapping(&source->getModel(), end, false)) return;
-
-    updateRange();
-    
-    sliderEnabled = true;
-    String name = source->getName();
-    setTextColour(source->getColour());
-    setText(String(name.getTrailingIntValue()));
-    
-    setValue(end, dontSendNotification);
+    model.setMapping(&source->getModel(), end);
 }
 
 void MappingTarget::removeMapping()
 {
-    model.removeMapping(false);
-    
-    sliderEnabled = false;
-    setTextColour(Colours::transparentBlack);
-    setText("");
-    
-    // Guarantee a change event is sent to listeners and set to 0
-    // Feels like there should be a better way to do this...
-    setValue(getValue() != getMinimum() ? getMinimum() : getMaximum());
-    setValue(0.f);
-    getParentComponent()->repaint();
+    model.removeMapping();
 }
 
 void MappingTarget::setMappingRange(float end)
 {
-    model.setMappingRange(end, false);
-    updateRange();
-    setValue(end);
+    model.setMappingRange(end);
 }
 
 void MappingTarget::menuCallback(int result, MappingTarget* target)

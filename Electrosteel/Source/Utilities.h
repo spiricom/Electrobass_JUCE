@@ -147,9 +147,9 @@ public:
     
     void prepareToPlay();
 
-    bool setMapping(MappingSourceModel* source, float end, bool sendChangeEvent = true);
-    void removeMapping(bool sendChangeEvent = true);
-    void setMappingRange(float end, bool sendChangeEvent = true);
+    bool setMapping(MappingSourceModel* source, float end);
+    void removeMapping();
+    void setMappingRange(float end);
     
     bool isBipolar() { return bipolar; }
     
