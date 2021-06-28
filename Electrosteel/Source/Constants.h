@@ -152,7 +152,7 @@ static const StringArray cOutputParams = {
 };
 static const std::vector<std::vector<float>> vOutputInit = {
     { 0.0f, 2.0f, 0.0f },   //Amp
-    { 0.0f, 1.0f, 0.5f },  //Pan
+    { -1.0f, 1.0f, 0.f },  //Pan
 };
 
 //==============================================================================
