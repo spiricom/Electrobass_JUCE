@@ -19,7 +19,6 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
     
     //==============================================================================
     // Top level parameters
-    
     for (int i = 0; i < NUM_MACROS; ++i)
     {
         layout.add (std::make_unique<AudioParameterFloat> ("M" + String(i+1),
@@ -286,7 +285,18 @@ void ESAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
         param->prepareToPlay(sampleRate, samplesPerBlock);
     }
     
-    if (!initialMappings.isEmpty())
+    if (initialMappings.isEmpty())
+    {
+        // Source address have likely changed, so remap existing mappings
+        for (auto target : targetMap)
+        {
+            if (target->currentSource != nullptr)
+            {
+                target->setMapping(target->currentSource, target->value, false);
+            }
+        }
+    }
+    else // First prepareToPlay
     {
         for (Mapping m : initialMappings)
         {
@@ -361,11 +371,9 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
             }
         }
 
-        
         //RangedAudioParameter* fund = vts.getParameter("Copedent Fundamental");
         //flat.add(fund->convertFrom0to1(fund->getValue()));
         
-
         Array<uint8_t> flat7bitInt;
         
         union flatUnion fu;
@@ -387,8 +395,6 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
                 flat7bitInt.add((fu.i >> 7) & 127);
                 flat7bitInt.add(fu.i & 127);
             }
-            
-            
             
             MidiMessage copedentMessage = MidiMessage::createSysExMessage(flat7bitInt.getRawDataPointer(), sizeof(uint8_t) * flat7bitInt.size());
             

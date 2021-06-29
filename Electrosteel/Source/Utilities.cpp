@@ -175,10 +175,9 @@ void MappingTargetModel::prepareToPlay()
     }
 }
 
-bool MappingTargetModel::setMapping(MappingSourceModel* source, float end, bool sendChangeEvent)
+void MappingTargetModel::setMapping(MappingSourceModel* source, float end, bool sendChangeEvent)
 {
-    if (source == nullptr) return false;
-    if (currentSource != nullptr && currentSource == source) return false;
+    if (source == nullptr) return;
     
     currentSource = source;
     bipolar = source->isBipolar();
@@ -196,8 +195,6 @@ bool MappingTargetModel::setMapping(MappingSourceModel* source, float end, bool 
     }
     
     if (onMappingChange != nullptr) onMappingChange(sendChangeEvent);
-    
-    return true;
 }
 
 void MappingTargetModel::removeMapping(bool sendChangeEvent)

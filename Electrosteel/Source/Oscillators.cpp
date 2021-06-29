@@ -93,7 +93,7 @@ void Oscillator::tick(float output[][NUM_STRINGS])
 
 LowFreqOscillator::LowFreqOscillator(const String& n, ESAudioProcessor& p, AudioProcessorValueTreeState& vts) :
 AudioComponent(n, p, vts, cLowFreqParams, false),
-MappingSourceModel(p, n, &lfoValues[0], true, true, true, Colours::lime)
+MappingSourceModel(p, n, lfoValues, true, true, true, Colours::lime)
 {
     sync = vts.getParameter(n + "Sync");
     
@@ -126,6 +126,7 @@ void LowFreqOscillator::prepareToPlay (double sampleRate, int samplesPerBlock)
     {
         lfoValues[i] = (float*)leaf_calloc(&processor.leaf, sizeof(float) * currentBlockSize);
     }
+    source = lfoValues;
 }
 
 void LowFreqOscillator::frame()

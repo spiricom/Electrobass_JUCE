@@ -15,7 +15,7 @@
 Envelope::Envelope(const String& n, ESAudioProcessor& p,
                    AudioProcessorValueTreeState& vts) :
 AudioComponent(n, p, vts, cEnvelopeParams, false),
-MappingSourceModel(p, n, &envValues[0], true, true, false, Colours::cyan)
+MappingSourceModel(p, n, envValues, true, true, false, Colours::cyan)
 {
     useVelocity = vts.getParameter(n + "Velocity");
     
@@ -60,6 +60,7 @@ void Envelope::prepareToPlay (double sampleRate, int samplesPerBlock)
     {
         envValues[i] = (float*)leaf_calloc(&processor.leaf, sizeof(float) * currentBlockSize);
     }
+    source = envValues;
 }
 
 void Envelope::frame()
