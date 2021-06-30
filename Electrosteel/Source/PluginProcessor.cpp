@@ -52,16 +52,16 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
             float max = vOscInit[j][1];
             float def = vOscInit[j][2];
             
-            n = "Osc" + String(i+1) + cOscParams[j];
+            n = "Osc" + String(i+1) + " " + cOscParams[j];
             layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
             paramIds.add(n);
         }
         
-        n = "Osc" + String(i+1) + "ShapeSet";
+        n = "Osc" + String(i+1) + " ShapeSet";
         layout.add (std::make_unique<AudioParameterChoice> (n, n, oscSetNames, 0));
         paramIds.add(n);
         
-        n = "Osc" + String(i+1) + "FilterSend";
+        n = "Osc" + String(i+1) + " FilterSend";
         layout.add (std::make_unique<AudioParameterFloat> (n, n, 0.f, 1.f, 0.5f));
         paramIds.add(n);
     }
@@ -74,7 +74,7 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
         layout.add (std::make_unique<AudioParameterChoice> (n, n, StringArray("Off", "On"), 1));
         paramIds.add(n);
         
-        n = "Filter" + String(i+1) + "Type";
+        n = "Filter" + String(i+1) + " Type";
         layout.add (std::make_unique<AudioParameterChoice> (n, n, oscSetNames, 0));
         paramIds.add(n);
         
@@ -84,7 +84,7 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
             float max = vFilterInit[j][1];
             float def = vFilterInit[j][2];
             
-            n = "Filter" + String(i+1) + cFilterParams[j];
+            n = "Filter" + String(i+1) + " " + cFilterParams[j];
             layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
             paramIds.add(n);
         }
@@ -103,12 +103,12 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
             float max = vEnvelopeInit[j][1];
             float def = vEnvelopeInit[j][2];
             
-            n = "Envelope" + String(i+1) + cEnvelopeParams[j];
+            n = "Envelope" + String(i+1) + " " + cEnvelopeParams[j];
             layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
             paramIds.add(n);
         }
         
-        n = "Envelope" + String(i+1) + "Velocity";
+        n = "Envelope" + String(i+1) + " Velocity";
         layout.add (std::make_unique<AudioParameterChoice> (n, n, StringArray("Off", "On"), 1));
         paramIds.add(n);
     }
@@ -122,16 +122,16 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
             float max = vLowFreqInit[j][1];
             float def = vLowFreqInit[j][2];
             
-            n = "LFO" + String(i+1) + cLowFreqParams[j];
+            n = "LFO" + String(i+1) + " " + cLowFreqParams[j];
             layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
             paramIds.add(n);
         }
         
-        n = "LFO" + String(i+1) + "ShapeSet";
+        n = "LFO" + String(i+1) + " ShapeSet";
         layout.add (std::make_unique<AudioParameterChoice> (n, n, oscSetNames, 0));
         paramIds.add(n);
         
-        n = "LFO" + String(i+1) + "Sync";
+        n = "LFO" + String(i+1) + " Sync";
         layout.add (std::make_unique<AudioParameterChoice> (n, n, StringArray("Off", "On"), 0));
         paramIds.add(n);
     }
@@ -142,7 +142,7 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
         float min = vOutputInit[i][0];
         float max = vOutputInit[i][1];
         float def = vOutputInit[i][2];
-        n = "Output" + cOutputParams[i];
+        n = "Output " + cOutputParams[i];
         layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
         paramIds.add(n);
     }
@@ -265,12 +265,12 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
     // A couple of default mappings that will be used if nothing has been saved
     Mapping defaultFilter1Cutoff;
     defaultFilter1Cutoff.sourceName = "Envelope3";
-    defaultFilter1Cutoff.targetName = "Filter1CutoffT3";
+    defaultFilter1Cutoff.targetName = "Filter1 Cutoff T3";
     defaultFilter1Cutoff.value = 24.f;
     
     Mapping defaultOutputAmp;
     defaultOutputAmp.sourceName = "Envelope4";
-    defaultOutputAmp.targetName = "OutputAmpT3";
+    defaultOutputAmp.targetName = "Output Amp T3";
     defaultOutputAmp.value = 1.f;
     
     initialMappings.add(defaultFilter1Cutoff);
@@ -406,7 +406,7 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
         {
             for (int t = 0; t < 3; ++t)
             {
-                String tn = id + "T" + String(t+1);
+                String tn = id + " T" + String(t+1);
                 if (targetMap.contains(tn))
                 {
                     MappingTargetModel* target = targetMap[tn];
@@ -919,18 +919,18 @@ void ESAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
         }
         
         // Mappings
-        if (XmlElement* mappings = xml->getChildByName("Mappings"))
-        {
-            initialMappings.clear();
-            for (auto child : mappings->getChildIterator())
-            {
-                Mapping m;
-                m.sourceName = child->getStringAttribute("s");
-                m.targetName = child->getStringAttribute("t");
-                m.value = child->getDoubleAttribute("v");
-                initialMappings.add(m);
-            }
-        }
+//        if (XmlElement* mappings = xml->getChildByName("Mappings"))
+//        {
+//            initialMappings.clear();
+//            for (auto child : mappings->getChildIterator())
+//            {
+//                Mapping m;
+//                m.sourceName = child->getStringAttribute("s");
+//                m.targetName = child->getStringAttribute("t");
+//                m.value = child->getDoubleAttribute("v");
+//                initialMappings.add(m);
+//            }
+//        }
     }
 }
 
@@ -973,83 +973,83 @@ juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 //PitchBend11: 28
 //PitchBend12: 29
 //Osc1: 30
-//Osc1Pitch: 31
-//Osc1Fine: 32
-//Osc1Shape: 33
-//Osc1Amp: 34
-//Osc1ShapeSet: 35
-//Osc1FilterSend: 36
+//Osc1 Pitch: 31
+//Osc1 Fine: 32
+//Osc1 Shape: 33
+//Osc1 Amp: 34
+//Osc1 ShapeSet: 35
+//Osc1 FilterSend: 36
 //Osc2: 37
-//Osc2Pitch: 38
-//Osc2Fine: 39
-//Osc2Shape: 40
-//Osc2Amp: 41
-//Osc2ShapeSet: 42
-//Osc2FilterSend: 43
+//Osc2 Pitch: 38
+//Osc2 Fine: 39
+//Osc2 Shape: 40
+//Osc2 Amp: 41
+//Osc2 ShapeSet: 42
+//Osc2 FilterSend: 43
 //Osc3: 44
-//Osc3Pitch: 45
-//Osc3Fine: 46
-//Osc3Shape: 47
-//Osc3Amp: 48
-//Osc3ShapeSet: 49
-//Osc3FilterSend: 50
+//Osc3 Pitch: 45
+//Osc3 Fine: 46
+//Osc3 Shape: 47
+//Osc3 Amp: 48
+//Osc3 ShapeSet: 49
+//Osc3 FilterSend: 50
 //Filter1: 51
-//Filter1Type: 52
-//Filter1Cutoff: 53
-//Filter1Resonance: 54
-//Filter1KeyFollow: 55
+//Filter1 Type: 52
+//Filter1 Cutoff: 53
+//Filter1 Resonance: 54
+//Filter1 KeyFollow: 55
 //Filter2: 56
-//Filter2Type: 57
-//Filter2Cutoff: 58
-//Filter2Resonance: 59
-//Filter2KeyFollow: 60
+//Filter2 Type: 57
+//Filter2 Cutoff: 58
+//Filter2 Resonance: 59
+//Filter2 KeyFollow: 60
 //Filter Series-Parallel Mix: 61
-//Envelope1Attack: 62
-//Envelope1Decay: 63
-//Envelope1Sustain: 64
-//Envelope1Release: 65
-//Envelope1Leak: 66
-//Envelope1Velocity: 67
-//Envelope2Attack: 68
-//Envelope2Decay: 69
-//Envelope2Sustain: 70
-//Envelope2Release: 71
-//Envelope2Leak: 72
-//Envelope2Velocity: 73
-//Envelope3Attack: 74
-//Envelope3Decay: 75
-//Envelope3Sustain: 76
-//Envelope3Release: 77
-//Envelope3Leak: 78
-//Envelope3Velocity: 79
-//Envelope4Attack: 80
-//Envelope4Decay: 81
-//Envelope4Sustain: 82
-//Envelope4Release: 83
-//Envelope4Leak: 84
-//Envelope4Velocity: 85
-//LFO1Rate: 86
-//LFO1Shape: 87
-//LFO1Sync Phase: 88
-//LFO1ShapeSet: 89
-//LFO1Sync: 90
-//LFO2Rate: 91
-//LFO2Shape: 92
-//LFO2Sync Phase: 93
-//LFO2ShapeSet: 94
-//LFO2Sync: 95
-//LFO3Rate: 96
-//LFO3Shape: 97
-//LFO3Sync Phase: 98
-//LFO3ShapeSet: 99
-//LFO3Sync: 100
-//LFO4Rate: 101
-//LFO4Shape: 102
-//LFO4Sync Phase: 103
-//LFO4ShapeSet: 104
-//LFO4Sync: 105
-//OutputAmp: 106
-//OutputPan: 107
+//Envelope1 Attack: 62
+//Envelope1 Decay: 63
+//Envelope1 Sustain: 64
+//Envelope1 Release: 65
+//Envelope1 Leak: 66
+//Envelope1 Velocity: 67
+//Envelope2 Attack: 68
+//Envelope2 Decay: 69
+//Envelope2 Sustain: 70
+//Envelope2 Release: 71
+//Envelope2 Leak: 72
+//Envelope2 Velocity: 73
+//Envelope3 Attack: 74
+//Envelope3 Decay: 75
+//Envelope3 Sustain: 76
+//Envelope3 Release: 77
+//Envelope3 Leak: 78
+//Envelope3 Velocity: 79
+//Envelope4 Attack: 80
+//Envelope4 Decay: 81
+//Envelope4 Sustain: 82
+//Envelope4 Release: 83
+//Envelope4 Leak: 84
+//Envelope4 Velocity: 85
+//LFO1 Rate: 86
+//LFO1 Shape: 87
+//LFO1 Sync Phase: 88
+//LFO1 ShapeSet: 89
+//LFO1 Sync: 90
+//LFO2 Rate: 91
+//LFO2 Shape: 92
+//LFO2 Sync Phase: 93
+//LFO2 ShapeSet: 94
+//LFO2 Sync: 95
+//LFO3 Rate: 96
+//LFO3 Shape: 97
+//LFO3 Sync Phase: 98
+//LFO3 ShapeSet: 99
+//LFO3 Sync: 100
+//LFO4 Rate: 101
+//LFO4 Shape: 102
+//LFO4 Sync Phase: 103
+//LFO4 ShapeSet: 104
+//LFO4 Sync: 105
+//Output Amp: 106
+//Output Pan: 107
 //SOURCES//
 //M1: 0
 //M2: 1

@@ -222,7 +222,7 @@ label(displayName, displayName)
         
         for (int i = 0; i < numTargets; ++i)
         {
-            t.add(new MappingTarget(editor, *editor.processor.getMappingTarget(paramName + "T" + String(i+1))));
+            t.add(new MappingTarget(editor, *editor.processor.getMappingTarget(paramName + " T" + String(i+1))));
             t[i]->addListener(this);
             t[i]->addMouseListener(this, true);
             addAndMakeVisible(t[i]);

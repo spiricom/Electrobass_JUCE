@@ -526,11 +526,11 @@ outlineColour(Colours::transparentBlack)
     StringArray& paramNames = ac.getParamNames();
     for (int i = 0; i < paramNames.size(); i++)
     {
-        String paramName = name + paramNames[i];
+        String paramName = name + " " + paramNames[i];
         String displayName = paramNames[i];
         dials.add(new ESDial(editor, paramName, displayName, false, true));
         addAndMakeVisible(dials[i]);
-        sliderAttachments.add(new SliderAttachment(vts, name + paramNames[i], dials[i]->getSlider()));
+        sliderAttachments.add(new SliderAttachment(vts, paramName, dials[i]->getSlider()));
         dials[i]->getSlider().addListener(this);
         for (auto t : dials[i]->getTargets())
         {
@@ -619,17 +619,17 @@ ESModule(editor, vts, ac, 0.05f, 0.132f, 0.05f, 0.18f, 0.78f)
     pitchLabel.addListener(this);
     addAndMakeVisible(pitchLabel);
     
-    RangedAudioParameter* set = vts.getParameter(ac.getName() + "ShapeSet");
+    RangedAudioParameter* set = vts.getParameter(ac.getName() + " ShapeSet");
     shapeCB.addItemList(oscSetNames, 1);
     shapeCB.setSelectedItemIndex(set->convertFrom0to1(set->getValue()));
     shapeCB.setLookAndFeel(&laf);
     addAndMakeVisible(shapeCB);
-    comboBoxAttachments.add(new ComboBoxAttachment(vts, ac.getName() + "ShapeSet", shapeCB));
+    comboBoxAttachments.add(new ComboBoxAttachment(vts, ac.getName() + " ShapeSet", shapeCB));
     
     sendSlider.setSliderStyle(Slider::SliderStyle::LinearVertical);
     sendSlider.setTextBoxStyle(Slider::TextEntryBoxPosition::NoTextBox, false, 10, 10);
     addAndMakeVisible(sendSlider);
-    sliderAttachments.add(new SliderAttachment(vts, ac.getName() + "FilterSend", sendSlider));
+    sliderAttachments.add(new SliderAttachment(vts, ac.getName() + " FilterSend", sendSlider));
     
     f1Label.setText("F1", dontSendNotification);
     f1Label.setJustificationType(Justification::bottomRight);
@@ -762,12 +762,12 @@ ESModule(editor, vts, ac, 0.05f, 0.2f, 0.05f, 0.2f, 0.7f)
     cutoffLabel.addListener(this);
     addAndMakeVisible(cutoffLabel);
     
-    RangedAudioParameter* set = vts.getParameter(ac.getName() + "Type");
+    RangedAudioParameter* set = vts.getParameter(ac.getName() + " Type");
     typeCB.addItemList(filterTypeNames, 1);
     typeCB.setSelectedItemIndex(set->convertFrom0to1(set->getValue()));
     typeCB.setLookAndFeel(&laf);
     addAndMakeVisible(typeCB);
-    comboBoxAttachments.add(new ComboBoxAttachment(vts, ac.getName() + "Type", typeCB));
+    comboBoxAttachments.add(new ComboBoxAttachment(vts, ac.getName() + " Type", typeCB));
 }
 
 FilterModule::~FilterModule()
@@ -859,7 +859,7 @@ ESModule(editor, vts, ac, 0.04f, 0.13f, 0.0675f, 0.16f, 0.84f)
 {
     velocityToggle.setButtonText("Scale to velocity");
     addAndMakeVisible(velocityToggle);
-    buttonAttachments.add(new ButtonAttachment(vts, ac.getName() + "Velocity", velocityToggle));
+    buttonAttachments.add(new ButtonAttachment(vts, ac.getName() + " Velocity", velocityToggle));
 }
 
 EnvModule::~EnvModule()
@@ -892,16 +892,16 @@ ESModule(editor, vts, ac, 0.12f, 0.13f, 0.185f, 0.16f, 0.84f)
     rateLabel.addListener(this);
     addAndMakeVisible(rateLabel);
     
-    RangedAudioParameter* set = vts.getParameter(ac.getName() + "ShapeSet");
+    RangedAudioParameter* set = vts.getParameter(ac.getName() + " ShapeSet");
     shapeCB.addItemList(oscSetNames, 1);
     shapeCB.setSelectedItemIndex(set->convertFrom0to1(set->getValue()));
     shapeCB.setLookAndFeel(&laf);
     addAndMakeVisible(shapeCB);
-    comboBoxAttachments.add(new ComboBoxAttachment(vts, ac.getName() + "ShapeSet", shapeCB));
+    comboBoxAttachments.add(new ComboBoxAttachment(vts, ac.getName() + " ShapeSet", shapeCB));
     
     syncToggle.setButtonText("Sync to note-on");
     addAndMakeVisible(syncToggle);
-    buttonAttachments.add(new ButtonAttachment(vts, ac.getName() + "Sync", syncToggle));
+    buttonAttachments.add(new ButtonAttachment(vts, ac.getName() + " Sync", syncToggle));
 }
 
 LFOModule::~LFOModule()

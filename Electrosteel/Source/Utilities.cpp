@@ -11,7 +11,8 @@
 #include "Utilities.h"
 #include "PluginProcessor.h"
 
-SmoothedParameter::SmoothedParameter(ESAudioProcessor& processor, AudioProcessorValueTreeState& vts, String paramId, int voice) :
+SmoothedParameter::SmoothedParameter(ESAudioProcessor& processor, AudioProcessorValueTreeState& vts,
+                                     String paramId, int voice) :
 processor(processor),
 voice(voice)
 {
@@ -237,7 +238,7 @@ toggleable(toggleable)
 {
     for (int i = 0; i < paramNames.size(); ++i)
     {
-        String pn = name + paramNames[i];
+        String pn = name + " " + paramNames[i];
         params.add(new OwnedArray<SmoothedParameter>());
         for (int v = 0; v < NUM_STRINGS; ++v)
         {
@@ -248,7 +249,7 @@ toggleable(toggleable)
         }
         for (int t = 0; t < 3; ++t)
         {
-            String targetName = pn + "T" + String(t+1);
+            String targetName = pn + " T" + String(t+1);
             targets.add(new MappingTargetModel(processor, targetName, *params.getLast(), t));
             processor.addMappingTarget(targets.getLast());
         }

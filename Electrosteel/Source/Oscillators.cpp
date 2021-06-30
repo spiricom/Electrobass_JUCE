@@ -23,7 +23,7 @@ AudioComponent(n, p, vts, cOscParams, true)
         tMBPulse_init(&pulse[i], &processor.leaf);
     }
     
-    filterSend = std::make_unique<SmoothedParameter>(p, vts, n + "FilterSend", -1);
+    filterSend = std::make_unique<SmoothedParameter>(p, vts, n + " FilterSend", -1);
 }
 
 Oscillator::~Oscillator()
@@ -95,7 +95,7 @@ LowFreqOscillator::LowFreqOscillator(const String& n, ESAudioProcessor& p, Audio
 AudioComponent(n, p, vts, cLowFreqParams, false),
 MappingSourceModel(p, n, lfoValues, true, true, true, Colours::lime)
 {
-    sync = vts.getParameter(n + "Sync");
+    sync = vts.getParameter(n + " Sync");
     
     for (int i = 0; i < NUM_STRINGS; i++)
     {

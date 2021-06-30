@@ -17,7 +17,7 @@ Envelope::Envelope(const String& n, ESAudioProcessor& p,
 AudioComponent(n, p, vts, cEnvelopeParams, false),
 MappingSourceModel(p, n, envValues, true, true, false, Colours::cyan)
 {
-    useVelocity = vts.getParameter(n + "Velocity");
+    useVelocity = vts.getParameter(n + " Velocity");
     
     //exponential buffer rising from 0 to 1
     LEAF_generate_exp(expBuffer, 1000.0f, -1.0f, 0.0f, -0.0008f, EXP_BUFFER_SIZE);
