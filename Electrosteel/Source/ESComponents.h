@@ -264,7 +264,7 @@ public:
         nameField.setLookAndFeel(&laf);
         addAndMakeVisible (nameField);
         
-        sendOutButton.setButtonText("Send via MIDI");
+        sendOutButton.setButtonText("Send copedent via MIDI");
         sendOutButton.setLookAndFeel(&laf);
         sendOutButton.onClick = [this] { processor.sendCopedentMidiMessage(); };
         addAndMakeVisible(sendOutButton);

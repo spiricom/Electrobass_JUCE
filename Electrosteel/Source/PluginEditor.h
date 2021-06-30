@@ -85,6 +85,7 @@ private:
     Component tab2;
     CopedentTable copedentTable;
     
+    TextButton sendOutButton;
     Label versionLabel;
     std::unique_ptr<Drawable> logo;
     Label synderphonicsLabel;

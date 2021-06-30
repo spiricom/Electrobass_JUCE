@@ -198,6 +198,11 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     
     setSize(EDITOR_WIDTH * processor.editorScale, EDITOR_HEIGHT * processor.editorScale);
     
+    sendOutButton.setButtonText("Send preset via MIDI");
+    sendOutButton.setLookAndFeel(&laf);
+    sendOutButton.onClick = [this] { processor.sendPresetMidiMessage(); };
+    addAndMakeVisible(sendOutButton);
+    
     constrain->setFixedAspectRatio(EDITOR_WIDTH / EDITOR_HEIGHT);
     
 //    addAndMakeVisible(*resizer);
@@ -233,6 +238,8 @@ ESAudioProcessorEditor::~ESAudioProcessorEditor()
     envsAndLFOs.setLookAndFeel(nullptr);
     for (int i = 0; i < CopedentColumnNil; ++i)
     copedentButtons[i]->setLookAndFeel(nullptr);
+    
+    sendOutButton.setLookAndFeel(nullptr);
     
     sliderAttachments.clear();
     buttonAttachments.clear();
@@ -336,8 +343,10 @@ void ESAudioProcessorEditor::resized()
     
     //==============================================================================
     
-    versionLabel.setBounds(width*0.95, 0, width * 0.05f, tabs.getTabBarDepth());
+    versionLabel.setBounds(width*0.75f, 0, width * 0.05f, tabs.getTabBarDepth());
     versionLabel.setFont(euphemia.withHeight(20*s));
+    
+    sendOutButton.setBounds(width*0.85f, -1, width*0.15f+2, tabs.getTabBarDepth());
     
     int logoLeft = tabs.getTabbedButtonBar().getTabButton(1)->getRight() + 90*s;
     Rectangle<float> logoArea (logoLeft, 0, 98*s, tabs.getTabBarDepth());
@@ -349,7 +358,6 @@ void ESAudioProcessorEditor::resized()
     synderphonicsLabel.setFont(euphemia.withHeight(34*s));
     electrosteelLabel.setBounds(synderphonicsLabel.getRight(), -5*s, 300*s, 34*s);
     electrosteelLabel.setFont(euphemia.withHeight(34*s).withStyle(3));
-    
     
     float rt = EDITOR_WIDTH / EDITOR_HEIGHT;
     constrain->setSizeLimits(200, 200/rt, 800*rt, 800);

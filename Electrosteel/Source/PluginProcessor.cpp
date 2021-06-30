@@ -17,104 +17,123 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
 {
     AudioProcessorValueTreeState::ParameterLayout layout;
     
+    String n;
     //==============================================================================
     // Top level parameters
+    
+    n = "Master";
+    layout.add (std::make_unique<AudioParameterFloat> (n, n, 0., 2., 1.));
+    paramIds.add(n);
+    
     for (int i = 0; i < NUM_MACROS; ++i)
     {
-        layout.add (std::make_unique<AudioParameterFloat> ("M" + String(i+1),
-                                                           "M" + String(i+1),
-                                                           0., 1., 0.));
+        n = "M" + String(i+1);
+        layout.add (std::make_unique<AudioParameterFloat> (n, n, 0., 1., 0.));
+        paramIds.add(n);
     }
     
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
-        layout.add (std::make_unique<AudioParameterFloat> ("PitchBend" + String(i),
-                                                           "PitchBend" + String(i),
-                                                           -24., 24., 0.));
+        n = "PitchBend" + String(i);
+        layout.add (std::make_unique<AudioParameterFloat> (n, n, -24., 24., 0.));
+        paramIds.add(n);
     }
     
     //==============================================================================
-    for (int i = 0; i < cOscParams.size(); ++i)
-    {
-        float min = vOscInit[i][0];
-        float max = vOscInit[i][1];
-        float def = vOscInit[i][2];
-        for (int j = 0; j < NUM_OSCS; ++j)
-        {
-            String n = "Osc" + String(j+1) + cOscParams[i];
-            layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
-        }
-    }
     for (int i = 0; i < NUM_OSCS; ++i)
     {
         String n = "Osc" + String(i+1);
         layout.add (std::make_unique<AudioParameterChoice> (n, n, StringArray("Off", "On"), 1));
+        paramIds.add(n);
+        
+        for (int j = 0; j < cOscParams.size(); ++j)
+        {
+            float min = vOscInit[j][0];
+            float max = vOscInit[j][1];
+            float def = vOscInit[j][2];
+            
+            n = "Osc" + String(i+1) + cOscParams[j];
+            layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
+            paramIds.add(n);
+        }
+        
         n = "Osc" + String(i+1) + "ShapeSet";
         layout.add (std::make_unique<AudioParameterChoice> (n, n, oscSetNames, 0));
+        paramIds.add(n);
+        
         n = "Osc" + String(i+1) + "FilterSend";
         layout.add (std::make_unique<AudioParameterFloat> (n, n, 0.f, 1.f, 0.5f));
+        paramIds.add(n);
     }
     
     //==============================================================================
-    for (int i = 0; i < cFilterParams.size(); ++i)
-    {
-        float min = vFilterInit[i][0];
-        float max = vFilterInit[i][1];
-        float def = vFilterInit[i][2];
-        for (int j = 0; j < NUM_FILT; ++j)
-        {
-            String n = "Filter" + String(j+1) + cFilterParams[i];
-            layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
-        }
-    }
+    
     for (int i = 0; i < NUM_FILT; ++i)
     {
-        String n = "Filter" + String(i+1);
+        n = "Filter" + String(i+1);
         layout.add (std::make_unique<AudioParameterChoice> (n, n, StringArray("Off", "On"), 1));
+        paramIds.add(n);
+        
         n = "Filter" + String(i+1) + "Type";
         layout.add (std::make_unique<AudioParameterChoice> (n, n, oscSetNames, 0));
-    }
-    
-    layout.add (std::make_unique<AudioParameterFloat> ("Filter Series-Parallel Mix",
-                                                       "Filter Series-Parallel Mix",
-                                                       0., 1., 0.));
-    
-    //==============================================================================
-    for (int i = 0; i < cEnvelopeParams.size(); ++i)
-    {
-        float min = vEnvelopeInit[i][0];
-        float max = vEnvelopeInit[i][1];
-        float def = vEnvelopeInit[i][2];
-        for (int j = 0; j < NUM_ENVS; ++j)
+        paramIds.add(n);
+        
+        for (int j = 0; j < cFilterParams.size(); ++j)
         {
-            String n = "Envelope" + String(j+1) + cEnvelopeParams[i];
+            float min = vFilterInit[j][0];
+            float max = vFilterInit[j][1];
+            float def = vFilterInit[j][2];
+            
+            n = "Filter" + String(i+1) + cFilterParams[j];
             layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
+            paramIds.add(n);
         }
     }
+    
+    n = "Filter Series-Parallel Mix";
+    layout.add (std::make_unique<AudioParameterFloat> (n, n, 0., 1., 0.));
+    paramIds.add(n);
+    
+    //=============================================================================
     for (int i = 0; i < NUM_ENVS; ++i)
     {
-        String n = "Envelope" + String(i+1) + "Velocity";
+        for (int j = 0; j < cEnvelopeParams.size(); ++j)
+        {
+            float min = vEnvelopeInit[j][0];
+            float max = vEnvelopeInit[j][1];
+            float def = vEnvelopeInit[j][2];
+            
+            n = "Envelope" + String(i+1) + cEnvelopeParams[j];
+            layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
+            paramIds.add(n);
+        }
+        
+        n = "Envelope" + String(i+1) + "Velocity";
         layout.add (std::make_unique<AudioParameterChoice> (n, n, StringArray("Off", "On"), 1));
+        paramIds.add(n);
     }
     
     //==============================================================================
-    for (int i = 0; i < cLowFreqParams.size(); ++i)
-    {
-        float min = vLowFreqInit[i][0];
-        float max = vLowFreqInit[i][1];
-        float def = vLowFreqInit[i][2];
-        for (int j = 0; j < NUM_LFOS; ++j)
-        {
-            String n = "LFO" + String(j+1) + cLowFreqParams[i];
-            layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
-        }
-    }
     for (int i = 0; i < NUM_LFOS; ++i)
     {
-        String n = "LFO" + String(i+1) + "Sync";
-        layout.add (std::make_unique<AudioParameterChoice> (n, n, StringArray("Off", "On"), 0));
+        for (int j = 0; j < cLowFreqParams.size(); ++j)
+        {
+            float min = vLowFreqInit[j][0];
+            float max = vLowFreqInit[j][1];
+            float def = vLowFreqInit[j][2];
+            
+            n = "LFO" + String(i+1) + cLowFreqParams[j];
+            layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
+            paramIds.add(n);
+        }
+        
         n = "LFO" + String(i+1) + "ShapeSet";
         layout.add (std::make_unique<AudioParameterChoice> (n, n, oscSetNames, 0));
+        paramIds.add(n);
+        
+        n = "LFO" + String(i+1) + "Sync";
+        layout.add (std::make_unique<AudioParameterChoice> (n, n, StringArray("Off", "On"), 0));
+        paramIds.add(n);
     }
     
     //==============================================================================
@@ -123,18 +142,22 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
         float min = vOutputInit[i][0];
         float max = vOutputInit[i][1];
         float def = vOutputInit[i][2];
-        String n = "Output" + cOutputParams[i];
+        n = "Output" + cOutputParams[i];
         layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
+        paramIds.add(n);
     }
-    
-    layout.add (std::make_unique<AudioParameterFloat> ("Master", "Master", 0., 2., 1.));
     
     //==============================================================================
     for (int i = 1; i < CopedentColumnNil; ++i)
     {
-        layout.add (std::make_unique<AudioParameterChoice>(cCopedentColumnNames[i],
-                                                           cCopedentColumnNames[i],
-                                                           StringArray("Off", "On"), 0));
+        n = cCopedentColumnNames[i];
+        layout.add (std::make_unique<AudioParameterChoice>(n, n, StringArray("Off", "On"), 0));
+    }
+    
+    DBG("PARAMS//");
+    for (int i = 0; i < paramIds.size(); ++i)
+    {
+        DBG(paramIds[i] + ": " + String(i));
     }
     
     return layout;
@@ -191,22 +214,6 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
     
     seriesParallel = std::make_unique<SmoothedParameter>(*this, vts, "Filter Series-Parallel Mix", -1);
     
-    for (int i = 0; i < NUM_ENVS; ++i)
-    {
-        String n = "Envelope" + String(i+1);
-        envs.add(new Envelope(n, *this, vts));
-        addMappingSource(envs.getLast());
-    }
-    
-    for (int i = 0; i < NUM_LFOS; ++i)
-    {
-        String n = "LFO" + String(i+1);
-        lfos.add(new LowFreqOscillator(n, *this, vts));
-        addMappingSource(lfos.getLast());
-    }
-    
-    output = std::make_unique<Output>("Output", *this, vts);
-    
     for (int i = 0; i < NUM_MACROS; ++i)
     {
         String n = "M" + String(i+1);
@@ -214,7 +221,26 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
         ccSources.add(new MappingSourceModel(*this, n, ccParams.getLast()->getValuePointerArray(),
                                              false, false, false, Colours::red));
         addMappingSource(ccSources.getLast());
+        sourceIds.add(n);
     }
+    
+    for (int i = 0; i < NUM_ENVS; ++i)
+    {
+        String n = "Envelope" + String(i+1);
+        envs.add(new Envelope(n, *this, vts));
+        addMappingSource(envs.getLast());
+        sourceIds.add(n);
+    }
+    
+    for (int i = 0; i < NUM_LFOS; ++i)
+    {
+        String n = "LFO" + String(i+1);
+        lfos.add(new LowFreqOscillator(n, *this, vts));
+        addMappingSource(lfos.getLast());
+        sourceIds.add(n);
+    }
+    
+    output = std::make_unique<Output>("Output", *this, vts);
     
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
@@ -249,6 +275,12 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
     
     initialMappings.add(defaultFilter1Cutoff);
     initialMappings.add(defaultOutputAmp);
+    
+    DBG("SOURCES//");
+    for (int i = 0; i < sourceIds.size(); ++i)
+    {
+        DBG(sourceIds[i] + ": " + String(i));
+    }
 }
 
 ESAudioProcessor::~ESAudioProcessor()
@@ -287,7 +319,7 @@ void ESAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     
     if (initialMappings.isEmpty())
     {
-        // Source address have likely changed, so remap existing mappings
+        // Source addresses have likely changed, so remap existing mappings
         for (auto target : targetMap)
         {
             if (target->currentSource != nullptr)
@@ -338,7 +370,7 @@ bool ESAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 }
 #endif
 
-union flatUnion
+union uintfUnion
 {
     float f;
     uint32_t i;
@@ -359,6 +391,57 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
         handleMidiMessage(m);
     }
     
+    if (waitingToSendPreset)
+    {
+        Array<float> data;
+        
+        // Order is determined in createParameterLayout
+        for (auto id : paramIds)
+        {
+            const NormalisableRange<float>& range = vts.getParameter(id)->getNormalisableRange();
+            data.add(range.convertFrom0to1(vts.getParameter(id)->getValue()));
+        }
+        
+        for (auto id : paramIds)
+        {
+            for (int t = 0; t < 3; ++t)
+            {
+                String tn = id + "T" + String(t+1);
+                if (targetMap.contains(tn))
+                {
+                    MappingTargetModel* target = targetMap[tn];
+                    if (MappingSourceModel* source = target->currentSource)
+                    {
+                        data.add(sourceIds.indexOf(source->name));
+                        data.add(paramIds.indexOf(target->name));
+                        data.add(t);
+                        data.add(target->value);
+                    }
+                }
+            }
+        }
+        
+        Array<uint8_t> data7bitInt;
+        union uintfUnion fu;
+        
+        for (int i = 0; i < data.size(); i++)
+        {
+            data7bitInt.add(0); // saying it's a preset
+            
+            fu.f = data[i];
+            data7bitInt.add((fu.i >> 28) & 15);
+            data7bitInt.add((fu.i >> 21) & 127);
+            data7bitInt.add((fu.i >> 14) & 127);
+            data7bitInt.add((fu.i >> 7) & 127);
+            data7bitInt.add(fu.i & 127);
+            
+            MidiMessage presetMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
+            
+            midiMessages.addEvent(presetMessage, 0);
+        }
+        waitingToSendPreset = false;
+    }
+    
     if (waitingToSendCopedent)
     {
         Array<float> flat;
@@ -375,15 +458,14 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
         //flat.add(fund->convertFrom0to1(fund->getValue()));
         
         Array<uint8_t> flat7bitInt;
+        union uintfUnion fu;
         
-        union flatUnion fu;
-        
-        for (int j =0; j < 11; j++)
+        for (int j = 0; j < 11; j++)
         {
             flat7bitInt.clear();
             
             flat7bitInt.add(1); // saying it's a copedent
-            flat7bitInt.add(1); // saying which copedent number to store (need this to be a user entered value)
+            flat7bitInt.add(copedentNumber); // saying which copedent number to store (need this to be a user entered value)
             flat7bitInt.add(50 + j);
             
             for (int i = 0; i < 12; i++)
@@ -659,6 +741,11 @@ void ESAudioProcessor::sendCopedentMidiMessage()
     waitingToSendCopedent = true;
 }
 
+void ESAudioProcessor::sendPresetMidiMessage()
+{
+    waitingToSendPreset = true;
+}
+
 //==============================================================================
 const juce::String ESAudioProcessor::getName() const
 {
@@ -853,3 +940,141 @@ juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
     return new ESAudioProcessor();
 }
+
+//PARAMS//
+//Master: 0
+//M1: 1
+//M2: 2
+//M3: 3
+//M4: 4
+//M5: 5
+//M6: 6
+//M7: 7
+//M8: 8
+//M9: 9
+//M10: 10
+//M11: 11
+//M12: 12
+//M13: 13
+//M14: 14
+//M15: 15
+//M16: 16
+//PitchBend0: 17
+//PitchBend1: 18
+//PitchBend2: 19
+//PitchBend3: 20
+//PitchBend4: 21
+//PitchBend5: 22
+//PitchBend6: 23
+//PitchBend7: 24
+//PitchBend8: 25
+//PitchBend9: 26
+//PitchBend10: 27
+//PitchBend11: 28
+//PitchBend12: 29
+//Osc1: 30
+//Osc1Pitch: 31
+//Osc1Fine: 32
+//Osc1Shape: 33
+//Osc1Amp: 34
+//Osc1ShapeSet: 35
+//Osc1FilterSend: 36
+//Osc2: 37
+//Osc2Pitch: 38
+//Osc2Fine: 39
+//Osc2Shape: 40
+//Osc2Amp: 41
+//Osc2ShapeSet: 42
+//Osc2FilterSend: 43
+//Osc3: 44
+//Osc3Pitch: 45
+//Osc3Fine: 46
+//Osc3Shape: 47
+//Osc3Amp: 48
+//Osc3ShapeSet: 49
+//Osc3FilterSend: 50
+//Filter1: 51
+//Filter1Type: 52
+//Filter1Cutoff: 53
+//Filter1Resonance: 54
+//Filter1KeyFollow: 55
+//Filter2: 56
+//Filter2Type: 57
+//Filter2Cutoff: 58
+//Filter2Resonance: 59
+//Filter2KeyFollow: 60
+//Filter Series-Parallel Mix: 61
+//Envelope1Attack: 62
+//Envelope1Decay: 63
+//Envelope1Sustain: 64
+//Envelope1Release: 65
+//Envelope1Leak: 66
+//Envelope1Velocity: 67
+//Envelope2Attack: 68
+//Envelope2Decay: 69
+//Envelope2Sustain: 70
+//Envelope2Release: 71
+//Envelope2Leak: 72
+//Envelope2Velocity: 73
+//Envelope3Attack: 74
+//Envelope3Decay: 75
+//Envelope3Sustain: 76
+//Envelope3Release: 77
+//Envelope3Leak: 78
+//Envelope3Velocity: 79
+//Envelope4Attack: 80
+//Envelope4Decay: 81
+//Envelope4Sustain: 82
+//Envelope4Release: 83
+//Envelope4Leak: 84
+//Envelope4Velocity: 85
+//LFO1Rate: 86
+//LFO1Shape: 87
+//LFO1Sync Phase: 88
+//LFO1ShapeSet: 89
+//LFO1Sync: 90
+//LFO2Rate: 91
+//LFO2Shape: 92
+//LFO2Sync Phase: 93
+//LFO2ShapeSet: 94
+//LFO2Sync: 95
+//LFO3Rate: 96
+//LFO3Shape: 97
+//LFO3Sync Phase: 98
+//LFO3ShapeSet: 99
+//LFO3Sync: 100
+//LFO4Rate: 101
+//LFO4Shape: 102
+//LFO4Sync Phase: 103
+//LFO4ShapeSet: 104
+//LFO4Sync: 105
+//OutputAmp: 106
+//OutputPan: 107
+//SOURCES//
+//M1: 0
+//M2: 1
+//M3: 2
+//M4: 3
+//M5: 4
+//M6: 5
+//M7: 6
+//M8: 7
+//M9: 8
+//M10: 9
+//M11: 10
+//M12: 11
+//M13: 12
+//M14: 13
+//M15: 14
+//M16: 15
+//Envelope1: 16
+//Envelope2: 17
+//Envelope3: 18
+//Envelope4: 19
+//LFO1: 20
+//LFO2: 21
+//LFO3: 22
+//LFO4: 23
+
+//Mapping looks like:
+//SourceID, TargetParamID, TargetIndex(0-2), Scale

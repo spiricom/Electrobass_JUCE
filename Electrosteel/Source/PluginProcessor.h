@@ -85,6 +85,7 @@ public:
     
     //==============================================================================
     void sendCopedentMidiMessage();
+    void sendPresetMidiMessage();
     
     //==============================================================================
     void addMappingSource(MappingSourceModel* source);
@@ -143,6 +144,8 @@ public:
     
 private:
     
+    StringArray paramIds;
+    StringArray sourceIds;
     AudioProcessorValueTreeState vts;
     
     char dummy_memory[1];
@@ -153,6 +156,8 @@ private:
     int keyCenter = 0;
     
     bool waitingToSendCopedent = false;
+    bool waitingToSendPreset = false;
+    
     bool mpeMode = true;
     
     int midiChannelNoteCount[NUM_CHANNELS+1];
