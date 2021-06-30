@@ -395,6 +395,7 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
     {
         Array<float> data;
         
+        // Parameter values
         // Order is determined in createParameterLayout
         for (auto id : paramIds)
         {
@@ -402,6 +403,7 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
             data.add(range.convertFrom0to1(vts.getParameter(id)->getValue()));
         }
         
+        // Mappings
         for (auto id : paramIds)
         {
             for (int t = 0; t < 3; ++t)
@@ -412,10 +414,10 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
                     MappingTargetModel* target = targetMap[tn];
                     if (MappingSourceModel* source = target->currentSource)
                     {
-                        data.add(sourceIds.indexOf(source->name));
-                        data.add(paramIds.indexOf(target->name));
-                        data.add(t);
-                        data.add(target->value);
+                        data.add(sourceIds.indexOf(source->name));//SourceID
+                        data.add(paramIds.indexOf(target->name));//TargetID
+                        data.add(t);//TargetIndex
+                        data.add(target->value);//Value
                     }
                 }
             }
