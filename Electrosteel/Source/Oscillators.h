@@ -30,10 +30,18 @@ public:
     void tick(float output[][NUM_STRINGS]);
     
 private:
+    
+    void (Oscillator::*shapeTick)(float& sample, int v, float freq, float shape);
+    void sawPulseTick(float& sample, int v, float freq, float shape);
+    void userTick(float& sample, int v, float freq, float shape);
+    
     tMBSaw saw[NUM_STRINGS];
     tMBPulse pulse[NUM_STRINGS];
 
     std::unique_ptr<SmoothedParameter> filterSend;
+    
+    std::atomic<float>* afpShapeSet;
+    OscShapeSet currentShapeSet;
 };
 
 //==============================================================================

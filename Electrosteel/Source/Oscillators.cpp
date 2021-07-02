@@ -24,6 +24,8 @@ AudioComponent(n, p, vts, cOscParams, true)
     }
     
     filterSend = std::make_unique<SmoothedParameter>(p, vts, n + " FilterSend", -1);
+    
+    afpShapeSet = vts.getRawParameterValue(n + " ShapeSet");
 }
 
 Oscillator::~Oscillator()
@@ -53,6 +55,20 @@ void Oscillator::frame()
     }
     sampleInBlock = 0;
     enabled = afpEnabled == nullptr || *afpEnabled > 0;
+    currentShapeSet = OscShapeSet(int(*afpShapeSet));
+    switch (currentShapeSet) {
+        case SawPulseShapeSet:
+            shapeTick = &Oscillator::sawPulseTick;
+            break;
+            
+        case UserShapeSet:
+            shapeTick = &Oscillator::userTick;
+            break;
+            
+        default:
+            shapeTick = &Oscillator::sawPulseTick;
+            break;
+    }
 }
 
 void Oscillator::tick(float output[][NUM_STRINGS])
@@ -60,7 +76,7 @@ void Oscillator::tick(float output[][NUM_STRINGS])
     if (!enabled) return;
     
     float a = sampleInBlock * invBlockSize;
-        
+
     for (int v = 0; v < NUM_STRINGS; ++v)
     {
         float pitch = values[OscPitch][v]*a + lastValues[OscPitch][v]*(1.f-a);
@@ -72,20 +88,34 @@ void Oscillator::tick(float output[][NUM_STRINGS])
         float note = processor.voiceNote[v];
         float freq = mtof(LEAF_clip(0, note + pitch + fine*0.01f, 127));
         freq = freq < 10.f ? 0.f : freq;
-        tMBSaw_setFreq(&saw[v], freq);
-        tMBPulse_setFreq(&pulse[v], freq);
         
         float sample = 0.0f;
-        
-        sample += tMBSaw_tick(&saw[v]) * (1.0f - shape);
-        sample += tMBPulse_tick(&pulse[v]) * shape;
+        (this->*shapeTick)(sample, v, freq, shape);
+    
         sample *= amp*INV_NUM_OSCS;
         
         float f = filterSend->tickNoHooks();
         output[0][v] += sample*f;
         output[1][v] += sample*(1.f-f);
     }
+    
     sampleInBlock++;
+}
+
+void Oscillator::sawPulseTick(float& sample, int v, float freq, float shape)
+{
+    tMBSaw_setFreq(&saw[v], freq);
+    tMBPulse_setFreq(&pulse[v], freq);
+    sample += tMBSaw_tick(&saw[v]) * (1.0f - shape);
+    sample += tMBPulse_tick(&pulse[v]) * shape;
+}
+
+void Oscillator::userTick(float& sample, int v, float freq, float shape)
+{
+    tMBSaw_setFreq(&saw[v], freq);
+    tMBPulse_setFreq(&pulse[v], freq);
+    sample += tMBSaw_tick(&saw[v]) * (1.0f - shape);
+    sample += tMBPulse_tick(&pulse[v]) * shape;
 }
 
 
