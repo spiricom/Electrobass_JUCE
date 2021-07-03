@@ -103,7 +103,6 @@ public:
     
     MidiKeyboardState keyboardState;
     
-    StringArray wavetablePaths;
     juce::AudioFormatManager formatManager;
     std::unique_ptr<juce::AudioFormatReaderSource> readerSource;
     

@@ -42,6 +42,8 @@
       <FILE id="AALJ5R" name="PluginEditor.h" compile="0" resource="0" file="Source/PluginEditor.h"/>
       <FILE id="Fh069E" name="PluginEditor.cpp" compile="1" resource="0"
             file="Source/PluginEditor.cpp"/>
+      <FILE id="cJNmcg" name="ESModules.h" compile="0" resource="0" file="Source/ESModules.h"/>
+      <FILE id="RCIDJR" name="ESModules.cpp" compile="1" resource="0" file="Source/ESModules.cpp"/>
       <FILE id="DXzM9o" name="ESComponents.h" compile="0" resource="0" file="Source/ESComponents.h"/>
       <FILE id="UeMlIm" name="ESComponents.cpp" compile="1" resource="0"
             file="Source/ESComponents.cpp"/>

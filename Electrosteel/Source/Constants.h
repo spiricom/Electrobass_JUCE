@@ -51,15 +51,15 @@ static const std::vector<std::vector<float>> vOscInit = {
     { 0.0f, 1.0f, 1.0f },   //Volume
 };
 
-typedef enum _OscSet
+typedef enum _OscShapeSet
 {
     SawPulseShapeSet = 0,
     UserShapeSet,
     OscSetNil
 } OscShapeSet;
-static const StringArray oscSetNames = {
+static const StringArray oscShapeSetNames = {
     "SawPulse",
-    "Add wavetable..."
+    "Select file..."
 };
 
 //==============================================================================

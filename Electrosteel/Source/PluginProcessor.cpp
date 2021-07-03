@@ -58,7 +58,7 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
         }
         
         n = "Osc" + String(i+1) + " ShapeSet";
-        layout.add (std::make_unique<AudioParameterChoice> (n, n, oscSetNames, 0));
+        layout.add (std::make_unique<AudioParameterChoice> (n, n, oscShapeSetNames, 0));
         paramIds.add(n);
         
         n = "Osc" + String(i+1) + " FilterSend";
@@ -75,7 +75,7 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
         paramIds.add(n);
         
         n = "Filter" + String(i+1) + " Type";
-        layout.add (std::make_unique<AudioParameterChoice> (n, n, oscSetNames, 0));
+        layout.add (std::make_unique<AudioParameterChoice> (n, n, oscShapeSetNames, 0));
         paramIds.add(n);
         
         for (int j = 0; j < cFilterParams.size(); ++j)
@@ -128,7 +128,7 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
         }
         
         n = "LFO" + String(i+1) + " ShapeSet";
-        layout.add (std::make_unique<AudioParameterChoice> (n, n, oscSetNames, 0));
+        layout.add (std::make_unique<AudioParameterChoice> (n, n, oscShapeSetNames, 0));
         paramIds.add(n);
         
         n = "LFO" + String(i+1) + " Sync";
@@ -179,6 +179,7 @@ ESAudioProcessor::ESAudioProcessor()
 ,
 vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
 {
+    formatManager.registerBasicFormats();   
     keyboardState.addListener(this);
     
     LEAF_init(&leaf, 44100.0f, dummy_memory, 1, []() {return (float)rand() / RAND_MAX; });
@@ -844,6 +845,17 @@ void ESAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
         root.setProperty("Ch" + String(i+1) + "String", channelToString[i+1], nullptr);
     }
     
+    for (int i = 0; i < NUM_OSCS; ++i)
+    {
+        root.setProperty("osc" + String(i+1) + "File",
+                         oscs[i]->getWaveTableFile().getFullPathName(), nullptr);
+    }
+    for (int i = 0; i < NUM_LFOS; ++i)
+    {
+        root.setProperty("lfo" + String(i+1) + "File",
+                         lfos[i]->getWaveTableFile().getFullPathName(), nullptr);
+    }
+    
     // Audio processor value tree state
     ValueTree state = vts.copyState();
     root.addChild(state, -1, nullptr);
@@ -899,6 +911,31 @@ void ESAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
             channelToString[i+1] = xml->getIntAttribute("Ch" + String(i+1) + "String", i);
         }
         
+        for (int i = 0; i < NUM_OSCS; ++i)
+        {
+            File wav (xml->getStringAttribute("osc" + String(i+1) + "File"));
+            if (wav.exists())
+            {
+                oscs[i]->setWaveTableFile(wav);
+                oscs[i]->setLoadingTables(true);
+                oscs[i]->clearWaveTables();
+                oscs[i]->addWaveTables(wav);
+                oscs[i]->waveTablesChanged();
+            }
+        }
+        for (int i = 0; i < NUM_LFOS; ++i)
+        {
+            File wav (xml->getStringAttribute("lfo" + String(i+1) + "File"));
+            if (wav.exists())
+            {
+                lfos[i]->setWaveTableFile(wav);
+                lfos[i]->setLoadingTables(true);
+                lfos[i]->clearWaveTables();
+                lfos[i]->addWaveTables(wav);
+                lfos[i]->waveTablesChanged();
+            }
+        }
+        
         // Audio processor value tree state
         if (XmlElement* state = xml->getChildByName(vts.state.getType()))
             vts.replaceState (juce::ValueTree::fromXml (*state));
@@ -921,18 +958,18 @@ void ESAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
         }
         
         // Mappings
-//        if (XmlElement* mappings = xml->getChildByName("Mappings"))
-//        {
-//            initialMappings.clear();
-//            for (auto child : mappings->getChildIterator())
-//            {
-//                Mapping m;
-//                m.sourceName = child->getStringAttribute("s");
-//                m.targetName = child->getStringAttribute("t");
-//                m.value = child->getDoubleAttribute("v");
-//                initialMappings.add(m);
-//            }
-//        }
+        if (XmlElement* mappings = xml->getChildByName("Mappings"))
+        {
+            initialMappings.clear();
+            for (auto child : mappings->getChildIterator())
+            {
+                Mapping m;
+                m.sourceName = child->getStringAttribute("s");
+                m.targetName = child->getStringAttribute("t");
+                m.value = child->getDoubleAttribute("v");
+                initialMappings.add(m);
+            }
+        }
     }
 }
 

@@ -30,7 +30,19 @@ AudioComponent(n, p, vts, cOscParams, true)
 
 Oscillator::~Oscillator()
 {
-    
+    if (tables != nullptr)
+    {
+        for (int i = 0; i < NUM_STRINGS; ++i)
+        {
+            tWaveOsc_free(&wave[i]);
+        }
+        for (int i = 0; i < lastNumWaveTables; ++i)
+        {
+            tWaveTable_free(&tables[i]);
+        }
+        leaf_free(&processor.leaf, (char*)tables);
+        tables = nullptr;
+    }
 }
 
 void Oscillator::prepareToPlay (double sampleRate, int samplesPerBlock)
@@ -62,7 +74,7 @@ void Oscillator::frame()
             break;
             
         case UserShapeSet:
-            shapeTick = &Oscillator::userTick;
+            shapeTick = loadingTables ? &Oscillator::sawPulseTick : &Oscillator::userTick;
             break;
             
         default:
@@ -112,12 +124,81 @@ void Oscillator::sawPulseTick(float& sample, int v, float freq, float shape)
 
 void Oscillator::userTick(float& sample, int v, float freq, float shape)
 {
-    tMBSaw_setFreq(&saw[v], freq);
-    tMBPulse_setFreq(&pulse[v], freq);
-    sample += tMBSaw_tick(&saw[v]) * (1.0f - shape);
-    sample += tMBPulse_tick(&pulse[v]) * shape;
+    tWaveOsc_setFreq(&wave[v], freq);
+    tWaveOsc_setIndex(&wave[v], shape);
+    sample += tWaveOsc_tick(&wave[v]);
 }
 
+void Oscillator::addWaveTables(File& file)
+{
+    if (file.isDirectory())
+    {
+        for (auto wav : file.findChildFiles(File::TypesOfFileToFind::findFiles, false, "*.wav"))
+        {
+            addWaveTables(wav);
+        }
+    }
+    else
+    {
+        auto* reader = processor.formatManager.createReaderFor(file);
+        if (reader != nullptr)
+        {
+            std::unique_ptr<juce::AudioFormatReaderSource> newSource (new juce::AudioFormatReaderSource
+                                                                      (reader, true));
+            jassert(reader->lengthInSamples%2048 == 0);
+            
+            for (int i = 0; i < reader->lengthInSamples / 2048; ++i)
+            {
+                waveTables.add(new AudioBuffer<float>(reader->numChannels, 2048));
+                reader->read(waveTables.getLast(), 0, waveTables.getLast()->getNumSamples(),
+                             i*2048, true, true);
+            }
+            
+            processor.readerSource.reset(newSource.release());
+        }
+    }
+}
+
+void Oscillator::clearWaveTables()
+{
+    waveTables.clear();
+}
+
+void Oscillator::waveTablesChanged()
+{
+    if (tables != nullptr)
+    {
+        for (int i = 0; i < NUM_STRINGS; ++i)
+        {
+            tWaveOsc_free(&wave[i]);
+        }
+        for (int i = 0; i < lastNumWaveTables; ++i)
+        {
+            tWaveTable_free(&tables[i]);
+        }
+        leaf_free(&processor.leaf, (char*)tables);
+        tables = nullptr;
+    }
+    lastNumWaveTables = waveTables.size();
+    
+    if (lastNumWaveTables == 0)
+    {
+        loadingTables = false;
+        return;
+    }
+    
+    tables = (tWaveTable*)leaf_alloc(&processor.leaf, sizeof(tWaveTable) * lastNumWaveTables);
+    for (int i = 0; i < lastNumWaveTables; ++i)
+    {
+        tWaveTable_init(&tables[i], waveTables[i]->getWritePointer(0), 2048, 14000.f, &processor.leaf);
+    }
+    
+    for (int i = 0; i < NUM_STRINGS; ++i)
+    {
+        tWaveOsc_init(&wave[i], tables, waveTables.size(), &processor.leaf);
+    }
+    loadingTables = false;
+}
 
 //==============================================================================
 
@@ -138,6 +219,20 @@ MappingSourceModel(p, n, lfoValues, true, true, true, Colours::lime)
 
 LowFreqOscillator::~LowFreqOscillator()
 {
+    if (tables != nullptr)
+    {
+        for (int i = 0; i < NUM_STRINGS; ++i)
+        {
+            tWaveOsc_free(&wave[i]);
+        }
+        for (int i = 0; i < lastNumWaveTables; ++i)
+        {
+            tWaveTable_free(&tables[i]);
+        }
+        leaf_free(&processor.leaf, (char*)tables);
+        tables = nullptr;
+    }
+    
     for (int i = 0; i < NUM_STRINGS; i++)
     {
         leaf_free(&processor.leaf, (char*)lfoValues[i]);
@@ -198,4 +293,75 @@ void LowFreqOscillator::noteOn(int voice, float velocity)
 void LowFreqOscillator::noteOff(int voice, float velocity)
 {
     
+}
+
+void LowFreqOscillator::addWaveTables(File& file)
+{
+    if (file.isDirectory())
+    {
+        for (auto wav : file.findChildFiles(File::TypesOfFileToFind::findFiles, false, "*.wav"))
+        {
+            addWaveTables(wav);
+        }
+    }
+    else
+    {
+        auto* reader = processor.formatManager.createReaderFor(file);
+        if (reader != nullptr)
+        {
+            std::unique_ptr<juce::AudioFormatReaderSource> newSource (new juce::AudioFormatReaderSource
+                                                                      (reader, true));
+            jassert(reader->lengthInSamples%2048 == 0);
+            
+            for (int i = 0; i < reader->lengthInSamples / 2048; ++i)
+            {
+                waveTables.add(new AudioBuffer<float>(reader->numChannels, 2048));
+                reader->read(waveTables.getLast(), 0, waveTables.getLast()->getNumSamples(),
+                             i*2048, true, true);
+            }
+            
+            processor.readerSource.reset(newSource.release());
+        }
+    }
+}
+
+void LowFreqOscillator::clearWaveTables()
+{
+    waveTables.clear();
+}
+
+void LowFreqOscillator::waveTablesChanged()
+{
+    if (tables != nullptr)
+    {
+        for (int i = 0; i < NUM_STRINGS; ++i)
+        {
+            tWaveOsc_free(&wave[i]);
+        }
+        for (int i = 0; i < lastNumWaveTables; ++i)
+        {
+            tWaveTable_free(&tables[i]);
+        }
+        leaf_free(&processor.leaf, (char*)tables);
+        tables = nullptr;
+    }
+    lastNumWaveTables = waveTables.size();
+    
+    if (lastNumWaveTables == 0)
+    {
+        loadingTables = false;
+        return;
+    }
+    
+    tables = (tWaveTable*)leaf_alloc(&processor.leaf, sizeof(tWaveTable) * lastNumWaveTables);
+    for (int i = 0; i < lastNumWaveTables; ++i)
+    {
+        tWaveTable_init(&tables[i], waveTables[i]->getWritePointer(0), 2048, 14000.f, &processor.leaf);
+    }
+
+    for (int i = 0; i < NUM_STRINGS; ++i)
+    {
+        tWaveOsc_init(&wave[i], tables, waveTables.size(), &processor.leaf);
+    }
+    loadingTables = false;
 }
