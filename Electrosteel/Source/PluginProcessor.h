@@ -106,6 +106,8 @@ public:
     juce::AudioFormatManager formatManager;
     std::unique_ptr<juce::AudioFormatReaderSource> readerSource;
     
+    Array<File> waveTableFiles;
+    
     LEAF leaf;
     float voiceNote[NUM_STRINGS];
     

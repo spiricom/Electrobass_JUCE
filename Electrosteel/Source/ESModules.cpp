@@ -129,19 +129,13 @@ chooser("Select wavetable file or folder...",
     addAndMakeVisible(pitchLabel);
     
     RangedAudioParameter* set = vts.getParameter(ac.getName() + " ShapeSet");
-    shapeCB.addItemList(oscShapeSetNames, 1);
+    updateShapeCB();
     shapeCB.setSelectedItemIndex(set->convertFrom0to1(set->getValue()), dontSendNotification);
-    if (shapeCB.getSelectedItemIndex() == shapeCB.getNumItems()-1)
-    {
-        Oscillator& osc = static_cast<Oscillator&>(ac);
-        String text = osc.getWaveTableFile().getFileNameWithoutExtension();
-        shapeCB.changeItemText(shapeCB.getItemId(shapeCB.getNumItems()-1), text);
-        shapeCB.setText(text, dontSendNotification);
-    }
     shapeCB.setLookAndFeel(&laf);
     shapeCB.addListener(this);
+    shapeCB.addMouseListener(this, true);
     addAndMakeVisible(shapeCB);
-    comboBoxAttachments.add(new ComboBoxAttachment(vts, ac.getName() + " ShapeSet", shapeCB));
+//    comboBoxAttachments.add(new ComboBoxAttachment(vts, ac.getName() + " ShapeSet", shapeCB));
     
     sendSlider.setSliderStyle(Slider::SliderStyle::LinearVertical);
     sendSlider.setTextBoxStyle(Slider::TextEntryBoxPosition::NoTextBox, false, 10, 10);
@@ -230,24 +224,49 @@ void OscModule::comboBoxChanged(ComboBox *comboBox)
                 
                 if (path.isEmpty())
                 {
-                    shapeCB.setSelectedItemIndex(0);
+                    shapeCB.setSelectedItemIndex(0, dontSendNotification);
                     osc.setLoadingTables(false);
+                    vts.getParameter(ac.getName() + " ShapeSet")->setValueNotifyingHost(0.);
                     return;
                 }
                 
                 File file(path);
-            
-                osc.setWaveTableFile(file);
-                shapeCB.changeItemText(shapeCB.getItemId(shapeCB.getNumItems()-1),
-                                       file.getFileNameWithoutExtension());
-                shapeCB.setText(file.getFileNameWithoutExtension(), dontSendNotification);
                 
+                editor.processor.waveTableFiles.addIfNotAlreadyThere(file);
+                
+                osc.setWaveTableFile(file);
                 osc.clearWaveTables();
                 osc.addWaveTables(file);
                 osc.waveTablesChanged();
+                
+                vts.getParameter(ac.getName() + " ShapeSet")->setValueNotifyingHost(1.);
+                updateShapeCB();
             });
         }
+        else if (shapeCB.getSelectedItemIndex() >= UserShapeSet)
+        {
+            Oscillator& osc = static_cast<Oscillator&>(ac);
+            File file = editor.processor.waveTableFiles[shapeCB.getSelectedItemIndex()-UserShapeSet];
+            osc.setWaveTableFile(file);
+            osc.setLoadingTables(true);
+            osc.clearWaveTables();
+            osc.addWaveTables(file);
+            osc.waveTablesChanged();
+            vts.getParameter(ac.getName() + " ShapeSet")->setValueNotifyingHost(1.);
+            updateShapeCB();
+        }
+        else
+        {
+            float normValue = shapeCB.getSelectedItemIndex() / float(UserShapeSet+1);
+            vts.getParameter(ac.getName() + " ShapeSet")->setValueNotifyingHost(normValue);
+            updateShapeCB();
+        }
     }
+}
+
+void OscModule::mouseDown(const MouseEvent& e)
+{
+    updateShapeCB();
 }
 
 void OscModule::mouseEnter(const MouseEvent& e)
@@ -261,6 +280,29 @@ void OscModule::mouseEnter(const MouseEvent& e)
 void OscModule::mouseExit(const MouseEvent& e)
 {
     displayPitch();
+}
+
+void OscModule::updateShapeCB()
+{
+    shapeCB.clear(dontSendNotification);
+    for (int i = 0; i < oscShapeSetNames.size()-1; ++i)
+    {
+        shapeCB.addItem(oscShapeSetNames[i], shapeCB.getNumItems()+1);
+    }
+    for (auto file : editor.processor.waveTableFiles)
+    {
+        shapeCB.addItem(file.getFileNameWithoutExtension(), shapeCB.getNumItems()+1);
+    }
+    shapeCB.addItem(oscShapeSetNames[oscShapeSetNames.size()-1], shapeCB.getNumItems()+1);
+    
+    RangedAudioParameter* param = vts.getParameter(ac.getName() + " ShapeSet");
+    int index = param->getNormalisableRange().convertFrom0to1(param->getValue());
+    if (index == UserShapeSet)
+    {
+        Oscillator& osc = static_cast<Oscillator&>(ac);
+        index = editor.processor.waveTableFiles.indexOf(osc.getWaveTableFile())+UserShapeSet;
+    }
+    shapeCB.setSelectedItemIndex(index, dontSendNotification);
 }
 
 void OscModule::displayPitch()
@@ -319,7 +361,7 @@ ESModule(editor, vts, ac, 0.05f, 0.2f, 0.05f, 0.2f, 0.7f)
     
     RangedAudioParameter* set = vts.getParameter(ac.getName() + " Type");
     typeCB.addItemList(filterTypeNames, 1);
-    typeCB.setSelectedItemIndex(set->convertFrom0to1(set->getValue()));
+    typeCB.setSelectedItemIndex(set->convertFrom0to1(set->getValue()), dontSendNotification);
     typeCB.setLookAndFeel(&laf);
     addAndMakeVisible(typeCB);
     comboBoxAttachments.add(new ComboBoxAttachment(vts, ac.getName() + " Type", typeCB));
@@ -450,19 +492,13 @@ chooser("Select wavetable file or folder...",
     addAndMakeVisible(rateLabel);
     
     RangedAudioParameter* set = vts.getParameter(ac.getName() + " ShapeSet");
-    shapeCB.addItemList(oscShapeSetNames, 1);
+    updateShapeCB();
     shapeCB.setSelectedItemIndex(set->convertFrom0to1(set->getValue()), dontSendNotification);
-    if (shapeCB.getSelectedItemIndex() == shapeCB.getNumItems()-1)
-    {
-        LowFreqOscillator& osc = static_cast<LowFreqOscillator&>(ac);
-        String text = osc.getWaveTableFile().getFileNameWithoutExtension();
-        shapeCB.changeItemText(shapeCB.getItemId(shapeCB.getNumItems()-1), text);
-        shapeCB.setText(text, dontSendNotification);
-    }
     shapeCB.setLookAndFeel(&laf);
     shapeCB.addListener(this);
+    shapeCB.addMouseListener(this, true);
     addAndMakeVisible(shapeCB);
-    comboBoxAttachments.add(new ComboBoxAttachment(vts, ac.getName() + " ShapeSet", shapeCB));
+//    comboBoxAttachments.add(new ComboBoxAttachment(vts, ac.getName() + " ShapeSet", shapeCB));
     
     syncToggle.setButtonText("Sync to note-on");
     addAndMakeVisible(syncToggle);
@@ -515,7 +551,7 @@ void LFOModule::comboBoxChanged(ComboBox *comboBox)
     {
         if (shapeCB.getSelectedItemIndex() == shapeCB.getNumItems()-1)
         {
-            LowFreqOscillator& osc = static_cast<LowFreqOscillator&>(ac);
+            Oscillator& osc = static_cast<Oscillator&>(ac);
             osc.setLoadingTables(true);
             chooser.launchAsync (FileBrowserComponent::openMode |
                                  FileBrowserComponent::canSelectFiles |
@@ -524,26 +560,52 @@ void LFOModule::comboBoxChanged(ComboBox *comboBox)
                                  {
                 String path = chooser.getResult().getFullPathName();
                 LowFreqOscillator& osc = static_cast<LowFreqOscillator&>(ac);
+                
                 if (path.isEmpty())
                 {
-                    shapeCB.setSelectedItemIndex(0);
+                    shapeCB.setSelectedItemIndex(0, dontSendNotification);
                     osc.setLoadingTables(false);
+                    vts.getParameter(ac.getName() + " ShapeSet")->setValueNotifyingHost(0.);
                     return;
                 }
                 
                 File file(path);
                 
-                osc.setWaveTableFile(file);
-                shapeCB.changeItemText(shapeCB.getItemId(shapeCB.getNumItems()-1),
-                                       file.getFileNameWithoutExtension());
-                shapeCB.setText(file.getFileNameWithoutExtension(), dontSendNotification);
+                editor.processor.waveTableFiles.addIfNotAlreadyThere(file);
                 
+                osc.setWaveTableFile(file);
                 osc.clearWaveTables();
                 osc.addWaveTables(file);
                 osc.waveTablesChanged();
+                
+                vts.getParameter(ac.getName() + " ShapeSet")->setValueNotifyingHost(1.);
+                updateShapeCB();
             });
         }
+        else if (shapeCB.getSelectedItemIndex() >= UserShapeSet)
+        {
+            LowFreqOscillator& osc = static_cast<LowFreqOscillator&>(ac);
+            File file = editor.processor.waveTableFiles[shapeCB.getSelectedItemIndex()-UserShapeSet];
+            osc.setWaveTableFile(file);
+            osc.setLoadingTables(true);
+            osc.clearWaveTables();
+            osc.addWaveTables(file);
+            osc.waveTablesChanged();
+            vts.getParameter(ac.getName() + " ShapeSet")->setValueNotifyingHost(1.);
+            updateShapeCB();
+        }
+        else
+        {
+            float normValue = shapeCB.getSelectedItemIndex() / float(UserShapeSet+1);
+            vts.getParameter(ac.getName() + " ShapeSet")->setValueNotifyingHost(normValue);
+            updateShapeCB();
+        }
     }
+}
+
+void LFOModule::mouseDown(const MouseEvent& e)
+{
+    updateShapeCB();
 }
 
 void LFOModule::mouseEnter(const MouseEvent& e)
@@ -557,6 +619,29 @@ void LFOModule::mouseEnter(const MouseEvent& e)
 void LFOModule::mouseExit(const MouseEvent& e)
 {
     displayRate();
+}
+
+void LFOModule::updateShapeCB()
+{
+    shapeCB.clear(dontSendNotification);
+    for (int i = 0; i < oscShapeSetNames.size()-1; ++i)
+    {
+        shapeCB.addItem(oscShapeSetNames[i], shapeCB.getNumItems()+1);
+    }
+    for (auto file : editor.processor.waveTableFiles)
+    {
+        shapeCB.addItem(file.getFileNameWithoutExtension(), shapeCB.getNumItems()+1);
+    }
+    shapeCB.addItem(oscShapeSetNames[oscShapeSetNames.size()-1], shapeCB.getNumItems()+1);
+    
+    RangedAudioParameter* param = vts.getParameter(ac.getName() + " ShapeSet");
+    int index = param->getNormalisableRange().convertFrom0to1(param->getValue());
+    if (index == UserShapeSet)
+    {
+        LowFreqOscillator& osc = static_cast<LowFreqOscillator&>(ac);
+        index = editor.processor.waveTableFiles.indexOf(osc.getWaveTableFile())+UserShapeSet;
+    }
+    shapeCB.setSelectedItemIndex(index, dontSendNotification);
 }
 
 void LFOModule::displayRate()

@@ -916,6 +916,7 @@ void ESAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
             File wav (xml->getStringAttribute("osc" + String(i+1) + "File"));
             if (wav.exists())
             {
+                waveTableFiles.addIfNotAlreadyThere(wav);
                 oscs[i]->setWaveTableFile(wav);
                 oscs[i]->setLoadingTables(true);
                 oscs[i]->clearWaveTables();
@@ -928,6 +929,7 @@ void ESAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
             File wav (xml->getStringAttribute("lfo" + String(i+1) + "File"));
             if (wav.exists())
             {
+                waveTableFiles.addIfNotAlreadyThere(wav);
                 lfos[i]->setWaveTableFile(wav);
                 lfos[i]->setLoadingTables(true);
                 lfos[i]->clearWaveTables();
