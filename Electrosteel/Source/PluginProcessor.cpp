@@ -1091,6 +1091,7 @@ juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 //LFO4 Sync: 105
 //Output Amp: 106
 //Output Pan: 107
+
 //SOURCES//
 //M1: 0
 //M2: 1

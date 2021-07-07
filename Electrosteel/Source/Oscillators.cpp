@@ -34,11 +34,11 @@ Oscillator::~Oscillator()
     {
         for (int i = 0; i < NUM_STRINGS; ++i)
         {
-            tWaveOsc_free(&wave[i]);
+            tWaveOscS_free(&wave[i]);
         }
         for (int i = 0; i < lastNumWaveTables; ++i)
         {
-            tWaveTable_free(&tables[i]);
+            tWaveTableS_free(&tables[i]);
         }
         leaf_free(&processor.leaf, (char*)tables);
         tables = nullptr;
@@ -74,7 +74,7 @@ void Oscillator::frame()
             break;
             
         case UserShapeSet:
-            shapeTick = loadingTables ? &Oscillator::sawPulseTick : &Oscillator::userTick;
+            shapeTick = &Oscillator::userTick;
             break;
             
         default:
@@ -85,7 +85,7 @@ void Oscillator::frame()
 
 void Oscillator::tick(float output[][NUM_STRINGS])
 {
-    if (!enabled) return;
+    if (!enabled || loadingTables) return;
     
     float a = sampleInBlock * invBlockSize;
 
@@ -124,9 +124,9 @@ void Oscillator::sawPulseTick(float& sample, int v, float freq, float shape)
 
 void Oscillator::userTick(float& sample, int v, float freq, float shape)
 {
-    tWaveOsc_setFreq(&wave[v], freq);
-    tWaveOsc_setIndex(&wave[v], shape);
-    sample += tWaveOsc_tick(&wave[v]);
+    tWaveOscS_setFreq(&wave[v], freq);
+    tWaveOscS_setIndex(&wave[v], shape);
+    sample += tWaveOscS_tick(&wave[v]);
 }
 
 void Oscillator::addWaveTables(File& file)
@@ -170,11 +170,11 @@ void Oscillator::waveTablesChanged()
     {
         for (int i = 0; i < NUM_STRINGS; ++i)
         {
-            tWaveOsc_free(&wave[i]);
+            tWaveOscS_free(&wave[i]);
         }
         for (int i = 0; i < lastNumWaveTables; ++i)
         {
-            tWaveTable_free(&tables[i]);
+            tWaveTableS_free(&tables[i]);
         }
         leaf_free(&processor.leaf, (char*)tables);
         tables = nullptr;
@@ -187,15 +187,15 @@ void Oscillator::waveTablesChanged()
         return;
     }
     
-    tables = (tWaveTable*)leaf_alloc(&processor.leaf, sizeof(tWaveTable) * lastNumWaveTables);
+    tables = (tWaveTableS*)leaf_alloc(&processor.leaf, sizeof(tWaveTableS) * lastNumWaveTables);
     for (int i = 0; i < lastNumWaveTables; ++i)
     {
-        tWaveTable_init(&tables[i], waveTables[i]->getWritePointer(0), 2048, 14000.f, &processor.leaf);
+        tWaveTableS_init(&tables[i], waveTables[i]->getWritePointer(0), 2048, 14000.f, &processor.leaf);
     }
     
     for (int i = 0; i < NUM_STRINGS; ++i)
     {
-        tWaveOsc_init(&wave[i], tables, waveTables.size(), &processor.leaf);
+        tWaveOscS_init(&wave[i], tables, waveTables.size(), &processor.leaf);
     }
     loadingTables = false;
 }
@@ -223,11 +223,11 @@ LowFreqOscillator::~LowFreqOscillator()
     {
         for (int i = 0; i < NUM_STRINGS; ++i)
         {
-            tWaveOsc_free(&wave[i]);
+            tWaveOscS_free(&wave[i]);
         }
         for (int i = 0; i < lastNumWaveTables; ++i)
         {
-            tWaveTable_free(&tables[i]);
+            tWaveTableS_free(&tables[i]);
         }
         leaf_free(&processor.leaf, (char*)tables);
         tables = nullptr;
@@ -336,11 +336,11 @@ void LowFreqOscillator::waveTablesChanged()
     {
         for (int i = 0; i < NUM_STRINGS; ++i)
         {
-            tWaveOsc_free(&wave[i]);
+            tWaveOscS_free(&wave[i]);
         }
         for (int i = 0; i < lastNumWaveTables; ++i)
         {
-            tWaveTable_free(&tables[i]);
+            tWaveTableS_free(&tables[i]);
         }
         leaf_free(&processor.leaf, (char*)tables);
         tables = nullptr;
@@ -353,15 +353,15 @@ void LowFreqOscillator::waveTablesChanged()
         return;
     }
     
-    tables = (tWaveTable*)leaf_alloc(&processor.leaf, sizeof(tWaveTable) * lastNumWaveTables);
+    tables = (tWaveTableS*)leaf_alloc(&processor.leaf, sizeof(tWaveTableS) * lastNumWaveTables);
     for (int i = 0; i < lastNumWaveTables; ++i)
     {
-        tWaveTable_init(&tables[i], waveTables[i]->getWritePointer(0), 2048, 14000.f, &processor.leaf);
+        tWaveTableS_init(&tables[i], waveTables[i]->getWritePointer(0), 2048, 14000.f, &processor.leaf);
     }
 
     for (int i = 0; i < NUM_STRINGS; ++i)
     {
-        tWaveOsc_init(&wave[i], tables, waveTables.size(), &processor.leaf);
+        tWaveOscS_init(&wave[i], tables, waveTables.size(), &processor.leaf);
     }
     loadingTables = false;
 }

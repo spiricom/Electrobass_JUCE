@@ -47,8 +47,8 @@ private:
     tMBSaw saw[NUM_STRINGS];
     tMBPulse pulse[NUM_STRINGS];
     
-    tWaveTable* tables = nullptr;
-    tWaveOsc wave[NUM_STRINGS];
+    tWaveTableS* tables = nullptr;
+    tWaveOscS wave[NUM_STRINGS];
 
     std::unique_ptr<SmoothedParameter> filterSend;
     
@@ -94,8 +94,8 @@ private:
     
     tCycle lfo[NUM_STRINGS];
     
-    tWaveTable* tables = nullptr;
-    tWaveOsc wave[NUM_STRINGS];
+    tWaveTableS* tables = nullptr;
+    tWaveOscS wave[NUM_STRINGS];
     
     float* lfoValues[NUM_STRINGS];
     float phaseReset;
