@@ -15,7 +15,7 @@
 Envelope::Envelope(const String& n, ESAudioProcessor& p,
                    AudioProcessorValueTreeState& vts) :
 AudioComponent(n, p, vts, cEnvelopeParams, false),
-MappingSourceModel(p, n, envValues, true, true, false, Colours::cyan)
+MappingSourceModel(p, n, envValues, true, true, false, Colours::deepskyblue)
 {
     useVelocity = vts.getParameter(n + " Velocity");
     
@@ -44,6 +44,7 @@ Envelope::~Envelope()
 {
     for (int i = 0; i < NUM_STRINGS; i++)
     {
+        tADSRT_free(&envs[i]);
         leaf_free(&processor.leaf, (char*)envValues[i]);
     }
 }
@@ -67,7 +68,7 @@ void Envelope::frame()
 {
     for (int i = 0; i < params.size(); ++i)
     {
-        for (int v = 0; v < NUM_STRINGS; ++v)
+        for (int v = 0; v < processor.numVoicesActive; ++v)
         {
             lastValues[i][v] = values[i][v];
             values[i][v] = ref[i][v]->skip(currentBlockSize);
@@ -80,7 +81,7 @@ void Envelope::tick()
 {
     float a = sampleInBlock * invBlockSize;
     
-    for (int v = 0; v < NUM_STRINGS; v++)
+    for (int v = 0; v < processor.numVoicesActive; v++)
     {
         float attack = values[EnvelopeAttack][v]*a + lastValues[EnvelopeAttack][v]*(1.f-a);
         float decay = values[EnvelopeDecay][v]*a + lastValues[EnvelopeDecay][v]*(1.f-a);

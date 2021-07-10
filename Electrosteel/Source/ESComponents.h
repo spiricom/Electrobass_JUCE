@@ -83,7 +83,7 @@ public:
     void setMapping(MappingSource* source, float end);
     void removeMapping();
     
-    void setMappingRange(float end);
+    void setMappingRange(float end, bool sendChangeEvent = true);
     
     static void menuCallback(int result, MappingTarget* target);
     
@@ -133,6 +133,7 @@ private:
     OwnedArray<MappingTarget> t;
     std::unique_ptr<MappingSource> s;
     Label label;
+    double lastSliderValue = DBL_MAX;
     
     ESLookAndFeel laf;
     

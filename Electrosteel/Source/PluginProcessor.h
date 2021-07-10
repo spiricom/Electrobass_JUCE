@@ -95,6 +95,9 @@ public:
     MappingTargetModel* getMappingTarget(const String& name);
     
     //==============================================================================
+    File loadWaveTables(const String& setName, File& file);
+    
+    //==============================================================================
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
@@ -107,7 +110,8 @@ public:
     std::unique_ptr<juce::AudioFormatReaderSource> readerSource;
     
     Array<File> waveTableFiles;
-    
+    HashMap<String, Array<tWaveTableS>> waveTables;
+
     LEAF leaf;
     float voiceNote[NUM_STRINGS];
     
@@ -142,6 +146,8 @@ public:
     int copedentNumber = 0;
     
     int channelToString[NUM_CHANNELS+1];
+    
+    int numVoicesActive = 12;
     
 private:
     

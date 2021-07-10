@@ -45,17 +45,17 @@ static const StringArray cOscParams = {
     "Amp"
 };
 static const std::vector<std::vector<float>> vOscInit = {
-    { -24.0f, 24.0f, 0.0f }, //Pitch
-    { -100.f, 100.f, 0.0f }, //Fine
-    { 0.0f, 1.0f, 0.06f },  //Shape
-    { 0.0f, 1.0f, 1.0f },   //Volume
+    { -24.0f, 24.0f, 0.0f, 0.0f }, //Pitch
+    { -100.f, 100.f, 0.0f, 0.0f }, //Fine
+    { 0.0f, 1.0f, 0.0f, 0.5f },  //Shape
+    { 0.0f, 1.0f, 1.0f, 0.5f },   //Volume
 };
 
 typedef enum _OscShapeSet
 {
     SawPulseShapeSet = 0,
     UserShapeSet,
-    OscSetNil
+    ShapeSetNil
 } OscShapeSet;
 static const StringArray oscShapeSetNames = {
     "SawPulse",
@@ -77,9 +77,10 @@ static const StringArray cLowFreqParams = {
     "Sync Phase"
 };
 static const std::vector<std::vector<float>> vLowFreqInit = {
-    { 0.0f, 30.f, 1.0f },  //Rate
-    { 0.0f, 1.0f, 0.0f },  //Shape
-    { 0.0f, 1.0f, 0.0f} // Phase Offset
+    { 0.0f, 30.f, 1.0f, 2.f },  //Rate
+//    { 0.0f, 1.f, 0.f, 0.5f },  //Rate
+    { 0.0f, 1.0f, 0.0f, 0.5f },  //Shape
+    { 0.0f, 1.0f, 0.0f, 0.5f } // Phase Offset
 };
 
 //==============================================================================
@@ -97,9 +98,9 @@ static const StringArray cFilterParams = {
     "KeyFollow"
 };
 static const std::vector<std::vector<float>> vFilterInit = {
-    { 0.0f, 127.f, 72.f },   //Cutoff
-    { 0.1f, 2.f, 0.4f },   //Resonance
-    { 0.0f, 1.f, 0.5f }   //KeyFollow
+    { 0.0f, 127.f, 72.f, 63.5f },   //Cutoff
+    { 0.25f, 200.f, 0.7f, 1.5f },   //Resonance
+    { 0.0f, 1.f, 0.5f, 0.5f }   //KeyFollow
 };
 
 typedef enum _FilterType
@@ -132,11 +133,11 @@ static const StringArray cEnvelopeParams = {
     "Leak"
 };
 static const std::vector<std::vector<float>> vEnvelopeInit = {
-    { 0.0f, 1.0f, 0.0f },   //Attack
-    { 0.0f, 1.0f, 0.06f },  //Decay
-    { 0.0f, 1.0f, 0.9f },   //Sustain
-    { 0.0f, 1.0f, 0.1f },   //Release
-    { 0.0f, 1.0f, 0.1f },   //Leak
+    { 0.0f, 20000.0f, 7.f, 4000.f },   //Attack
+    { 0.0f, 20000.0f, 1000.f, 4000.f },  //Decay
+    { 0.0f, 1.f, 0.8f, 0.5f },   //Sustain
+    { 0.0f, 20000.0f, 20.f, 4000.f },   //Release
+    { 0.0f, 1.0f, 0.f, 0.5f },   //Leak
 };
 
 //==============================================================================
@@ -152,8 +153,8 @@ static const StringArray cOutputParams = {
     "Pan"
 };
 static const std::vector<std::vector<float>> vOutputInit = {
-    { 0.0f, 2.0f, 0.0f },   //Amp
-    { -1.0f, 1.0f, 0.f },  //Pan
+    { 0.0f, 2.0f, 0.0f, 1.0f },   //Amp
+    { -1.0f, 1.0f, 0.f, 0.f},  //Pan
 };
 
 //==============================================================================

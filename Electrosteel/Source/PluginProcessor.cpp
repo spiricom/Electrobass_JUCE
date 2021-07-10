@@ -22,20 +22,26 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
     // Top level parameters
     
     n = "Master";
-    layout.add (std::make_unique<AudioParameterFloat> (n, n, 0., 2., 1.));
+    auto normRange = NormalisableRange<float>(0., 2.);
+    normRange.setSkewForCentre(1.);
+    layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, 1.));
     paramIds.add(n);
     
     for (int i = 0; i < NUM_MACROS; ++i)
     {
         n = "M" + String(i+1);
-        layout.add (std::make_unique<AudioParameterFloat> (n, n, 0., 1., 0.));
+        normRange = NormalisableRange<float>(0., 1.);
+        normRange.setSkewForCentre(.5);
+        layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, 0.));
         paramIds.add(n);
     }
     
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
         n = "PitchBend" + String(i);
-        layout.add (std::make_unique<AudioParameterFloat> (n, n, -24., 24., 0.));
+        normRange = NormalisableRange<float>(-24., 24.);
+        normRange.setSkewForCentre(.0);
+        layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, 0.));
         paramIds.add(n);
     }
     
@@ -51,9 +57,13 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
             float min = vOscInit[j][0];
             float max = vOscInit[j][1];
             float def = vOscInit[j][2];
+            float center = vOscInit[j][3];
             
             n = "Osc" + String(i+1) + " " + cOscParams[j];
-            layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
+            
+            normRange = NormalisableRange<float>(min, max);
+            normRange.setSkewForCentre(center);
+            layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, def));
             paramIds.add(n);
         }
         
@@ -62,7 +72,9 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
         paramIds.add(n);
         
         n = "Osc" + String(i+1) + " FilterSend";
-        layout.add (std::make_unique<AudioParameterFloat> (n, n, 0.f, 1.f, 0.5f));
+        normRange = NormalisableRange<float>(0., 1.);
+        normRange.setSkewForCentre(.5);
+        layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, 0.5f));
         paramIds.add(n);
     }
     
@@ -83,15 +95,20 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
             float min = vFilterInit[j][0];
             float max = vFilterInit[j][1];
             float def = vFilterInit[j][2];
+            float center = vFilterInit[j][3];
             
             n = "Filter" + String(i+1) + " " + cFilterParams[j];
-            layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
+            normRange = NormalisableRange<float>(min, max);
+            normRange.setSkewForCentre(center);
+            layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, def));
             paramIds.add(n);
         }
     }
     
     n = "Filter Series-Parallel Mix";
-    layout.add (std::make_unique<AudioParameterFloat> (n, n, 0., 1., 0.));
+    normRange = NormalisableRange<float>(0., 1.);
+    normRange.setSkewForCentre(.5);
+    layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, 0.));
     paramIds.add(n);
     
     //=============================================================================
@@ -102,9 +119,12 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
             float min = vEnvelopeInit[j][0];
             float max = vEnvelopeInit[j][1];
             float def = vEnvelopeInit[j][2];
+            float center = vEnvelopeInit[j][3];
             
             n = "Envelope" + String(i+1) + " " + cEnvelopeParams[j];
-            layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
+            normRange = NormalisableRange<float>(min, max);
+            normRange.setSkewForCentre(center);
+            layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, def));
             paramIds.add(n);
         }
         
@@ -121,14 +141,16 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
             float min = vLowFreqInit[j][0];
             float max = vLowFreqInit[j][1];
             float def = vLowFreqInit[j][2];
+            float center = vLowFreqInit[j][3];
             
             n = "LFO" + String(i+1) + " " + cLowFreqParams[j];
-            layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
+            normRange = NormalisableRange<float>(min, max);
+            normRange.setSkewForCentre(center);
+            layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, def));
             paramIds.add(n);
         }
         
-        n = "LFO" + String(i+1) + " ShapeSet";
-        layout.add (std::make_unique<AudioParameterChoice> (n, n, oscShapeSetNames, 0));
+        n = "LFO" + String(i+1) + " ShapeSet";        layout.add (std::make_unique<AudioParameterChoice> (n, n, oscShapeSetNames, 0));
         paramIds.add(n);
         
         n = "LFO" + String(i+1) + " Sync";
@@ -142,8 +164,12 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
         float min = vOutputInit[i][0];
         float max = vOutputInit[i][1];
         float def = vOutputInit[i][2];
+        float center = vOutputInit[i][3];
+        
         n = "Output " + cOutputParams[i];
-        layout.add (std::make_unique<AudioParameterFloat> (n, n, min, max, def));
+        normRange = NormalisableRange<float>(min, max);
+        normRange.setSkewForCentre(center);
+        layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, def));
         paramIds.add(n);
     }
     
@@ -186,7 +212,7 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
     
     leaf.clearOnAllocation = 1;
     
-    tSimplePoly_init(&strings[0], 12, &leaf);
+    tSimplePoly_init(&strings[0], numVoicesActive, &leaf);
     tSimplePoly_setNumVoices(&strings[0], 1);
     
     voiceNote[0] = 0;
@@ -220,8 +246,7 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
         String n = "M" + String(i+1);
         ccParams.add(new SmoothedParameter(*this, vts, n, -1));
         ccSources.add(new MappingSourceModel(*this, n, ccParams.getLast()->getValuePointerArray(),
-                                             false, false, false, Colours::red));
-        addMappingSource(ccSources.getLast());
+                                             false, false, false, Colours::red.withSaturation(0.9f)));
         sourceIds.add(n);
     }
     
@@ -229,7 +254,6 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
     {
         String n = "Envelope" + String(i+1);
         envs.add(new Envelope(n, *this, vts));
-        addMappingSource(envs.getLast());
         sourceIds.add(n);
     }
     
@@ -237,7 +261,6 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
     {
         String n = "LFO" + String(i+1);
         lfos.add(new LowFreqOscillator(n, *this, vts));
-        addMappingSource(lfos.getLast());
         sourceIds.add(n);
     }
     
@@ -282,10 +305,26 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
     {
         DBG(sourceIds[i] + ": " + String(i));
     }
+    
+    DBG("Post init: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
 }
 
 ESAudioProcessor::~ESAudioProcessor()
 {
+    DBG("Pre exit: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
+    
+    for (auto waveTableSet : waveTables)
+    {
+        for (auto waveTable : waveTableSet)
+        {
+            tWaveTableS_free(&waveTable);
+        }
+    }
+    
+    for (int i = 0; i < NUM_STRINGS; ++i)
+    {
+        tSimplePoly_free(&strings[i]);
+    }
     params.clearQuick(false);
 }
 
@@ -294,6 +333,16 @@ void ESAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     midiChannelActivityTimeout = sampleRate/samplesPerBlock/2;
     LEAF_setSampleRate(&leaf, sampleRate);
+    
+    DBG("Pre prepare: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
+    
+    for (auto waveTableSet : waveTables)
+    {
+        for (auto waveTable : waveTableSet)
+        {
+            tWaveTableS_setSampleRate(&waveTable, sampleRate);
+        }
+    }
     
     for (auto env : envs)
     {
@@ -337,6 +386,8 @@ void ESAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
         }
         initialMappings.clear();
     }
+    
+    DBG("Post prepare: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
 }
 
 void ESAudioProcessor::releaseResources()
@@ -442,6 +493,61 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
             
             midiMessages.addEvent(presetMessage, 0);
         }
+        
+        // Wavetable data
+        
+        // Determine which tables are in use and therefore should be sent
+        Array<String> tableSetsToSend;
+        for (auto osc : oscs)
+        {
+            if (osc->getCurrentShapeSet() == UserShapeSet)
+            {
+                tableSetsToSend.addIfNotAlreadyThere(osc->getWaveTableFile().getFullPathName());
+            }
+        }
+//        for (auto lfo : lfos)
+//        {
+//            if (lfo->getCurrentShapeSet() == UserShapeSet)
+//            {
+//                tableSetsToSend.addIfNotAlreadyThere(lfo->getWaveTableFile().getFullPathName());
+//            }
+//        }
+        
+        // Send out each set of tables
+        for (auto setName : tableSetsToSend)
+        {
+            data.clear();
+            data7bitInt.clear();
+            
+            for (auto table : waveTables.getReference(setName))
+            {
+                for (int i = 0; i < table->numTables; ++i)
+                {
+                    data.add(table->sizes[i]);
+                    for (int j = 0; j < table->sizes[i]; ++j)
+                    {
+                        data.add(table->tables[i][j]);
+                    }
+                }
+            }
+            
+            for (int i = 0; i < data.size(); i++)
+            {
+                data7bitInt.add(2); // saying it's wavetable data
+                
+                fu.f = data[i];
+                data7bitInt.add((fu.i >> 28) & 15);
+                data7bitInt.add((fu.i >> 21) & 127);
+                data7bitInt.add((fu.i >> 14) & 127);
+                data7bitInt.add((fu.i >> 7) & 127);
+                data7bitInt.add(fu.i & 127);
+                
+                MidiMessage presetMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
+                
+                midiMessages.addEvent(presetMessage, 0);
+            }
+        }
+    
         waitingToSendPreset = false;
     }
     
@@ -542,7 +648,7 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
         outputSamples[0] = 0.f;
         outputSamples[1] = 0.f;
         
-        for (int v = 0; v < NUM_STRINGS; ++v)
+        for (int v = 0; v < numVoicesActive; ++v)
         {
             float pitchBend = globalPitchBend + pitchBendParams[v+1]->tickNoHooks();
             float tempNote = (float)tSimplePoly_getPitch(&strings[v*mpe], v*impe);
@@ -570,14 +676,14 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
 
         filt[0]->tick(samples[0]);
         
-        for (int v = 0; v < NUM_STRINGS; ++v)
+        for (int v = 0; v < numVoicesActive; ++v)
         {
             samples[1][v] += samples[0][v]*(1.f-parallel);
         }
         
         filt[1]->tick(samples[1]);
         
-        for (int v = 0; v < NUM_STRINGS; ++v)
+        for (int v = 0; v < numVoicesActive; ++v)
         {
             samples[1][v] += samples[0][v]*parallel;
         }
@@ -735,7 +841,7 @@ bool ESAudioProcessor::getMPEMode()
 void ESAudioProcessor::setMPEMode(bool enabled)
 {
     mpeMode = enabled;
-    tSimplePoly_setNumVoices(&strings[0], mpeMode ? 1 : 12);
+    tSimplePoly_setNumVoices(&strings[0], mpeMode ? 1 : numVoicesActive);
 }
 
 //==============================================================================
@@ -833,6 +939,81 @@ MappingTargetModel* ESAudioProcessor::getMappingTarget(const String& name)
 }
 
 //==============================================================================
+File ESAudioProcessor::loadWaveTables(const String& setName, File& file)
+{
+    // If we've already loaded this file, just return it
+    if (waveTableFiles.contains(file)) return file;
+    
+    // If this is the root of the wavetable set, keep track of the file
+    if (setName == file.getFullPathName()) waveTableFiles.add(file);
+//    {
+//        waveTableFiles.addIfNotAlreadyThere(file);
+//        // And if we've already loaded this, make sure to remove any existing redundant set
+//        if (waveTables.contains(setName))
+//        {
+//            for (auto waveTable : waveTables.getReference(setName))
+//            {
+//                tWaveTableS_free(&waveTable);
+//            }
+//            waveTables.remove(setName);
+//        }
+//    }
+    
+    // If we have a directory, add all .wav files in that dir to one wavetable set
+    if (file.isDirectory())
+    {
+        for (auto wav : file.findChildFiles(File::TypesOfFileToFind::findFiles, false, "*.wav"))
+        {
+            loadWaveTables(setName, wav);
+        }
+    }
+    // Read the file, generate a tWaveTableS, and add it to the wavetable set with setName
+    else
+    {
+        auto* reader = formatManager.createReaderFor(file);
+        
+        Array<AudioBuffer<float>> tableBuffers;
+        
+        if (reader != nullptr)
+        {
+            std::unique_ptr<juce::AudioFormatReaderSource> newSource (new juce::AudioFormatReaderSource
+                                                                      (reader, true));
+            jassert(reader->lengthInSamples%2048 == 0);
+            
+            for (int i = 0; i < reader->lengthInSamples / 2048; ++i)
+            {
+                tableBuffers.add(AudioBuffer<float>(reader->numChannels, 2048));
+                reader->read(&tableBuffers.getReference(tableBuffers.size()-1), 0,
+                             tableBuffers.getReference(tableBuffers.size()-1).getNumSamples(),
+                             i*2048, true, true);
+            }
+            
+            readerSource.reset(newSource.release());
+        }
+        else return File();
+        
+        Array<tWaveTableS> tables;
+        for (int i = 0; i < tableBuffers.size(); ++i)
+        {
+            tWaveTableS table;
+            tWaveTableS_init(&table, tableBuffers.getReference(i).getWritePointer(0), 2048, 14000.f, &leaf);
+            tables.add(table);
+        }
+        
+        if (waveTables.contains(setName))
+        {
+            waveTables.getReference(setName).addArray(tables);
+        }
+        else
+        {
+            waveTables.set(setName, tables);
+        }
+    }
+    
+    return file;
+}
+
+//==============================================================================
 void ESAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     ValueTree root ("Electrosteel");
@@ -898,6 +1079,8 @@ void ESAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 
 void ESAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
+    DBG("Pre set state: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
+    
     std::unique_ptr<juce::XmlElement> xml(getXmlFromBinary(data, sizeInBytes));
     
     if (xml.get() != nullptr)
@@ -916,12 +1099,9 @@ void ESAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
             File wav (xml->getStringAttribute("osc" + String(i+1) + "File"));
             if (wav.exists())
             {
-                waveTableFiles.addIfNotAlreadyThere(wav);
-                oscs[i]->setWaveTableFile(wav);
-                oscs[i]->setLoadingTables(true);
-                oscs[i]->clearWaveTables();
-                oscs[i]->addWaveTables(wav);
-                oscs[i]->waveTablesChanged();
+                DBG("Pre osc set state: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
+                oscs[i]->setWaveTables(wav);
+                DBG("Post osc set state: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
             }
         }
         for (int i = 0; i < NUM_LFOS; ++i)
@@ -929,12 +1109,7 @@ void ESAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
             File wav (xml->getStringAttribute("lfo" + String(i+1) + "File"));
             if (wav.exists())
             {
-                waveTableFiles.addIfNotAlreadyThere(wav);
-                lfos[i]->setWaveTableFile(wav);
-                lfos[i]->setLoadingTables(true);
-                lfos[i]->clearWaveTables();
-                lfos[i]->addWaveTables(wav);
-                lfos[i]->waveTablesChanged();
+                lfos[i]->setWaveTables(wav);
             }
         }
         
@@ -973,6 +1148,8 @@ void ESAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
             }
         }
     }
+    
+    DBG("Post set state: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
 }
 
 //==============================================================================

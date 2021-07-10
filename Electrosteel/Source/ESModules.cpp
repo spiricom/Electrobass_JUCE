@@ -151,6 +151,10 @@ chooser("Select wavetable file or folder...",
     f2Label.setJustificationType(Justification::topRight);
     f2Label.setLookAndFeel(&laf);
     addAndMakeVisible(f2Label);
+    
+    s = std::make_unique<MappingSource>
+    (editor, *editor.processor.getMappingSource(ac.getName()), ac.getName());
+    addAndMakeVisible(s.get());
 }
 
 OscModule::~OscModule()
@@ -180,6 +184,8 @@ void OscModule::resized()
     
     f1Label.setBoundsRelative(0.9f, 0.05f, 0.06f, 0.15f);
     f2Label.setBoundsRelative(0.9f, 0.80f, 0.06f, 0.15f);
+    
+    s->setBounds(enabledToggle.getRight(), 4, getWidth()*0.15f, enabledToggle.getHeight()-8);
 }
 
 void OscModule::sliderValueChanged(Slider* slider)
@@ -212,8 +218,6 @@ void OscModule::comboBoxChanged(ComboBox *comboBox)
     {
         if (shapeCB.getSelectedItemIndex() == shapeCB.getNumItems()-1)
         {
-            Oscillator& osc = static_cast<Oscillator&>(ac);
-            osc.setLoadingTables(true);
             chooser.launchAsync (FileBrowserComponent::openMode |
                                  FileBrowserComponent::canSelectFiles |
                                  FileBrowserComponent::canSelectDirectories,
@@ -225,20 +229,12 @@ void OscModule::comboBoxChanged(ComboBox *comboBox)
                 if (path.isEmpty())
                 {
                     shapeCB.setSelectedItemIndex(0, dontSendNotification);
-                    osc.setLoadingTables(false);
                     vts.getParameter(ac.getName() + " ShapeSet")->setValueNotifyingHost(0.);
                     return;
                 }
                 
                 File file(path);
-                
-                editor.processor.waveTableFiles.addIfNotAlreadyThere(file);
-                
-                osc.setWaveTableFile(file);
-                osc.clearWaveTables();
-                osc.addWaveTables(file);
-                osc.waveTablesChanged();
-                
+                osc.setWaveTables(file);
                 vts.getParameter(ac.getName() + " ShapeSet")->setValueNotifyingHost(1.);
                 updateShapeCB();
             });
@@ -247,11 +243,7 @@ void OscModule::comboBoxChanged(ComboBox *comboBox)
         {
             Oscillator& osc = static_cast<Oscillator&>(ac);
             File file = editor.processor.waveTableFiles[shapeCB.getSelectedItemIndex()-UserShapeSet];
-            osc.setWaveTableFile(file);
-            osc.setLoadingTables(true);
-            osc.clearWaveTables();
-            osc.addWaveTables(file);
-            osc.waveTablesChanged();
+            osc.setWaveTables(file);
             vts.getParameter(ac.getName() + " ShapeSet")->setValueNotifyingHost(1.);
             updateShapeCB();
         }
@@ -526,6 +518,7 @@ void LFOModule::resized()
 
 void LFOModule::sliderValueChanged(Slider* slider)
 {
+    DBG(slider->getSkewFactor());
     if (slider == &getDial(LowFreqRate)->getSlider())
     {
         displayRate();
@@ -549,52 +542,38 @@ void LFOModule::comboBoxChanged(ComboBox *comboBox)
 {
     if (comboBox == &shapeCB)
     {
-        if (shapeCB.getSelectedItemIndex() == shapeCB.getNumItems()-1)
-        {
-            Oscillator& osc = static_cast<Oscillator&>(ac);
-            osc.setLoadingTables(true);
-            chooser.launchAsync (FileBrowserComponent::openMode |
-                                 FileBrowserComponent::canSelectFiles |
-                                 FileBrowserComponent::canSelectDirectories,
-                                 [this] (const FileChooser& chooser)
-                                 {
-                String path = chooser.getResult().getFullPathName();
-                LowFreqOscillator& osc = static_cast<LowFreqOscillator&>(ac);
-                
-                if (path.isEmpty())
-                {
-                    shapeCB.setSelectedItemIndex(0, dontSendNotification);
-                    osc.setLoadingTables(false);
-                    vts.getParameter(ac.getName() + " ShapeSet")->setValueNotifyingHost(0.);
-                    return;
-                }
-                
-                File file(path);
-                
-                editor.processor.waveTableFiles.addIfNotAlreadyThere(file);
-                
-                osc.setWaveTableFile(file);
-                osc.clearWaveTables();
-                osc.addWaveTables(file);
-                osc.waveTablesChanged();
-                
-                vts.getParameter(ac.getName() + " ShapeSet")->setValueNotifyingHost(1.);
-                updateShapeCB();
-            });
-        }
-        else if (shapeCB.getSelectedItemIndex() >= UserShapeSet)
-        {
-            LowFreqOscillator& osc = static_cast<LowFreqOscillator&>(ac);
-            File file = editor.processor.waveTableFiles[shapeCB.getSelectedItemIndex()-UserShapeSet];
-            osc.setWaveTableFile(file);
-            osc.setLoadingTables(true);
-            osc.clearWaveTables();
-            osc.addWaveTables(file);
-            osc.waveTablesChanged();
-            vts.getParameter(ac.getName() + " ShapeSet")->setValueNotifyingHost(1.);
-            updateShapeCB();
-        }
-        else
+//        if (shapeCB.getSelectedItemIndex() == shapeCB.getNumItems()-1)
+//        {
+//            chooser.launchAsync (FileBrowserComponent::openMode |
+//                                 FileBrowserComponent::canSelectFiles |
+//                                 FileBrowserComponent::canSelectDirectories,
+//                                 [this] (const FileChooser& chooser)
+//                                 {
+//                String path = chooser.getResult().getFullPathName();
+//                LowFreqOscillator& osc = static_cast<LowFreqOscillator&>(ac);
+//
+//                if (path.isEmpty())
+//                {
+//                    shapeCB.setSelectedItemIndex(0, dontSendNotification);
+//                    vts.getParameter(ac.getName() + " ShapeSet")->setValueNotifyingHost(0.);
+//                    return;
+//                }
+//
+//                File file(path);
+//                osc.setWaveTables(file);
+//                vts.getParameter(ac.getName() + " ShapeSet")->setValueNotifyingHost(1.);
+//                updateShapeCB();
+//            });
+//        }
+//        else if (shapeCB.getSelectedItemIndex() >= UserShapeSet)
+//        {
+//            LowFreqOscillator& osc = static_cast<LowFreqOscillator&>(ac);
+//            File file = editor.processor.waveTableFiles[shapeCB.getSelectedItemIndex()-UserShapeSet];
+//            osc.setWaveTables(file);
+//            vts.getParameter(ac.getName() + " ShapeSet")->setValueNotifyingHost(1.);
+//            updateShapeCB();
+//        }
+//        else
         {
             float normValue = shapeCB.getSelectedItemIndex() / float(UserShapeSet+1);
             vts.getParameter(ac.getName() + " ShapeSet")->setValueNotifyingHost(normValue);
@@ -628,19 +607,19 @@ void LFOModule::updateShapeCB()
     {
         shapeCB.addItem(oscShapeSetNames[i], shapeCB.getNumItems()+1);
     }
-    for (auto file : editor.processor.waveTableFiles)
-    {
-        shapeCB.addItem(file.getFileNameWithoutExtension(), shapeCB.getNumItems()+1);
-    }
-    shapeCB.addItem(oscShapeSetNames[oscShapeSetNames.size()-1], shapeCB.getNumItems()+1);
+//    for (auto file : editor.processor.waveTableFiles)
+//    {
+//        shapeCB.addItem(file.getFileNameWithoutExtension(), shapeCB.getNumItems()+1);
+//    }
+//    shapeCB.addItem(oscShapeSetNames[oscShapeSetNames.size()-1], shapeCB.getNumItems()+1);
     
     RangedAudioParameter* param = vts.getParameter(ac.getName() + " ShapeSet");
     int index = param->getNormalisableRange().convertFrom0to1(param->getValue());
-    if (index == UserShapeSet)
-    {
-        LowFreqOscillator& osc = static_cast<LowFreqOscillator&>(ac);
-        index = editor.processor.waveTableFiles.indexOf(osc.getWaveTableFile())+UserShapeSet;
-    }
+//    if (index == UserShapeSet)
+//    {
+//        LowFreqOscillator& osc = static_cast<LowFreqOscillator&>(ac);
+//        index = editor.processor.waveTableFiles.indexOf(osc.getWaveTableFile())+UserShapeSet;
+//    }
     shapeCB.setSelectedItemIndex(index, dontSendNotification);
 }
 
@@ -648,7 +627,7 @@ void LFOModule::displayRate()
 {
     double rate = getDial(LowFreqRate)->getSlider().getValue();
     rateLabel.setColour(Label::textColourId, Colours::gold.withBrightness(0.95f));
-    rateLabel.setText(String(rate, 2) + " Hz", dontSendNotification);
+    rateLabel.setText(String(rate, 3) + " Hz", dontSendNotification);
 }
 
 void LFOModule::displayRateMapping(MappingTarget* mt)
@@ -660,7 +639,7 @@ void LFOModule::displayRateMapping(MappingTarget* mt)
         rateLabel.setColour(Label::textColourId, mt->getColour());
         String text;
         if (mt->isBipolar()) text = String::charToString(0xb1);
-        else text = (value >= 0 ? "+" : "");
+        else text = (value >= 0 ? "+" : "-");
         text += String(fabs(value), 2) + " Hz";
         rateLabel.setText(text, dontSendNotification);
     }

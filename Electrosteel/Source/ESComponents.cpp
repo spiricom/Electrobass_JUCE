@@ -156,9 +156,12 @@ void MappingTarget::updateRange()
     auto min = dial->getSlider().getMinimum();
     auto max = dial->getSlider().getMaximum();
     auto interval = dial->getSlider().getInterval();
+    auto skew = dial->getSlider().getSkewFactor();
     
     if (model.isBipolar()) setRange((min-max)*0.5, (max-min)*0.5, interval);
     else setRange(min-value, max-value, interval);
+    
+    setSkewFactor(skew);
 }
 
 void MappingTarget::setText(String s)
@@ -182,9 +185,9 @@ void MappingTarget::removeMapping()
     model.removeMapping(true);
 }
 
-void MappingTarget::setMappingRange(float end)
+void MappingTarget::setMappingRange(float end, bool sendChangeEvent)
 {
-    model.setMappingRange(end, true);
+    model.setMappingRange(end, sendChangeEvent);
 }
 
 void MappingTarget::menuCallback(int result, MappingTarget* target)
@@ -209,9 +212,9 @@ label(displayName, displayName)
 
     if (isSource)
     {
-    s = std::make_unique<MappingSource>
-    (editor, *editor.processor.getMappingSource(paramName), displayName);
-    addAndMakeVisible(s.get());
+        s = std::make_unique<MappingSource>
+        (editor, *editor.processor.getMappingSource(paramName), displayName);
+        addAndMakeVisible(s.get());
     }
     else if (isTarget)
     {
@@ -287,7 +290,7 @@ void ESDial::paint(Graphics& g)
         // Should not reflect negative values
         auto sliderNorm = slider.valueToProportionOfLength(slider.getValue());
         // Should reflect negative values
-        auto targetNorm = t[i]->getValue() / t[i]->getRange().getLength();
+        auto targetNorm = t[i]->valueToProportionOfLength(t[i]->getValue()) - sliderNorm;
         auto currentAngle = startAngle + (sliderNorm * (endAngle - startAngle));
         auto angle = currentAngle + (targetNorm * (endAngle - startAngle));
         angle = fmax(startAngle, fmin(angle, endAngle));
@@ -374,6 +377,26 @@ void ESDial::sliderValueChanged(Slider* s)
     if (MappingTarget* mt = dynamic_cast<MappingTarget*>(s))
     {
         mt->setMappingRange(mt->getValue());
+    }
+    else
+    {
+        if (lastSliderValue != DBL_MAX && slider.getSkewFactor() != 1.)
+        {
+            // Get the proportional change of the main slider
+            auto pd = slider.valueToProportionOfLength(slider.getValue()) -
+            slider.valueToProportionOfLength(lastSliderValue);
+            for (auto mt : t)
+            {
+                // Add it to the proportional value of the targets
+                auto mtp = mt->valueToProportionOfLength(mt->getValue()) + pd;
+                if (0. <= mtp && mtp <= 1.)
+                {
+                    // Take the real value of the new proportional value and subtract the real change of the main slider
+                    mt->setMappingRange(mt->proportionOfLengthToValue(mtp)-(slider.getValue()-lastSliderValue), false);
+                }
+            }
+        }
+        lastSliderValue = slider.getValue();
     }
     repaint();
 }

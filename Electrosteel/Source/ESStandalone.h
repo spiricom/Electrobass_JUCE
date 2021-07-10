@@ -120,7 +120,7 @@ public:
     {
         processor.reset (createPluginFilterOfType (AudioProcessor::wrapperType_Standalone));
         processor->disableNonMainBuses();
-        processor->setRateAndBufferSizeDetails (44100, 512);
+        processor->setRateAndBufferSizeDetails (44100, 128);
         
         int inChannels = (channelConfiguration.size() > 0 ? channelConfiguration[0].numIns
                           : processor->getMainBusNumInputChannels());

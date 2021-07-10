@@ -17,7 +17,8 @@ class ESAudioProcessor;
 
 //==============================================================================
 
-class Oscillator : public AudioComponent
+class Oscillator : public AudioComponent,
+                   public MappingSourceModel
 {
 public:
     //==============================================================================
@@ -30,13 +31,10 @@ public:
     void tick(float output[][NUM_STRINGS]);
     
     //==============================================================================
-    void addWaveTables(File& file);
-    void clearWaveTables();
-    void waveTablesChanged();
-    
-    void setWaveTableFile(File table) { waveTableFile = table; }
+    void setWaveTables(File file);
     File& getWaveTableFile() { return waveTableFile; }
-    void setLoadingTables(bool loading) { loadingTables = loading; }
+    
+    OscShapeSet getCurrentShapeSet() { return currentShapeSet; }
     
 private:
     
@@ -46,18 +44,18 @@ private:
     
     tMBSaw saw[NUM_STRINGS];
     tMBPulse pulse[NUM_STRINGS];
-    
-    tWaveTableS* tables = nullptr;
     tWaveOscS wave[NUM_STRINGS];
+    
+    float* oscValues[NUM_STRINGS];
 
     std::unique_ptr<SmoothedParameter> filterSend;
     
     std::atomic<float>* afpShapeSet;
-    OscShapeSet currentShapeSet;
+    OscShapeSet currentShapeSet = ShapeSetNil;
+    
+    float outSamples[2][NUM_STRINGS];
     
     File waveTableFile;
-    OwnedArray<AudioBuffer<float>> waveTables;
-    int lastNumWaveTables = 0;
     bool loadingTables = false;
 };
 
@@ -81,27 +79,18 @@ public:
     void noteOff(int voice, float velocity);
     
     //==============================================================================
-    void addWaveTables(File& file);
-    void clearWaveTables();
-    void waveTablesChanged();
-    
-    void setWaveTableFile(File table) { waveTableFile = table; }
+    void setWaveTables(File file);
     File& getWaveTableFile() { return waveTableFile; }
-    void setLoadingTables(bool loading) { loadingTables = loading; }
     
 private:
     RangedAudioParameter* sync;
     
     tCycle lfo[NUM_STRINGS];
-    
-    tWaveTableS* tables = nullptr;
     tWaveOscS wave[NUM_STRINGS];
     
     float* lfoValues[NUM_STRINGS];
     float phaseReset;
     
     File waveTableFile;
-    OwnedArray<AudioBuffer<float>> waveTables;
-    int lastNumWaveTables = 0;
     bool loadingTables = false;
 };

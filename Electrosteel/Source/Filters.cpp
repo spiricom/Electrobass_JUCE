@@ -18,13 +18,16 @@ AudioComponent(n, p, vts, cFilterParams, true)
 {    
     for (int i = 0; i < NUM_STRINGS; i++)
     {
-        tEfficientSVF_init(&svf[i], SVFTypeLowpass, 2000.f, 0.4f, &processor.leaf);
+        tEfficientSVF_init(&svf[i], SVFTypeLowpass, 2000.f, 0.7f, &processor.leaf);
     }
 }
 
 Filter::~Filter()
 {
-    
+    for (int i = 0; i < NUM_STRINGS; i++)
+    {
+        tEfficientSVF_free(&svf[i]);
+    }
 }
 
 void Filter::prepareToPlay (double sampleRate, int samplesPerBlock)
@@ -36,7 +39,7 @@ void Filter::frame()
 {
     for (int i = 0; i < params.size(); ++i)
     {
-        for (int v = 0; v < NUM_STRINGS; ++v)
+        for (int v = 0; v < processor.numVoicesActive; ++v)
         {
             lastValues[i][v] = values[i][v];
             values[i][v] = ref[i][v]->skip(currentBlockSize);
@@ -52,7 +55,7 @@ void Filter::tick(float* samples)
     
     float a = sampleInBlock * invBlockSize;
     
-    for (int v = 0; v < NUM_STRINGS; ++v)
+    for (int v = 0; v < processor.numVoicesActive; ++v)
     {
         float midiCutoff = values[FilterCutoff][v]*a + lastValues[FilterCutoff][v]*(1.f-a);
         float keyFollow = values[FilterKeyFollow][v]*a + lastValues[FilterKeyFollow][v]*(1.f-a);
@@ -71,6 +74,4 @@ void Filter::tick(float* samples)
     }
     
     sampleInBlock++;
-    
-
 }

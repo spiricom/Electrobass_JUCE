@@ -124,6 +124,7 @@ bipolar(bipolar),
 colour(colour),
 modelProcessor(p)
 {
+    p.addMappingSource(this);
 }
 
 MappingSourceModel::~MappingSourceModel()
@@ -214,6 +215,8 @@ void MappingTargetModel::removeMapping(bool sendChangeEvent)
 
 void MappingTargetModel::setMappingRange(float end, bool sendChangeEvent)
 {
+    if (currentSource == nullptr) return;
+    
     value = end;
     float start = 0.f;
     for (auto param : targetParameters)
