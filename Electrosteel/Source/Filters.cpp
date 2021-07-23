@@ -18,15 +18,21 @@ AudioComponent(n, p, vts, cFilterParams, true)
 {    
     for (int i = 0; i < NUM_STRINGS; i++)
     {
-        tEfficientSVF_init(&svf[i], SVFTypeLowpass, 2000.f, 0.7f, &processor.leaf);
+        tEfficientSVF_init(&lowpass[i], SVFTypeLowpass, 2000.f, 0.7f, &processor.leaf);
+        tEfficientSVF_init(&highpass[i], SVFTypeHighpass, 2000.f, 0.7f, &processor.leaf);
+        tEfficientSVF_init(&bandpass[i], SVFTypeBandpass, 2000.f, 0.7f, &processor.leaf);
     }
+    
+    afpFilterType = vts.getRawParameterValue(n + " Type");
 }
 
 Filter::~Filter()
 {
     for (int i = 0; i < NUM_STRINGS; i++)
     {
-        tEfficientSVF_free(&svf[i]);
+        tEfficientSVF_free(&lowpass[i]);
+        tEfficientSVF_free(&highpass[i]);
+        tEfficientSVF_free(&bandpass[i]);
     }
 }
 
@@ -37,29 +43,40 @@ void Filter::prepareToPlay (double sampleRate, int samplesPerBlock)
 
 void Filter::frame()
 {
-    for (int i = 0; i < params.size(); ++i)
-    {
-        for (int v = 0; v < processor.numVoicesActive; ++v)
-        {
-            lastValues[i][v] = values[i][v];
-            values[i][v] = ref[i][v]->skip(currentBlockSize);
-        }
-    }
     sampleInBlock = 0;
     enabled = afpEnabled == nullptr || *afpEnabled > 0;
+    
+    currentFilterType = FilterType(int(*afpFilterType));
+    switch (currentFilterType) {
+        case LowpassFilter:
+            filterTick = &Filter::lowpassTick;
+            break;
+            
+        case HighpassFilter:
+            filterTick = &Filter::highpassTick;
+            break;
+            
+        case BandpassFilter:
+            filterTick = &Filter::bandpassTick;
+            break;
+            
+        default:
+            filterTick = &Filter::lowpassTick;
+            break;
+    }
 }
 
 void Filter::tick(float* samples)
 {
     if (!enabled) return;
     
-    float a = sampleInBlock * invBlockSize;
+//    float a = sampleInBlock * invBlockSize;
     
     for (int v = 0; v < processor.numVoicesActive; ++v)
     {
-        float midiCutoff = values[FilterCutoff][v]*a + lastValues[FilterCutoff][v]*(1.f-a);
-        float keyFollow = values[FilterKeyFollow][v]*a + lastValues[FilterKeyFollow][v]*(1.f-a);
-        float q = values[FilterResonance][v]*a + lastValues[FilterResonance][v]*(1.f-a);
+        float midiCutoff = quickParams[FilterCutoff][v]->tick();
+        float keyFollow = quickParams[FilterKeyFollow][v]->tick();
+        float q = quickParams[FilterResonance][v]->tick();
         
         LEAF_clip(0.f, keyFollow, 1.f);
         
@@ -69,9 +86,27 @@ void Filter::tick(float* samples)
         cutoff = LEAF_clip(0.0f, cutoff*32.f, 4095.f);
         q = q < 0.f ? 0.f : q;
         
-        tEfficientSVF_setFreqAndQ(&svf[v], cutoff, q);
-        samples[v] = tEfficientSVF_tick(&svf[v], samples[v]);
+        (this->*filterTick)(samples[v], v, cutoff, q);
     }
     
     sampleInBlock++;
 }
+
+void Filter::lowpassTick(float& sample, int v, float cutoff, float q)
+{
+    tEfficientSVF_setFreqAndQ(&lowpass[v], cutoff, q);
+    sample = tEfficientSVF_tick(&lowpass[v], sample);
+}
+
+void Filter::highpassTick(float& sample, int v, float cutoff, float q)
+{
+    tEfficientSVF_setFreqAndQ(&highpass[v], cutoff, q);
+    sample = tEfficientSVF_tick(&highpass[v], sample);
+}
+
+void Filter::bandpassTick(float& sample, int v, float cutoff, float q)
+{
+    tEfficientSVF_setFreqAndQ(&bandpass[v], cutoff, q);
+    sample = tEfficientSVF_tick(&bandpass[v], sample);
+}
+

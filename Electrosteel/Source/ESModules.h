@@ -38,7 +38,7 @@ public:
     void resized() override;
     void paint(Graphics &g) override;
     
-    void sliderValueChanged(Slider* slider) override {};
+    void sliderValueChanged(Slider* slider) override;
     void labelTextChanged(Label* label) override {};
     void comboBoxChanged(ComboBox *comboBox) override {};
     
@@ -167,13 +167,9 @@ public:
     void resized() override;
     void sliderValueChanged(Slider* slider) override;
     void labelTextChanged(Label* label) override;
-    void comboBoxChanged(ComboBox *comboBox) override;
     
-    void mouseDown(const MouseEvent &) override;
     void mouseEnter(const MouseEvent &) override;
     void mouseExit(const MouseEvent &) override;
-    
-    void updateShapeCB();
     
     void displayRate();
     void displayRateMapping(MappingTarget* mt);

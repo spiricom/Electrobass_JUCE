@@ -83,7 +83,7 @@ public:
     void setMapping(MappingSource* source, float end);
     void removeMapping();
     
-    void setMappingRange(float end, bool sendChangeEvent = true);
+    void setMappingRange(float end, bool sendChangeEvent);
     
     static void menuCallback(int result, MappingTarget* target);
     

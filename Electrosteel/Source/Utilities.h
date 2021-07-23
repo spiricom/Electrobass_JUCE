@@ -23,19 +23,14 @@ public:
     ParameterHook() :
     sourceName(""),
     hook(&value0),
-    buffered(false),
-    size(1),
     min(0.0f),
     length(0.0f)
     {
     }
     
-    ParameterHook(String sourceName, float* hook, bool buffered,
-                  int size, float min, float max) :
+    ParameterHook(String sourceName, float* hook, float min, float max) :
     sourceName(sourceName),
     hook(hook),
-    buffered(buffered),
-    size(size),
     min(min),
     length(max-min)
     {
@@ -44,15 +39,13 @@ public:
     ~ParameterHook() {};
     
     //==============================================================================
-    float getValue(int i)
+    float getValue()
     {
-        return ((hook[i%size] * length) + min);
+        return ((*hook * length) + min);
     }
 
     String sourceName;
     float* hook;
-    bool buffered;
-    int size;
     float min, length;
 
 private:
@@ -70,20 +63,25 @@ public:
                       String paramId, int voice);
     ~SmoothedParameter() {};
     //==============================================================================
-    float tick(int i);
+    float tick();
     float tickNoHooks();
-float skip(int numSamples);
+    void tickSkews();
+    void tickSkewsNoHooks();
     
+    float skip(int numSamples);
+
     float get();
+    float get(int i);
     float** getValuePointerArray();
+    float** getValuePointerArray(int i);
     
     ParameterHook& getHook(int index);
     void setHook(const String& sourceName, int index,
-                 const float* hook, int size, float min, float max);
+                 const float* hook, float min, float max);
     void resetHook(int index);
     void updateHook(int index, const float* hook);
     
-    void setRange(int index, float min, float max);
+    void setHookRange(int index, float min, float max);
     
     float getStart();
     float getEnd();
@@ -91,6 +89,9 @@ float skip(int numSamples);
     void prepareToPlay(double sampleRate, int samplesPerBlock);
     
     int getVoice() { return voice; }
+    float getInvSkew() { return 1.f/range.skew; }
+    NormalisableRange<float>& getRange() { return range; }
+    float getRawValue() { return *raw; }
     
 private:
     ESAudioProcessor& processor;
@@ -98,8 +99,11 @@ private:
     SmoothedValue<float, ValueSmoothingTypes::Linear> smoothed;
     std::atomic<float>* raw;
     RangedAudioParameter* parameter;
-    float value = 0.0f;
+    NormalisableRange<float> range;
+    float value = 0.f;
     float* valuePointer = &value;
+    float values[MAX_NUM_UNIQUE_SKEWS];
+    float* valuePointers[MAX_NUM_UNIQUE_SKEWS];
     float value0 = 0.0f;
     ParameterHook hooks[3];
     int voice;
@@ -111,20 +115,18 @@ private:
 class MappingSourceModel
 {
 public:
-    MappingSourceModel(ESAudioProcessor& p, const String &name, float** source,
-                       bool perVoice, bool buffered, bool bipolar, Colour colour);
+    MappingSourceModel(ESAudioProcessor& p, const String &name,
+                       bool perVoice, bool bipolar, Colour colour);
     ~MappingSourceModel();
     
     bool isBipolar() { return bipolar; }
 
-    float** getValuePointerArray();
+    float** getValuePointerArray(int i);
     int getNumSourcePointers();
-    int getBufferSize();
     
     String name;
-    float** source;
+    float** sources[MAX_NUM_UNIQUE_SKEWS];
     int numSourcePointers;
-    bool buffered;
     bool bipolar;
     Colour colour;
     
@@ -141,7 +143,7 @@ class MappingTargetModel
 {
 public:
     
-    MappingTargetModel(ESAudioProcessor& p, const String &name,
+    MappingTargetModel(ESAudioProcessor& p, const String &name, 
                        OwnedArray<SmoothedParameter>& targetParameters, int index);
     ~MappingTargetModel();
     
@@ -161,8 +163,9 @@ public:
     MappingSourceModel* currentSource;
     OwnedArray<SmoothedParameter>& targetParameters;
     int index;
+    float start, end;
     bool bipolar;
-    float value;
+    float invSkew;
     
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MappingTargetModel)
 };
@@ -200,7 +203,7 @@ protected:
     StringArray paramNames;
     
     // First size needs to be at least the greatest number of params for any component
-    SmoothedParameter* ref[10][NUM_STRINGS];
+    SmoothedParameter* quickParams[10][NUM_STRINGS];
     
     OwnedArray<MappingTargetModel> targets;
     
@@ -212,9 +215,6 @@ protected:
     float invBlockSize = 0.f;
     
     int sampleInBlock;
-    
-    float lastValues[10][NUM_STRINGS];
-    float values[10][NUM_STRINGS];
     
     bool toggleable;
 };

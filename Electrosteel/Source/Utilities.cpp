@@ -18,28 +18,61 @@ voice(voice)
 {
     raw = vts.getRawParameterValue(paramId);
     parameter = vts.getParameter(paramId);
-    for (int i = 0; i < 3; ++i) hooks[i] = ParameterHook("", &value0, false, 1, 0.0f, 0.0f);
+    range = parameter->getNormalisableRange();
+    for (int i = 0; i < 3; ++i) hooks[i] = ParameterHook("", &value0, 0.0f, 0.0f);
     processor.params.add(this);
+    
+    for (int i = 0; i < processor.numInvParameterSkews; ++i)
+    {
+        values[i] = value;
+        valuePointers[i] = &values[i];
+    }
 }
 
-float SmoothedParameter::tick(int i)
+float SmoothedParameter::tick()
 {
-    float target = raw->load() +
-    hooks[0].getValue(i) + hooks[1].getValue(i) + hooks[2].getValue(i);
+    // Well defined inter-thread behavior PROBABLY shouldn't be an issue here, so
+    // the atomic is just slowing us down. memory_order_relaxed seems fastest, marginally
+    float target = raw->load(std::memory_order_relaxed) +
+    hooks[0].getValue() + hooks[1].getValue() + hooks[2].getValue();
     smoothed.setTargetValue(target);
     return value = smoothed.getNextValue();
 }
 
 float SmoothedParameter::tickNoHooks()
 {
-    smoothed.setTargetValue(*raw);
+    smoothed.setTargetValue(raw->load(std::memory_order_relaxed));
     return value = smoothed.getNextValue();
+}
+
+void SmoothedParameter::tickSkews()
+{
+    float target = raw->load(std::memory_order_relaxed) +
+    hooks[0].getValue() + hooks[1].getValue() + hooks[2].getValue();
+    smoothed.setTargetValue(target);
+    value = smoothed.getNextValue();
+    for (int i = 0; i < processor.numInvParameterSkews; ++i)
+    {
+        float invSkew = processor.quickInvParameterSkews[i];
+        values[i] = powf(value, invSkew);
+    }
+}
+
+void SmoothedParameter::tickSkewsNoHooks()
+{
+    smoothed.setTargetValue(raw->load(std::memory_order_relaxed));
+    value = smoothed.getNextValue();
+    for (int i = 0; i < processor.numInvParameterSkews; ++i)
+    {
+        float invSkew = processor.quickInvParameterSkews[i];
+        values[i] = powf(value, invSkew);
+    }
 }
 
 float SmoothedParameter::skip(int numSamples)
 {
-    float target = raw->load() +
-    hooks[0].getValue(numSamples) + hooks[1].getValue(numSamples) + hooks[2].getValue(numSamples);
+    float target = raw->load(std::memory_order_relaxed) +
+    hooks[0].getValue() + hooks[1].getValue() + hooks[2].getValue();
     smoothed.setTargetValue(target);
     return value = smoothed.skip(numSamples);
 }
@@ -49,9 +82,19 @@ float SmoothedParameter::get()
     return value;
 }
 
+float SmoothedParameter::get(int i)
+{
+    return values[i];
+}
+
 float** SmoothedParameter::getValuePointerArray()
 {
     return &valuePointer;
+}
+
+float** SmoothedParameter::getValuePointerArray(int i)
+{
+    return &valuePointers[i];
 }
 
 ParameterHook& SmoothedParameter::getHook(int index)
@@ -60,12 +103,10 @@ ParameterHook& SmoothedParameter::getHook(int index)
 }
 
 void SmoothedParameter::setHook(const String& sourceName, int index,
-             const float* hook, int size, float min, float max)
+             const float* hook, float min, float max)
 {
     hooks[index].sourceName = sourceName;
     hooks[index].hook = (float*)hook;
-    hooks[index].buffered = true;
-    hooks[index].size = size;
     hooks[index].min = min;
     hooks[index].length = max-min;
 }
@@ -74,8 +115,6 @@ void SmoothedParameter::resetHook(int index)
 {
     hooks[index].sourceName = "";
     hooks[index].hook = &value0;
-    hooks[index].buffered = false;
-    hooks[index].size = 1;
     hooks[index].min = 0.0f;
     hooks[index].length = 0.0f;
 }
@@ -85,7 +124,7 @@ void SmoothedParameter::updateHook(int index, const float* hook)
     hooks[index].hook = (float*)hook;
 }
 
-void SmoothedParameter::setRange(int index, float min, float max)
+void SmoothedParameter::setHookRange(int index, float min, float max)
 {
     hooks[index].min = min;
     hooks[index].length = max-min;
@@ -104,22 +143,15 @@ float SmoothedParameter::getEnd()
 void SmoothedParameter::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
     smoothed.reset(sampleRate, 0.010);
-    for (int i = 0; i < 3; ++i)
-    {
-        if (hooks[i].buffered)
-            hooks[i].size = samplesPerBlock;
-    }
 }
 
 //==============================================================================
 //==============================================================================
 
-MappingSourceModel::MappingSourceModel(ESAudioProcessor& p, const String &name, float** source,
-                                       bool perVoice, bool buffered, bool bipolar, Colour colour) :
+MappingSourceModel::MappingSourceModel(ESAudioProcessor& p, const String &name,
+                                       bool perVoice, bool bipolar, Colour colour) :
 name(name),
-source(source),
 numSourcePointers(perVoice ? NUM_STRINGS : 1),
-buffered(buffered),
 bipolar(bipolar),
 colour(colour),
 modelProcessor(p)
@@ -132,19 +164,14 @@ MappingSourceModel::~MappingSourceModel()
     
 }
 
-float** MappingSourceModel::getValuePointerArray()
+float** MappingSourceModel::getValuePointerArray(int i)
 {
-    return source;
+    return sources[i];
 }
 
 int MappingSourceModel::getNumSourcePointers()
 {
     return numSourcePointers;
-}
-
-int MappingSourceModel::getBufferSize()
-{
-    return buffered ? modelProcessor.getBlockSize() : 1;
 }
 
 //==============================================================================
@@ -159,6 +186,7 @@ currentSource(nullptr),
 targetParameters(targetParameters),
 index(index)
 {
+    invSkew = targetParameters[0]->getInvSkew();
 }
 
 MappingTargetModel::~MappingTargetModel()
@@ -167,32 +195,35 @@ MappingTargetModel::~MappingTargetModel()
 
 void MappingTargetModel::prepareToPlay()
 {
-    // Check for any active hooks
-    ParameterHook& hook = targetParameters[0]->getHook(index);
-    if (hook.sourceName.isNotEmpty())
-    {
-        // Remake the hook in case the block size has changed
-        MappingSourceModel* source = processor.sourceMap[hook.sourceName];
-        setMapping(source, hook.min+hook.length, false);
-    }
+   
 }
 
-void MappingTargetModel::setMapping(MappingSourceModel* source, float end, bool sendChangeEvent)
+void MappingTargetModel::setMapping(MappingSourceModel* source, float e, bool sendChangeEvent)
 {
     if (source == nullptr) return;
     
     currentSource = source;
     bipolar = source->isBipolar();
     
-    value = end;
-    
     int i = 0;
     int n = source->getNumSourcePointers();
-    float start = 0.f;
+    
+    start = 0.f;
+    end = e;
+    if (bipolar)
+    {
+        NormalisableRange<float>& range = targetParameters[0]->getRange();
+        float center = targetParameters[0]->getRawValue();
+        float pCenter = range.convertTo0to1(center);
+        float pOffset = range.convertTo0to1(range.getRange().clipValue(center+end)) - pCenter;
+        start = range.convertFrom0to1(jlimit(0.f, 1.f, pCenter-pOffset)) - center;
+    }
+    
+    float* sourceArray =
+    *source->getValuePointerArray(processor.invParameterSkews.indexOf(invSkew));
     for (auto param : targetParameters)
     {
-        param->setHook(source->name, index, source->getValuePointerArray()[i%n],
-                       source->getBufferSize(), start, end);
+        param->setHook(source->name, index, &sourceArray[i%n], start, end);
         i++;
     }
     
@@ -202,8 +233,7 @@ void MappingTargetModel::setMapping(MappingSourceModel* source, float end, bool 
 void MappingTargetModel::removeMapping(bool sendChangeEvent)
 {
     currentSource = nullptr;
-    
-    value = 0.f;
+    start = end = 0.f;
     
     for (auto param : targetParameters)
     {
@@ -213,15 +243,24 @@ void MappingTargetModel::removeMapping(bool sendChangeEvent)
     if (onMappingChange != nullptr) onMappingChange(sendChangeEvent);
 }
 
-void MappingTargetModel::setMappingRange(float end, bool sendChangeEvent)
+void MappingTargetModel::setMappingRange(float e, bool sendChangeEvent)
 {
     if (currentSource == nullptr) return;
     
-    value = end;
-    float start = 0.f;
+    start = 0.f;
+    end = e;
+    if (bipolar)
+    {
+        NormalisableRange<float>& range = targetParameters[0]->getRange();
+        float center = targetParameters[0]->getRawValue();
+        float pCenter = range.convertTo0to1(center);
+        float pOffset = range.convertTo0to1(range.getRange().clipValue(center+end)) - pCenter;
+        start = range.convertFrom0to1(jlimit(0.f, 1.f, pCenter-pOffset)) - center;
+    }
+    
     for (auto param : targetParameters)
     {
-        param->setRange(index, start, end);
+        param->setHookRange(index, start, end);
     }
     DBG(String(start) + " " + String(end));
     
@@ -246,9 +285,7 @@ toggleable(toggleable)
         for (int v = 0; v < NUM_STRINGS; ++v)
         {
             params[i]->add(new SmoothedParameter(p, vts, pn, v));
-            ref[i][v] = params[i]->getUnchecked(v);
-            lastValues[i][v] = 0.f;
-            values[i][v] = 0.f;
+            quickParams[i][v] = params[i]->getUnchecked(v);
         }
         for (int t = 0; t < 3; ++t)
         {

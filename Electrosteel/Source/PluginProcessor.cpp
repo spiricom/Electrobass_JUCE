@@ -21,9 +21,13 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
     //==============================================================================
     // Top level parameters
     
+    // Ensure the first skew is always 1.f
+    invParameterSkews.add(1.f);
+    
     n = "Master";
     auto normRange = NormalisableRange<float>(0., 2.);
     normRange.setSkewForCentre(1.);
+    invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
     layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, 1.));
     paramIds.add(n);
     
@@ -32,6 +36,7 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
         n = "M" + String(i+1);
         normRange = NormalisableRange<float>(0., 1.);
         normRange.setSkewForCentre(.5);
+        invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
         layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, 0.));
         paramIds.add(n);
     }
@@ -41,6 +46,7 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
         n = "PitchBend" + String(i);
         normRange = NormalisableRange<float>(-24., 24.);
         normRange.setSkewForCentre(.0);
+        invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
         layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, 0.));
         paramIds.add(n);
     }
@@ -63,6 +69,7 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
             
             normRange = NormalisableRange<float>(min, max);
             normRange.setSkewForCentre(center);
+            invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
             layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, def));
             paramIds.add(n);
         }
@@ -74,6 +81,7 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
         n = "Osc" + String(i+1) + " FilterSend";
         normRange = NormalisableRange<float>(0., 1.);
         normRange.setSkewForCentre(.5);
+        invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
         layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, 0.5f));
         paramIds.add(n);
     }
@@ -87,7 +95,7 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
         paramIds.add(n);
         
         n = "Filter" + String(i+1) + " Type";
-        layout.add (std::make_unique<AudioParameterChoice> (n, n, oscShapeSetNames, 0));
+        layout.add (std::make_unique<AudioParameterChoice> (n, n, filterTypeNames, 0));
         paramIds.add(n);
         
         for (int j = 0; j < cFilterParams.size(); ++j)
@@ -100,6 +108,7 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
             n = "Filter" + String(i+1) + " " + cFilterParams[j];
             normRange = NormalisableRange<float>(min, max);
             normRange.setSkewForCentre(center);
+            invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
             layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, def));
             paramIds.add(n);
         }
@@ -108,6 +117,7 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
     n = "Filter Series-Parallel Mix";
     normRange = NormalisableRange<float>(0., 1.);
     normRange.setSkewForCentre(.5);
+    invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
     layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, 0.));
     paramIds.add(n);
     
@@ -124,6 +134,7 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
             n = "Envelope" + String(i+1) + " " + cEnvelopeParams[j];
             normRange = NormalisableRange<float>(min, max);
             normRange.setSkewForCentre(center);
+            invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
             layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, def));
             paramIds.add(n);
         }
@@ -146,11 +157,14 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
             n = "LFO" + String(i+1) + " " + cLowFreqParams[j];
             normRange = NormalisableRange<float>(min, max);
             normRange.setSkewForCentre(center);
+            invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
             layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, def));
             paramIds.add(n);
         }
         
-        n = "LFO" + String(i+1) + " ShapeSet";        layout.add (std::make_unique<AudioParameterChoice> (n, n, oscShapeSetNames, 0));
+        n = "LFO" + String(i+1) + " ShapeSet";
+        layout.add (std::make_unique<AudioParameterChoice> (n, n, lfoShapeSetNames,
+                                                            SineTriLFOShapeSet));
         paramIds.add(n);
         
         n = "LFO" + String(i+1) + " Sync";
@@ -169,6 +183,7 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
         n = "Output " + cOutputParams[i];
         normRange = NormalisableRange<float>(min, max);
         normRange.setSkewForCentre(center);
+        invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
         layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, def));
         paramIds.add(n);
     }
@@ -184,6 +199,12 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
     for (int i = 0; i < paramIds.size(); ++i)
     {
         DBG(paramIds[i] + ": " + String(i));
+    }
+    
+    numInvParameterSkews = invParameterSkews.size();
+    for (int i = 0; i < numInvParameterSkews; ++i)
+    {
+        quickInvParameterSkews[i] = invParameterSkews[i];
     }
     
     return layout;
@@ -245,8 +266,13 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
     {
         String n = "M" + String(i+1);
         ccParams.add(new SmoothedParameter(*this, vts, n, -1));
-        ccSources.add(new MappingSourceModel(*this, n, ccParams.getLast()->getValuePointerArray(),
-                                             false, false, false, Colours::red.withSaturation(0.9f)));
+        ccSources.add(new MappingSourceModel(*this, n,
+                                             false, false, Colours::red.withSaturation(0.9f)));
+        for (int i = 0; i < invParameterSkews.size(); ++i)
+        {
+            float** source = ccParams.getLast()->getValuePointerArray(i);
+            ccSources.getLast()->sources[i] = source;
+        }
         sourceIds.add(n);
     }
     
@@ -285,6 +311,11 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
         }
     }
     copedentFundamental = 21.f;
+    
+    for (int i = 1; i < CopedentColumnNil; ++i)
+    {
+        pedalValues[i] = vts.getRawParameterValue(cCopedentColumnNames[i]);
+    }
     
     // A couple of default mappings that will be used if nothing has been saved
     Mapping defaultFilter1Cutoff;
@@ -367,18 +398,7 @@ void ESAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
         param->prepareToPlay(sampleRate, samplesPerBlock);
     }
     
-    if (initialMappings.isEmpty())
-    {
-        // Source addresses have likely changed, so remap existing mappings
-        for (auto target : targetMap)
-        {
-            if (target->currentSource != nullptr)
-            {
-                target->setMapping(target->currentSource, target->value, false);
-            }
-        }
-    }
-    else // First prepareToPlay
+    if (!initialMappings.isEmpty()) // First prepareToPlay
     {
         for (Mapping m : initialMappings)
         {
@@ -469,7 +489,7 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
                         data.add(sourceIds.indexOf(source->name));//SourceID
                         data.add(paramIds.indexOf(target->name));//TargetID
                         data.add(t);//TargetIndex
-                        data.add(target->value);//Value
+                        data.add(target->end);//Mapping range length
                     }
                 }
             }
@@ -500,18 +520,11 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
         Array<String> tableSetsToSend;
         for (auto osc : oscs)
         {
-            if (osc->getCurrentShapeSet() == UserShapeSet)
+            if (osc->getCurrentShapeSet() == UserOscShapeSet)
             {
                 tableSetsToSend.addIfNotAlreadyThere(osc->getWaveTableFile().getFullPathName());
             }
         }
-//        for (auto lfo : lfos)
-//        {
-//            if (lfo->getCurrentShapeSet() == UserShapeSet)
-//            {
-//                tableSetsToSend.addIfNotAlreadyThere(lfo->getWaveTableFile().getFullPathName());
-//            }
-//        }
         
         // Send out each set of tables
         for (auto setName : tableSetsToSend)
@@ -601,7 +614,7 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
         float maxAboveZero = 0.0f;
         for (int c = 1; c < CopedentColumnNil; ++c)
         {
-            if (vts.getParameter(cCopedentColumnNames[c])->getValue() > 0)
+            if (pedalValues[c]->load() > 0)
             {
                 float value = copedentArray.getReference(c)[r];
                 if (value < minBelowZero) minBelowZero = value;
@@ -638,10 +651,10 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
     {
         for (int i = 0; i < ccParams.size(); ++i)
         {
-            ccParams[i]->tickNoHooks();
+            ccParams[i]->tickSkewsNoHooks();
         }
         
-        float globalPitchBend = pitchBendParams[0]->tick(s);
+        float globalPitchBend = pitchBendParams[0]->tick();
         
         float samples[2][NUM_STRINGS];
         float outputSamples[2];
@@ -1031,11 +1044,6 @@ void ESAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
         root.setProperty("osc" + String(i+1) + "File",
                          oscs[i]->getWaveTableFile().getFullPathName(), nullptr);
     }
-    for (int i = 0; i < NUM_LFOS; ++i)
-    {
-        root.setProperty("lfo" + String(i+1) + "File",
-                         lfos[i]->getWaveTableFile().getFullPathName(), nullptr);
-    }
     
     // Audio processor value tree state
     ValueTree state = vts.copyState();
@@ -1067,7 +1075,7 @@ void ESAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
             ValueTree mapping ("m" + String(i++));
             mapping.setProperty("s", source->name, nullptr);
             mapping.setProperty("t", target->name, nullptr);
-            mapping.setProperty("v", target->value, nullptr);
+            mapping.setProperty("v", target->end, nullptr);
             mappings.addChild(mapping, -1, nullptr);
         }
     }
@@ -1102,14 +1110,6 @@ void ESAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
                 DBG("Pre osc set state: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
                 oscs[i]->setWaveTables(wav);
                 DBG("Post osc set state: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
-            }
-        }
-        for (int i = 0; i < NUM_LFOS; ++i)
-        {
-            File wav (xml->getStringAttribute("lfo" + String(i+1) + "File"));
-            if (wav.exists())
-            {
-                lfos[i]->setWaveTables(wav);
             }
         }
         

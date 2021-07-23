@@ -31,26 +31,18 @@ void Output::prepareToPlay (double sampleRate, int samplesPerBlock)
 
 void Output::frame()
 {
-    for (int i = 0; i < params.size(); ++i)
-    {
-        for (int v = 0; v < processor.numVoicesActive; ++v)
-        {
-            lastValues[i][v] = values[i][v];
-            values[i][v] = ref[i][v]->skip(currentBlockSize);
-        }
-    }
     sampleInBlock = 0;
 }
 
 void Output::tick(float input[NUM_STRINGS], float output[2], int numChannels)
 {
-    float a = sampleInBlock * invBlockSize;
+//    float a = sampleInBlock * invBlockSize;
     float m = master->tickNoHooks();
     
     for (int v = 0; v < processor.numVoicesActive; ++v)
     {
-        float amp = values[OutputAmp][v]*a + lastValues[OutputAmp][v]*(1.f-a);
-        float pan = values[OutputPan][v]*a + lastValues[OutputPan][v]*(1.f-a);
+        float amp = quickParams[OutputAmp][v]->tick();
+        float pan = quickParams[OutputPan][v]->tick();
         amp = amp < 0.f ? 0.f : amp;
         pan = LEAF_clip(-1.f, pan, 1.f);
         

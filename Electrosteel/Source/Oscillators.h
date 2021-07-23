@@ -40,18 +40,21 @@ private:
     
     void (Oscillator::*shapeTick)(float& sample, int v, float freq, float shape);
     void sawPulseTick(float& sample, int v, float freq, float shape);
+    void sineTriTick(float& sample, int v, float freq, float shape);
     void userTick(float& sample, int v, float freq, float shape);
     
     tMBSaw saw[NUM_STRINGS];
     tMBPulse pulse[NUM_STRINGS];
+    tCycle sine[NUM_STRINGS];
+    tMBTriangle tri[NUM_STRINGS];
     tWaveOscS wave[NUM_STRINGS];
     
-    float* oscValues[NUM_STRINGS];
+    float* sourceValues[MAX_NUM_UNIQUE_SKEWS];
 
     std::unique_ptr<SmoothedParameter> filterSend;
     
     std::atomic<float>* afpShapeSet;
-    OscShapeSet currentShapeSet = ShapeSetNil;
+    OscShapeSet currentShapeSet = OscShapeSetNil;
     
     float outSamples[2][NUM_STRINGS];
     
@@ -79,18 +82,26 @@ public:
     void noteOff(int voice, float velocity);
     
     //==============================================================================
-    void setWaveTables(File file);
-    File& getWaveTableFile() { return waveTableFile; }
+    LFOShapeSet getCurrentShapeSet() { return currentShapeSet; }
     
 private:
+    
+    void (LowFreqOscillator::*shapeTick)(float& sample, int v, float freq, float shape);
+    void sawSquareTick(float& sample, int v, float freq, float shape);
+    void sineTriTick(float& sample, int v, float freq, float shape);
+    void userTick(float& sample, int v, float freq, float shape);
+    
     RangedAudioParameter* sync;
     
-    tCycle lfo[NUM_STRINGS];
+    tSawtooth saw[NUM_STRINGS];
+    tSquare square[NUM_STRINGS];
+    tCycle sine[NUM_STRINGS];
+    tTriangle tri[NUM_STRINGS];
     tWaveOscS wave[NUM_STRINGS];
     
-    float* lfoValues[NUM_STRINGS];
+    float* sourceValues[MAX_NUM_UNIQUE_SKEWS];
     float phaseReset;
     
-    File waveTableFile;
-    bool loadingTables = false;
+    std::atomic<float>* afpShapeSet;
+    LFOShapeSet currentShapeSet = LFOShapeSetNil;
 };

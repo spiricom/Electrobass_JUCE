@@ -84,7 +84,15 @@ void ESModule::resized()
     
     if (ac.isToggleable())
     {
-        enabledToggle.setBounds(0, 0, h*0.2f, h*0.2f);
+        enabledToggle.setBounds(0, 0, 25, 25);
+    }
+}
+
+void ESModule::sliderValueChanged(Slider* slider)
+{
+    if (MappingTarget* mt = dynamic_cast<MappingTarget*>(slider))
+    {
+        dynamic_cast<ESDial*>(mt->getParentComponent())->sliderValueChanged(slider);
     }
 }
 
@@ -196,6 +204,7 @@ void OscModule::sliderValueChanged(Slider* slider)
     }
     else if (MappingTarget* mt = dynamic_cast<MappingTarget*>(slider))
     {
+        dynamic_cast<ESDial*>(mt->getParentComponent())->sliderValueChanged(slider);
         displayPitchMapping(mt);
     }
 }
@@ -239,17 +248,17 @@ void OscModule::comboBoxChanged(ComboBox *comboBox)
                 updateShapeCB();
             });
         }
-        else if (shapeCB.getSelectedItemIndex() >= UserShapeSet)
+        else if (shapeCB.getSelectedItemIndex() >= UserOscShapeSet)
         {
             Oscillator& osc = static_cast<Oscillator&>(ac);
-            File file = editor.processor.waveTableFiles[shapeCB.getSelectedItemIndex()-UserShapeSet];
+            File file = editor.processor.waveTableFiles[shapeCB.getSelectedItemIndex()-UserOscShapeSet];
             osc.setWaveTables(file);
             vts.getParameter(ac.getName() + " ShapeSet")->setValueNotifyingHost(1.);
             updateShapeCB();
         }
         else
         {
-            float normValue = shapeCB.getSelectedItemIndex() / float(UserShapeSet+1);
+            float normValue = shapeCB.getSelectedItemIndex() / float(OscShapeSetNil);
             vts.getParameter(ac.getName() + " ShapeSet")->setValueNotifyingHost(normValue);
             updateShapeCB();
         }
@@ -289,10 +298,10 @@ void OscModule::updateShapeCB()
     
     RangedAudioParameter* param = vts.getParameter(ac.getName() + " ShapeSet");
     int index = param->getNormalisableRange().convertFrom0to1(param->getValue());
-    if (index == UserShapeSet)
+    if (index == UserOscShapeSet)
     {
         Oscillator& osc = static_cast<Oscillator&>(ac);
-        index = editor.processor.waveTableFiles.indexOf(osc.getWaveTableFile())+UserShapeSet;
+        index = editor.processor.waveTableFiles.indexOf(osc.getWaveTableFile())+UserOscShapeSet;
     }
     shapeCB.setSelectedItemIndex(index, dontSendNotification);
 }
@@ -312,23 +321,60 @@ void OscModule::displayPitchMapping(MappingTarget* mt)
         displayPitch();
         return;
     }
-    auto value = mt->getValue();
+    auto start = mt->getModel().start;
+    auto end = mt->getModel().end;
     if (mt->getParentComponent() == getDial(OscPitch))
     {
         pitchLabel.setColour(Label::textColourId, mt->getColour());
         String text;
-        if (mt->isBipolar()) text = String::charToString(0xb1);
-        else text = (value >= 0 ? "+" : "-");
-        text += String(fabs(value), 3);
+        if (mt->isBipolar())
+        {
+            if (mt->getSkewFactor() != 1. && start != end)
+            {
+                text = (start >= 0 ? "+" : "-");
+                text += String(fabs(start), 3) + "/";
+                text += (end >= 0 ? "+" : "-");
+                text += String(fabs(end), 3);
+            }
+            else
+            {
+                text = String::charToString(0xb1);
+                text += String(fabs(mt->getModel().end), 3);
+            }
+        }
+        else
+        {
+            text = (end >= 0 ? "+" : "-");
+            text += String(fabs(end), 3);
+        }
         pitchLabel.setText(text, dontSendNotification);
     }
     else if (mt->getParentComponent() == getDial(OscFine))
     {
         pitchLabel.setColour(Label::textColourId, mt->getColour());
         String text;
-        if (mt->isBipolar()) text = String::charToString(0xb1);
-        else text = (value >= 0 ? "+" : "-");
-        text += String(fabs(value*0.01), 3);
+        start *= 0.01f;
+        end *= 0.01f;
+        if (mt->isBipolar())
+        {
+            if (mt->getSkewFactor() != 1. && start != end)
+            {
+                text = (start >= 0 ? "+" : "-");
+                text += String(fabs(start), 3) + "/";
+                text += (end >= 0 ? "+" : "-");
+                text += String(fabs(end), 3);
+            }
+            else
+            {
+                text = String::charToString(0xb1);
+                text += String(fabs(mt->getModel().end), 3);
+            }
+        }
+        else
+        {
+            text = (end >= 0 ? "+" : "-");
+            text += String(fabs(end), 3);
+        }
         pitchLabel.setText(text, dontSendNotification);
     }
 }
@@ -379,8 +425,8 @@ void FilterModule::resized()
     cutoffLabel.setBoundsRelative(relLeftMargin+relDialWidth+0.5f*relDialSpacing,
                                   0.42f, relDialWidth, 0.16f);
     
-    typeCB.setBoundsRelative(relLeftMargin+relDialWidth, 0.01f,
-                             relDialWidth+relDialSpacing, 0.16f);
+    typeCB.setBounds(enabledToggle.getRight(), 4, getWidth()*0.3f, enabledToggle.getHeight()-4);
+//    typeCB.setBoundsRelative(relLeftMargin, 0.01f, relDialWidth+relDialSpacing, 0.16f);
 }
 
 void FilterModule::sliderValueChanged(Slider* slider)
@@ -391,6 +437,7 @@ void FilterModule::sliderValueChanged(Slider* slider)
     }
     else if (MappingTarget* mt = dynamic_cast<MappingTarget*>(slider))
     {
+        dynamic_cast<ESDial*>(mt->getParentComponent())->sliderValueChanged(slider);
         displayCutoffMapping(mt);
     }
 }
@@ -429,12 +476,30 @@ void FilterModule::displayCutoffMapping(MappingTarget* mt)
     if (!mt->isActive()) displayCutoff();
     else if (mt->getParentComponent() == getDial(FilterCutoff))
     {
-        auto value = mt->getValue();
+        auto start = mt->getModel().start;
+        auto end = mt->getModel().end;
         cutoffLabel.setColour(Label::textColourId, mt->getColour());
         String text;
-        if (mt->isBipolar()) text = String::charToString(0xb1);
-        else text = (value >= 0 ? "+" : "-");
-        text += String(fabs(value), 2);
+        if (mt->isBipolar())
+        {
+            if (mt->getSkewFactor() != 1. && start != end)
+            {
+                text = (start >= 0 ? "+" : "-");
+                text += String(fabs(start), 2) + "/";
+                text += (end >= 0 ? "+" : "-");
+                text += String(fabs(end), 2);
+            }
+            else
+            {
+                text = String::charToString(0xb1);
+                text += String(fabs(mt->getModel().end), 2);
+            }
+        }
+        else
+        {
+            text = (end >= 0 ? "+" : "-");
+            text += String(fabs(end), 2);
+        }
         cutoffLabel.setText(text, dontSendNotification);
     }
 }
@@ -484,13 +549,11 @@ chooser("Select wavetable file or folder...",
     addAndMakeVisible(rateLabel);
     
     RangedAudioParameter* set = vts.getParameter(ac.getName() + " ShapeSet");
-    updateShapeCB();
+    shapeCB.addItemList(lfoShapeSetNames, 1);
     shapeCB.setSelectedItemIndex(set->convertFrom0to1(set->getValue()), dontSendNotification);
     shapeCB.setLookAndFeel(&laf);
-    shapeCB.addListener(this);
-    shapeCB.addMouseListener(this, true);
     addAndMakeVisible(shapeCB);
-//    comboBoxAttachments.add(new ComboBoxAttachment(vts, ac.getName() + " ShapeSet", shapeCB));
+    comboBoxAttachments.add(new ComboBoxAttachment(vts, ac.getName() + " ShapeSet", shapeCB));
     
     syncToggle.setButtonText("Sync to note-on");
     addAndMakeVisible(syncToggle);
@@ -525,6 +588,7 @@ void LFOModule::sliderValueChanged(Slider* slider)
     }
     else if (MappingTarget* mt = dynamic_cast<MappingTarget*>(slider))
     {
+        dynamic_cast<ESDial*>(mt->getParentComponent())->sliderValueChanged(slider);
         displayRateMapping(mt);
     }
 }
@@ -536,55 +600,6 @@ void LFOModule::labelTextChanged(Label* label)
         auto value = rateLabel.getText().getDoubleValue();
         getDial(LowFreqRate)->getSlider().setValue(value);
     }
-}
-
-void LFOModule::comboBoxChanged(ComboBox *comboBox)
-{
-    if (comboBox == &shapeCB)
-    {
-//        if (shapeCB.getSelectedItemIndex() == shapeCB.getNumItems()-1)
-//        {
-//            chooser.launchAsync (FileBrowserComponent::openMode |
-//                                 FileBrowserComponent::canSelectFiles |
-//                                 FileBrowserComponent::canSelectDirectories,
-//                                 [this] (const FileChooser& chooser)
-//                                 {
-//                String path = chooser.getResult().getFullPathName();
-//                LowFreqOscillator& osc = static_cast<LowFreqOscillator&>(ac);
-//
-//                if (path.isEmpty())
-//                {
-//                    shapeCB.setSelectedItemIndex(0, dontSendNotification);
-//                    vts.getParameter(ac.getName() + " ShapeSet")->setValueNotifyingHost(0.);
-//                    return;
-//                }
-//
-//                File file(path);
-//                osc.setWaveTables(file);
-//                vts.getParameter(ac.getName() + " ShapeSet")->setValueNotifyingHost(1.);
-//                updateShapeCB();
-//            });
-//        }
-//        else if (shapeCB.getSelectedItemIndex() >= UserShapeSet)
-//        {
-//            LowFreqOscillator& osc = static_cast<LowFreqOscillator&>(ac);
-//            File file = editor.processor.waveTableFiles[shapeCB.getSelectedItemIndex()-UserShapeSet];
-//            osc.setWaveTables(file);
-//            vts.getParameter(ac.getName() + " ShapeSet")->setValueNotifyingHost(1.);
-//            updateShapeCB();
-//        }
-//        else
-        {
-            float normValue = shapeCB.getSelectedItemIndex() / float(UserShapeSet+1);
-            vts.getParameter(ac.getName() + " ShapeSet")->setValueNotifyingHost(normValue);
-            updateShapeCB();
-        }
-    }
-}
-
-void LFOModule::mouseDown(const MouseEvent& e)
-{
-    updateShapeCB();
 }
 
 void LFOModule::mouseEnter(const MouseEvent& e)
@@ -600,29 +615,6 @@ void LFOModule::mouseExit(const MouseEvent& e)
     displayRate();
 }
 
-void LFOModule::updateShapeCB()
-{
-    shapeCB.clear(dontSendNotification);
-    for (int i = 0; i < oscShapeSetNames.size()-1; ++i)
-    {
-        shapeCB.addItem(oscShapeSetNames[i], shapeCB.getNumItems()+1);
-    }
-//    for (auto file : editor.processor.waveTableFiles)
-//    {
-//        shapeCB.addItem(file.getFileNameWithoutExtension(), shapeCB.getNumItems()+1);
-//    }
-//    shapeCB.addItem(oscShapeSetNames[oscShapeSetNames.size()-1], shapeCB.getNumItems()+1);
-    
-    RangedAudioParameter* param = vts.getParameter(ac.getName() + " ShapeSet");
-    int index = param->getNormalisableRange().convertFrom0to1(param->getValue());
-//    if (index == UserShapeSet)
-//    {
-//        LowFreqOscillator& osc = static_cast<LowFreqOscillator&>(ac);
-//        index = editor.processor.waveTableFiles.indexOf(osc.getWaveTableFile())+UserShapeSet;
-//    }
-    shapeCB.setSelectedItemIndex(index, dontSendNotification);
-}
-
 void LFOModule::displayRate()
 {
     double rate = getDial(LowFreqRate)->getSlider().getValue();
@@ -635,12 +627,30 @@ void LFOModule::displayRateMapping(MappingTarget* mt)
     if (!mt->isActive()) displayRate();
     else if (mt->getParentComponent() == getDial(LowFreqRate))
     {
-        auto value = mt->getValue();
+        auto start = mt->getModel().start;
+        auto end = mt->getModel().end;
         rateLabel.setColour(Label::textColourId, mt->getColour());
         String text;
-        if (mt->isBipolar()) text = String::charToString(0xb1);
-        else text = (value >= 0 ? "+" : "-");
-        text += String(fabs(value), 2) + " Hz";
+        if (mt->isBipolar())
+        {
+            if (mt->getSkewFactor() != 1. && start != end)
+            {
+                text = (start >= 0 ? "+" : "-");
+                text += String(fabs(start), 2) + "/";
+                text += (end >= 0 ? "+" : "-");
+                text += String(fabs(end), 2) + " Hz";
+            }
+            else
+            {
+                text = String::charToString(0xb1);
+                text += String(fabs(mt->getModel().end), 2) + " Hz";
+            }
+        }
+        else
+        {
+            text = (end >= 0 ? "+" : "-");
+            text += String(fabs(end), 2) + " Hz";
+        }
         rateLabel.setText(text, dontSendNotification);
     }
 }

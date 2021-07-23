@@ -36,7 +36,8 @@ private:
     RangedAudioParameter* useVelocity;
     
     tADSRT envs[NUM_STRINGS];
-    float* envValues[NUM_STRINGS];
+    
+    float* sourceValues[MAX_NUM_UNIQUE_SKEWS];
     
     float expBuffer[EXP_BUFFER_SIZE];
     float expBufferSizeMinusOne;

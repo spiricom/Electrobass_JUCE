@@ -28,6 +28,8 @@
 #define EXP_BUFFER_SIZE 128
 #define DECAY_EXP_BUFFER_SIZE 512
 
+#define MAX_NUM_UNIQUE_SKEWS 10
+
 //==============================================================================
 
 typedef enum _OscParam
@@ -48,17 +50,19 @@ static const std::vector<std::vector<float>> vOscInit = {
     { -24.0f, 24.0f, 0.0f, 0.0f }, //Pitch
     { -100.f, 100.f, 0.0f, 0.0f }, //Fine
     { 0.0f, 1.0f, 0.0f, 0.5f },  //Shape
-    { 0.0f, 1.0f, 1.0f, 0.5f },   //Volume
+    { 0.0f, 2.0f, 1.0f, 1.0f },  //Amp
 };
 
 typedef enum _OscShapeSet
 {
-    SawPulseShapeSet = 0,
-    UserShapeSet,
-    ShapeSetNil
+    SawPulseOscShapeSet = 0,
+    SineTriOscShapeSet,
+    UserOscShapeSet,
+    OscShapeSetNil
 } OscShapeSet;
 static const StringArray oscShapeSetNames = {
-    "SawPulse",
+    "Saw-Pulse",
+    "Sine-Tri",
     "Select file..."
 };
 
@@ -78,9 +82,19 @@ static const StringArray cLowFreqParams = {
 };
 static const std::vector<std::vector<float>> vLowFreqInit = {
     { 0.0f, 30.f, 1.0f, 2.f },  //Rate
-//    { 0.0f, 1.f, 0.f, 0.5f },  //Rate
     { 0.0f, 1.0f, 0.0f, 0.5f },  //Shape
     { 0.0f, 1.0f, 0.0f, 0.5f } // Phase Offset
+};
+
+typedef enum _LFOShapeSet
+{
+    SineTriLFOShapeSet = 0,
+    SawPulseLFOShapeSet,
+    LFOShapeSetNil
+} LFOShapeSet;
+static const StringArray lfoShapeSetNames = {
+    "Sine-Tri",
+    "Saw-Square"
 };
 
 //==============================================================================
@@ -107,11 +121,13 @@ typedef enum _FilterType
 {
     LowpassFilter = 0,
     HighpassFilter,
+    BandpassFilter,
     FilterTypeNil
 } FilterType;
 static const StringArray filterTypeNames = {
     "Lowpass",
-    "Highpass"
+    "Highpass",
+    "Bandpass"
 };
 
 //==============================================================================

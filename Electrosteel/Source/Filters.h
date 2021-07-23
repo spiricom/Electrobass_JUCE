@@ -28,5 +28,16 @@ public:
     void tick(float* samples);
     
 private:
-    tEfficientSVF svf[NUM_STRINGS];
+    
+    void (Filter::*filterTick)(float& sample, int v, float cutoff, float q);
+    void lowpassTick(float& sample, int v, float cutoff, float q);
+    void highpassTick(float& sample, int v, float cutoff, float q);
+    void bandpassTick(float& sample, int v, float cutoff, float q);
+    
+    tEfficientSVF lowpass[NUM_STRINGS];
+    tEfficientSVF highpass[NUM_STRINGS];
+    tEfficientSVF bandpass[NUM_STRINGS];
+    
+    std::atomic<float>* afpFilterType;
+    FilterType currentFilterType = FilterTypeNil;
 };

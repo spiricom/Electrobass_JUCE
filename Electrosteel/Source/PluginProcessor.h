@@ -140,6 +140,8 @@ public:
     
     Array<Mapping> initialMappings;
     
+    std::atomic<float>* pedalValues[CopedentColumnNil];
+    
     Array<Array<float>> copedentArray;
     float copedentFundamental;
     String copedentName = "";
@@ -148,6 +150,11 @@ public:
     int channelToString[NUM_CHANNELS+1];
     
     int numVoicesActive = 12;
+    
+    // Must be at least as large of the number of unique skews
+    Array<float> invParameterSkews;
+    float quickInvParameterSkews[MAX_NUM_UNIQUE_SKEWS];
+    int numInvParameterSkews;
     
 private:
     

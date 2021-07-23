@@ -133,7 +133,7 @@ void MappingTarget::updateValue(bool sendChangeEvent)
         setTextColour(model.currentSource->colour);
         setText(String(name.getTrailingIntValue()));
         
-        setValue(model.value, sendChangeEvent ? sendNotification : dontSendNotification);
+        setValue(model.end, sendChangeEvent ? sendNotification : dontSendNotification);
     }
     else
     {
@@ -158,8 +158,9 @@ void MappingTarget::updateRange()
     auto interval = dial->getSlider().getInterval();
     auto skew = dial->getSlider().getSkewFactor();
     
-    if (model.isBipolar()) setRange((min-max)*0.5, (max-min)*0.5, interval);
-    else setRange(min-value, max-value, interval);
+//    if (model.isBipolar()) setRange((min-value)*2., (max-value)*2., interval);
+//    else
+        setRange(min-value, max-value, interval);
     
     setSkewFactor(skew);
 }
@@ -226,7 +227,9 @@ label(displayName, displayName)
         for (int i = 0; i < numTargets; ++i)
         {
             t.add(new MappingTarget(editor, *editor.processor.getMappingTarget(paramName + " T" + String(i+1))));
-            t[i]->addListener(this);
+            // calling sliderValueChanged directly from the parent module instead
+            // so we can ensure ordering
+//            t[i]->addListener(this);
             t[i]->addMouseListener(this, true);
             addAndMakeVisible(t[i]);
         }
@@ -287,10 +290,9 @@ void ESDial::paint(Graphics& g)
             continue;
         }
         
-        // Should not reflect negative values
         auto sliderNorm = slider.valueToProportionOfLength(slider.getValue());
-        // Should reflect negative values
         auto targetNorm = t[i]->valueToProportionOfLength(t[i]->getValue()) - sliderNorm;
+        
         auto currentAngle = startAngle + (sliderNorm * (endAngle - startAngle));
         auto angle = currentAngle + (targetNorm * (endAngle - startAngle));
         angle = fmax(startAngle, fmin(angle, endAngle));
@@ -376,7 +378,7 @@ void ESDial::sliderValueChanged(Slider* s)
 {
     if (MappingTarget* mt = dynamic_cast<MappingTarget*>(s))
     {
-        mt->setMappingRange(mt->getValue());
+        mt->setMappingRange(mt->getValue(), true);
     }
     else
     {
@@ -395,6 +397,10 @@ void ESDial::sliderValueChanged(Slider* s)
                     mt->setMappingRange(mt->proportionOfLengthToValue(mtp)-(slider.getValue()-lastSliderValue), false);
                 }
             }
+        }
+        else
+        {
+            for (auto mt : t) mt->setMappingRange(mt->getValue(), true);
         }
         lastSliderValue = slider.getValue();
     }
