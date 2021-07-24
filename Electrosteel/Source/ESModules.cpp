@@ -43,8 +43,7 @@ outlineColour(Colours::transparentBlack)
         {
             t->addListener(this);
             t->addMouseListener(this, true);
-            t->updateRange();
-            t->updateValue(false);
+            t->update(true, false);
         }
     }
     
@@ -72,10 +71,6 @@ void ESModule::paint(Graphics &g)
 
 void ESModule::resized()
 {
-    Rectangle<int> area = getLocalBounds();
-    
-    float h = area.getHeight();
-    
     for (int i = 0; i < ac.getParamNames().size(); ++i)
     {
         dials[i]->setBoundsRelative(relLeftMargin + (relDialWidth+relDialSpacing)*i, relTopMargin,

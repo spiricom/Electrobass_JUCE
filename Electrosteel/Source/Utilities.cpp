@@ -19,7 +19,11 @@ voice(voice)
     raw = vts.getRawParameterValue(paramId);
     parameter = vts.getParameter(paramId);
     range = parameter->getNormalisableRange();
-    for (int i = 0; i < 3; ++i) hooks[i] = ParameterHook("", &value0, 0.0f, 0.0f);
+    for (int i = 0; i < 3; ++i)
+    {
+        hooks[i] = ParameterHook("", &value0, 0.0f, 0.0f);
+        whichHooks[i] = 0;
+    }
     processor.params.add(this);
     
     for (int i = 0; i < processor.numInvParameterSkews; ++i)
@@ -33,8 +37,11 @@ float SmoothedParameter::tick()
 {
     // Well defined inter-thread behavior PROBABLY shouldn't be an issue here, so
     // the atomic is just slowing us down. memory_order_relaxed seems fastest, marginally
-    float target = raw->load(std::memory_order_relaxed) +
-    hooks[0].getValue() + hooks[1].getValue() + hooks[2].getValue();
+    float target = raw->load(std::memory_order_relaxed);
+    for (int i = 0; i < numActiveHooks; ++i)
+    {
+        target += hooks[whichHooks[i]].getValue();
+    }
     smoothed.setTargetValue(target);
     return value = smoothed.getNextValue();
 }
@@ -47,8 +54,11 @@ float SmoothedParameter::tickNoHooks()
 
 void SmoothedParameter::tickSkews()
 {
-    float target = raw->load(std::memory_order_relaxed) +
-    hooks[0].getValue() + hooks[1].getValue() + hooks[2].getValue();
+    float target = raw->load(std::memory_order_relaxed);
+    for (int i = 0; i < numActiveHooks; ++i)
+    {
+        target += hooks[whichHooks[i]].getValue();
+    }
     smoothed.setTargetValue(target);
     value = smoothed.getNextValue();
     for (int i = 0; i < processor.numInvParameterSkews; ++i)
@@ -71,8 +81,11 @@ void SmoothedParameter::tickSkewsNoHooks()
 
 float SmoothedParameter::skip(int numSamples)
 {
-    float target = raw->load(std::memory_order_relaxed) +
-    hooks[0].getValue() + hooks[1].getValue() + hooks[2].getValue();
+    float target = raw->load(std::memory_order_relaxed);
+    for (int i = 0; i < numActiveHooks; ++i)
+    {
+        target += hooks[whichHooks[i]].getValue();
+    }
     smoothed.setTargetValue(target);
     return value = smoothed.skip(numSamples);
 }
@@ -109,14 +122,32 @@ void SmoothedParameter::setHook(const String& sourceName, int index,
     hooks[index].hook = (float*)hook;
     hooks[index].min = min;
     hooks[index].length = max-min;
+    
+    if (numActiveHooks < 3) whichHooks[numActiveHooks++] = index;
 }
 
 void SmoothedParameter::resetHook(int index)
 {
+    if (hooks[index].hook == &value0) return;
+    
     hooks[index].sourceName = "";
     hooks[index].hook = &value0;
     hooks[index].min = 0.0f;
     hooks[index].length = 0.0f;
+    
+    numActiveHooks--;
+    // If this hook was at the start or middle of the active
+    // hooks list, make sure to move shift the others forward
+    // Could do this with a nested loop but whatever...
+    if (whichHooks[0] == index)
+    {
+        whichHooks[0] = whichHooks[1];
+        whichHooks[1] = whichHooks[2];
+    }
+    else if (whichHooks[1] == index)
+    {
+        whichHooks[1] = whichHooks[2];
+    }
 }
 
 void SmoothedParameter::updateHook(int index, const float* hook)
@@ -202,6 +233,9 @@ void MappingTargetModel::setMapping(MappingSourceModel* source, float e, bool se
 {
     if (source == nullptr) return;
     
+    if (currentSource != nullptr) processor.sourceMappingCounts.getReference(currentSource->name)--;
+    processor.sourceMappingCounts.getReference(source->name)++;
+    
     currentSource = source;
     bipolar = source->isBipolar();
     
@@ -227,11 +261,13 @@ void MappingTargetModel::setMapping(MappingSourceModel* source, float e, bool se
         i++;
     }
     
-    if (onMappingChange != nullptr) onMappingChange(sendChangeEvent);
+    if (onMappingChange != nullptr) onMappingChange(true, sendChangeEvent);
 }
 
 void MappingTargetModel::removeMapping(bool sendChangeEvent)
 {
+    processor.sourceMappingCounts.getReference(currentSource->name)--;
+    
     currentSource = nullptr;
     start = end = 0.f;
     
@@ -240,10 +276,11 @@ void MappingTargetModel::removeMapping(bool sendChangeEvent)
         param->resetHook(index);
     }
     
-    if (onMappingChange != nullptr) onMappingChange(sendChangeEvent);
+    if (onMappingChange != nullptr) onMappingChange(true, sendChangeEvent);
 }
 
-void MappingTargetModel::setMappingRange(float e, bool sendChangeEvent)
+void MappingTargetModel::setMappingRange(float e, bool sendChangeEvent,
+                                         bool directChange, bool sendListenerNotif)
 {
     if (currentSource == nullptr) return;
     
@@ -264,7 +301,7 @@ void MappingTargetModel::setMappingRange(float e, bool sendChangeEvent)
     }
     DBG(String(start) + " " + String(end));
     
-    if (onMappingChange != nullptr) onMappingChange(sendChangeEvent);
+    if (onMappingChange != nullptr && sendChangeEvent) onMappingChange(directChange, sendListenerNotif);
 }
 
 //==============================================================================

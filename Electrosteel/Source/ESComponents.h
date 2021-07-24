@@ -74,8 +74,7 @@ public:
     void mouseDown(const MouseEvent& event) override;
     void mouseDrag(const MouseEvent& event) override;
     
-    void updateValue(bool sendChangeEvent);
-    void updateRange();
+    void update(bool directChange, bool sendListenerNotif);
 
     void setText(String s);
     void setTextColour(Colour colour);
@@ -83,8 +82,8 @@ public:
     void setMapping(MappingSource* source, float end);
     void removeMapping();
     
-    void setMappingRange(float end, bool sendChangeEvent);
-    
+    void setMappingRange(float end, bool directChange, bool sendListenerNotif);
+
     static void menuCallback(int result, MappingTarget* target);
     
 private:
@@ -93,6 +92,9 @@ private:
     
     String text;
     bool sliderEnabled;
+    double overflowValue;
+    double lastProportionalValue;
+    double lastProportionalParentValue;
     
     ESLookAndFeel laf;
     

@@ -77,7 +77,9 @@ void Oscillator::prepareToPlay (double sampleRate, int samplesPerBlock)
 void Oscillator::frame()
 {
     sampleInBlock = 0;
-    enabled = afpEnabled == nullptr || *afpEnabled > 0;
+    enabled = afpEnabled == nullptr || *afpEnabled > 0 ||
+    processor.sourceMappingCounts[getName()] > 0;
+    
     currentShapeSet = OscShapeSet(int(*afpShapeSet));
     switch (currentShapeSet) {
         case SawPulseOscShapeSet:
@@ -100,9 +102,7 @@ void Oscillator::frame()
 
 void Oscillator::tick(float output[][NUM_STRINGS])
 {
-    if (loadingTables) return;
-    
-    float e = enabled ? 1.f : 0.f;
+    if (loadingTables || !enabled) return;
 
     for (int v = 0; v < processor.numVoicesActive; ++v)
     {
@@ -131,7 +131,7 @@ void Oscillator::tick(float output[][NUM_STRINGS])
             sourceValues[i][v] = powf(normSample, invSkew);
         }
         
-        sample *= INV_NUM_OSCS*e;
+        sample *= INV_NUM_OSCS;
         
         float f = filterSend->tickNoHooks();
         
@@ -250,6 +250,8 @@ void LowFreqOscillator::prepareToPlay (double sampleRate, int samplesPerBlock)
 void LowFreqOscillator::frame()
 {
     sampleInBlock = 0;
+    // only enabled if it's actually being used as a source
+    enabled = processor.sourceMappingCounts[getName()] > 0;
     currentShapeSet = LFOShapeSet(int(*afpShapeSet));
     switch (currentShapeSet) {
         case SineTriLFOShapeSet:
@@ -268,6 +270,7 @@ void LowFreqOscillator::frame()
 
 void LowFreqOscillator::tick()
 {
+    if (!enabled) return;
 //    float a = sampleInBlock * invBlockSize;
     
     for (int v = 0; v < processor.numVoicesActive; v++)

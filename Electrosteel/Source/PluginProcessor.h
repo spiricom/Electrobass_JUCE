@@ -156,10 +156,13 @@ public:
     float quickInvParameterSkews[MAX_NUM_UNIQUE_SKEWS];
     int numInvParameterSkews;
     
+    HashMap<String, int> sourceMappingCounts;
+    
 private:
     
     StringArray paramIds;
     StringArray sourceIds;
+
     AudioProcessorValueTreeState vts;
     
     char dummy_memory[1];

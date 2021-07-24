@@ -69,9 +69,11 @@ sliderEnabled(false)
     setTextColour(Colours::transparentBlack);
     updateText();
     
-    model.onMappingChange = [this](bool sendChangeEvent) {
-        updateRange();
-        updateValue(sendChangeEvent);
+    model.onMappingChange = [this](bool directChange, bool sendListenerNotif) {
+        // Handle range and overflow saving and keeps the
+        // target slider (the box that you click and drag)
+        // in sync with the actual mapping value
+        update(directChange, sendListenerNotif);
     };
 }
 
@@ -124,8 +126,42 @@ void MappingTarget::mouseDrag(const MouseEvent& event)
     }
 }
 
-void MappingTarget::updateValue(bool sendChangeEvent)
+void MappingTarget::update(bool directChange, bool sendListenerNotif)
 {
+    ESDial* dial = dynamic_cast<ESDial*>(getParentComponent());
+    Slider& main = dial->getSlider();
+    
+    auto value = main.getValue();
+    auto min = main.getMinimum();
+    auto max = main.getMaximum();
+    auto interval = main.getInterval();
+    auto skew = main.getSkewFactor();
+    setSkewFactor(skew);
+    
+    // For initialization and when range is set directly by the target slider
+    // as opposed to by the parent dial, which require additional handling
+    if (directChange)
+    {
+        setRange(min-value, max-value, interval);
+        setValue(model.end, dontSendNotification);
+        lastProportionalValue = valueToProportionOfLength(getValue());
+        lastProportionalParentValue = main.valueToProportionOfLength(main.getValue());
+    }
+    else
+    {
+        auto proportionalParentDelta =
+        main.valueToProportionOfLength(main.getValue()) - lastProportionalParentValue;
+        overflowValue = lastProportionalValue + proportionalParentDelta;
+        
+        lastProportionalValue = overflowValue;
+        lastProportionalParentValue = main.valueToProportionOfLength(main.getValue());
+        
+        setRange(min-value, max-value, interval);
+        
+        model.setMappingRange(proportionOfLengthToValue(jlimit(0., 1., overflowValue)),
+                              false, false, false);
+    }
+
     if (model.currentSource != nullptr)
     {
         sliderEnabled = true;
@@ -133,7 +169,7 @@ void MappingTarget::updateValue(bool sendChangeEvent)
         setTextColour(model.currentSource->colour);
         setText(String(name.getTrailingIntValue()));
         
-        setValue(model.end, sendChangeEvent ? sendNotification : dontSendNotification);
+        setValue(model.end, sendListenerNotif ? sendNotification : dontSendNotification);
     }
     else
     {
@@ -143,26 +179,9 @@ void MappingTarget::updateValue(bool sendChangeEvent)
         
         // Guarantee a change event is sent to listeners and set to 0
         // Feels like there should be a better way to do this...
-        setValue(0.f, sendChangeEvent ? sendNotification : dontSendNotification);
-//        getParentComponent()->repaint();
+        setValue(0.f, sendListenerNotif ? sendNotification : dontSendNotification);
+        //        getParentComponent()->repaint();
     }
-}
-
-void MappingTarget::updateRange()
-{
-    ESDial* dial = dynamic_cast<ESDial*>(getParentComponent());
-    
-    auto value = dial->getSlider().getValue();
-    auto min = dial->getSlider().getMinimum();
-    auto max = dial->getSlider().getMaximum();
-    auto interval = dial->getSlider().getInterval();
-    auto skew = dial->getSlider().getSkewFactor();
-    
-//    if (model.isBipolar()) setRange((min-value)*2., (max-value)*2., interval);
-//    else
-        setRange(min-value, max-value, interval);
-    
-    setSkewFactor(skew);
 }
 
 void MappingTarget::setText(String s)
@@ -186,9 +205,9 @@ void MappingTarget::removeMapping()
     model.removeMapping(true);
 }
 
-void MappingTarget::setMappingRange(float end, bool sendChangeEvent)
+void MappingTarget::setMappingRange(float end, bool directChange, bool sendListenerNotif)
 {
-    model.setMappingRange(end, sendChangeEvent);
+    model.setMappingRange(end, true, directChange, sendListenerNotif);
 }
 
 void MappingTarget::menuCallback(int result, MappingTarget* target)
@@ -290,6 +309,8 @@ void ESDial::paint(Graphics& g)
             continue;
         }
         
+        if (!t[i]->isActive()) continue;
+        
         auto sliderNorm = slider.valueToProportionOfLength(slider.getValue());
         auto targetNorm = t[i]->valueToProportionOfLength(t[i]->getValue()) - sliderNorm;
         
@@ -368,39 +389,43 @@ void ESDial::resized()
 
 void ESDial::mouseDown(const MouseEvent& event)
 {
-    if (MappingTarget* mt = dynamic_cast<MappingTarget*>(event.originalComponent->getParentComponent()))
-    {
-        mt->updateRange();
-    }
+//    if (MappingTarget* mt = dynamic_cast<MappingTarget*>(event.originalComponent->getParentComponent()))
+//    {
+//        mt->updateRange();
+//    }
 }
 
 void ESDial::sliderValueChanged(Slider* s)
 {
     if (MappingTarget* mt = dynamic_cast<MappingTarget*>(s))
     {
-        mt->setMappingRange(mt->getValue(), true);
+        mt->setMappingRange(mt->getValue(), true, true);
     }
     else
     {
-        if (lastSliderValue != DBL_MAX && slider.getSkewFactor() != 1.)
+        if (lastSliderValue != DBL_MAX)
         {
-            // Get the proportional change of the main slider
-            auto pd = slider.valueToProportionOfLength(slider.getValue()) -
-            slider.valueToProportionOfLength(lastSliderValue);
-            for (auto mt : t)
+            if (slider.getSkewFactor() != 1.)
             {
-                // Add it to the proportional value of the targets
-                auto mtp = mt->valueToProportionOfLength(mt->getValue()) + pd;
-                if (0. <= mtp && mtp <= 1.)
+                // Get the proportional change of the main slider
+                auto pd = slider.valueToProportionOfLength(slider.getValue()) -
+                slider.valueToProportionOfLength(lastSliderValue);
+                for (auto mt : t)
                 {
-                    // Take the real value of the new proportional value and subtract the real change of the main slider
-                    mt->setMappingRange(mt->proportionOfLengthToValue(mtp)-(slider.getValue()-lastSliderValue), false);
+                    if (!mt->isActive()) continue;
+                    // Add it to the proportional value of the targets
+                    auto mtp = mt->valueToProportionOfLength(mt->getValue()) + pd;
+                    if (0. <= mtp && mtp <= 1.)
+                    {
+                        // Take the real value of the new proportional value and subtract the real change of the main slider
+                        mt->setMappingRange(mt->proportionOfLengthToValue(mtp)-(slider.getValue()-lastSliderValue), false, false);
+                    }
                 }
             }
-        }
-        else
-        {
-            for (auto mt : t) mt->setMappingRange(mt->getValue(), true);
+            else
+            {
+                for (auto mt : t) mt->setMappingRange(mt->getValue(), false, false);
+            }
         }
         lastSliderValue = slider.getValue();
     }

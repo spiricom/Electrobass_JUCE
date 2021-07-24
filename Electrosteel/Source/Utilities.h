@@ -39,8 +39,11 @@ public:
     ~ParameterHook() {};
     
     //==============================================================================
-    float getValue()
+    inline float getValue()
     {
+        // Significant bottleneck; gets called for each hook for each param
+        // for each voice every tick so if there's any possible
+        // optimization here it should be impactful
         return ((*hook * length) + min);
     }
 
@@ -106,6 +109,8 @@ private:
     float* valuePointers[MAX_NUM_UNIQUE_SKEWS];
     float value0 = 0.0f;
     ParameterHook hooks[3];
+    int numActiveHooks = 0;
+    int whichHooks[3];
     int voice;
 };
 
@@ -151,11 +156,12 @@ public:
 
     void setMapping(MappingSourceModel* source, float end, bool sendChangeEvent);
     void removeMapping(bool sendChangeEvent);
-    void setMappingRange(float end, bool sendChangeEvent);
+    void setMappingRange(float end, bool sendChangeEvent,
+                         bool sendListenerNotif, bool updateSlider);
     
     bool isBipolar() { return bipolar; }
     
-    std::function<void(bool)> onMappingChange = nullptr;
+    std::function<void(bool, bool)> onMappingChange = nullptr;
 
     ESAudioProcessor& processor;
     

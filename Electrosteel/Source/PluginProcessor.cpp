@@ -335,6 +335,7 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
     for (int i = 0; i < sourceIds.size(); ++i)
     {
         DBG(sourceIds[i] + ": " + String(i));
+        sourceMappingCounts.set(sourceIds[i], 0);
     }
     
     DBG("Post init: " + String(leaf.allocCount) + " " + String(leaf.freeCount));

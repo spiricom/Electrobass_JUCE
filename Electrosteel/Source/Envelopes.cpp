@@ -70,10 +70,13 @@ void Envelope::prepareToPlay (double sampleRate, int samplesPerBlock)
 void Envelope::frame()
 {
     sampleInBlock = 0;
+    // only enabled if it's actually being used as a source
+    enabled = processor.sourceMappingCounts[getName()] > 0;
 }
 
 void Envelope::tick()
 {
+    if (!enabled) return;
 //    float a = sampleInBlock * invBlockSize;
     
     for (int v = 0; v < processor.numVoicesActive; v++)

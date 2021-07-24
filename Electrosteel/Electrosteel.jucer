@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <JUCERPROJECT id="k0d1wn" name="Electrosteel" projectType="audioplug" displaySplashScreen="1"
-              jucerFormatVersion="1" version="0.2.0" companyName="Snyderphonics"
+              jucerFormatVersion="1" version="0.3.0" companyName="Snyderphonics"
               companyCopyright="Snyderphonics" companyWebsite="http://snyderphonics.com/"
               pluginCharacteristicsValue="pluginIsSynth,pluginProducesMidiOut,pluginWantsMidiIn"
-              defines="JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP=1" pluginAUMainType="'augn'"
-              pluginVST3Category="Instrument">
+              defines="JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP=1" pluginVST3Category="Instrument">
   <MAINGROUP id="zr98AB" name="Electrosteel">
     <GROUP id="{B8EA8B88-4125-0A91-2EA2-1CD3B3374012}" name="Source">
       <GROUP id="{0009C3F0-8120-7949-3FFD-6710367E3C60}" name="Resources">
