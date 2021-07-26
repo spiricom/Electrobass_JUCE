@@ -140,7 +140,7 @@ void MappingTarget::update(bool directChange, bool sendListenerNotif)
     
     // For initialization and when range is set directly by the target slider
     // as opposed to by the parent dial, which require additional handling
-    if (directChange)
+    if (directChange && model.currentSource != nullptr)
     {
         setRange(min-value, max-value, interval);
         setValue(model.end, dontSendNotification);

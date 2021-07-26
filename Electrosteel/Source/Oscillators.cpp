@@ -106,10 +106,13 @@ void Oscillator::tick(float output[][NUM_STRINGS])
 
     for (int v = 0; v < processor.numVoicesActive; ++v)
     {
-        float pitch = quickParams[OscPitch][v]->tick();
-        float fine = quickParams[OscFine][v]->tick();
-        float shape = quickParams[OscShape][v]->tick();
-        float amp = quickParams[OscAmp][v]->tick();
+        float pitch = quickParams[OscPitch][v]->tickNoSmoothing();
+        float fine = quickParams[OscFine][v]->tickNoSmoothing();
+        float shape = quickParams[OscShape][v]->tickNoSmoothing();
+        float amp = quickParams[OscAmp][v]->tickNoSmoothing();
+        
+        if (!processor.voiceIsSounding[v]) continue;
+        
         amp = amp < 0.f ? 0.f : amp;
         
         float note = processor.voiceNote[v];
@@ -133,7 +136,7 @@ void Oscillator::tick(float output[][NUM_STRINGS])
         
         sample *= INV_NUM_OSCS;
         
-        float f = filterSend->tickNoHooks();
+        float f = filterSend->tickNoHooksNoSmoothing();
         
         output[0][v] += sample*f;
         output[1][v] += sample*(1.f-f);
@@ -275,8 +278,8 @@ void LowFreqOscillator::tick()
     
     for (int v = 0; v < processor.numVoicesActive; v++)
     {
-        float rate = quickParams[LowFreqRate][v]->tick();
-        float shape = quickParams[LowFreqShape][v]->tick();
+        float rate = quickParams[LowFreqRate][v]->tickNoSmoothing();
+        float shape = quickParams[LowFreqShape][v]->tickNoSmoothing();
         // Even though our oscs can handle negative frequency I think allowing the rate to
         // go negative would be confusing behavior
         rate = rate < 0.f ? 0.f : rate;

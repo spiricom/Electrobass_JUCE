@@ -52,6 +52,21 @@ float SmoothedParameter::tickNoHooks()
     return value = smoothed.getNextValue();
 }
 
+float SmoothedParameter::tickNoSmoothing()
+{
+    float target = raw->load(std::memory_order_relaxed);
+    for (int i = 0; i < numActiveHooks; ++i)
+    {
+        target += hooks[whichHooks[i]].getValue();
+    }
+    return value = target;
+}
+
+float SmoothedParameter::tickNoHooksNoSmoothing()
+{
+    return value = raw->load(std::memory_order_relaxed);
+}
+
 void SmoothedParameter::tickSkews()
 {
     float target = raw->load(std::memory_order_relaxed);
@@ -72,6 +87,31 @@ void SmoothedParameter::tickSkewsNoHooks()
 {
     smoothed.setTargetValue(raw->load(std::memory_order_relaxed));
     value = smoothed.getNextValue();
+    for (int i = 0; i < processor.numInvParameterSkews; ++i)
+    {
+        float invSkew = processor.quickInvParameterSkews[i];
+        values[i] = powf(value, invSkew);
+    }
+}
+
+void SmoothedParameter::tickSkewsNoSmoothing()
+{
+    float target = raw->load(std::memory_order_relaxed);
+    for (int i = 0; i < numActiveHooks; ++i)
+    {
+        target += hooks[whichHooks[i]].getValue();
+    }
+    value = target;
+    for (int i = 0; i < processor.numInvParameterSkews; ++i)
+    {
+        float invSkew = processor.quickInvParameterSkews[i];
+        values[i] = powf(value, invSkew);
+    }
+}
+
+void SmoothedParameter::tickSkewsNoHooksNoSmoothing()
+{
+    value = raw->load(std::memory_order_relaxed);
     for (int i = 0; i < processor.numInvParameterSkews; ++i)
     {
         float invSkew = processor.quickInvParameterSkews[i];

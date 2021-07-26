@@ -149,6 +149,8 @@ public:
     
     int channelToString[NUM_CHANNELS+1];
     
+    bool voiceIsSounding[NUM_STRINGS];
+    
     int numVoicesActive = 12;
     
     // Must be at least as large of the number of unique skews

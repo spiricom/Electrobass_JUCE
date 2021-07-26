@@ -81,24 +81,29 @@ void Envelope::tick()
     
     for (int v = 0; v < processor.numVoicesActive; v++)
     {
-        float attack = quickParams[EnvelopeAttack][v]->tick();
-        float decay = quickParams[EnvelopeDecay][v]->tick();
-        float sustain = quickParams[EnvelopeSustain][v]->tick();
-        float release = quickParams[EnvelopeRelease][v]->tick();
-        float leak = quickParams[EnvelopeLeak][v]->tick();
+        float attack = quickParams[EnvelopeAttack][v]->tickNoSmoothing();
+        float decay = quickParams[EnvelopeDecay][v]->tickNoSmoothing();
+        float sustain = quickParams[EnvelopeSustain][v]->tickNoSmoothing();
+        float release = quickParams[EnvelopeRelease][v]->tickNoSmoothing();
+        float leak = quickParams[EnvelopeLeak][v]->tickNoSmoothing();
         attack = attack < 0.f ? 0.f : attack;
         decay = decay < 0.f ? 0.f : decay;
         sustain = sustain < 0.f ? 0.f : sustain;
         release = release < 0.f ? 0.f : release;
         leak = leak < 0.f ? 0.f : leak;
         
-        tADSRT_setAttack(&envs[v], expBuffer[(int)(attack * expBufferSizeMinusOne)] * 8192.0f);
-        tADSRT_setDecay(&envs[v], expBuffer[(int)(decay * expBufferSizeMinusOne)] * 8192.0f);
+//        tADSRT_setAttack(&envs[v], expBuffer[(int)(attack * expBufferSizeMinusOne)] * 8192.0f);
+//        tADSRT_setDecay(&envs[v], expBuffer[(int)(decay * expBufferSizeMinusOne)] * 8192.0f);
+//        tADSRT_setSustain(&envs[v], sustain);
+//        tADSRT_setRelease(&envs[v], expBuffer[(int)(release * expBufferSizeMinusOne)] * 8192.0f);
+        tADSRT_setAttack(&envs[v], attack);
+        tADSRT_setDecay(&envs[v], decay);
         tADSRT_setSustain(&envs[v], sustain);
-        tADSRT_setRelease(&envs[v], expBuffer[(int)(release * expBufferSizeMinusOne)] * 8192.0f);
+        tADSRT_setRelease(&envs[v], release);
         tADSRT_setLeakFactor(&envs[v], 0.99995f + 0.00005f*(1.f-leak));
 
         float value = tADSRT_tickNoInterp(&envs[v]);
+        processor.voiceIsSounding[v] = value > 0.f;
         
         sourceValues[0][v] = value;
         for (int i = 1; i < processor.numInvParameterSkews; ++i)

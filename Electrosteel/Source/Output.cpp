@@ -37,12 +37,12 @@ void Output::frame()
 void Output::tick(float input[NUM_STRINGS], float output[2], int numChannels)
 {
 //    float a = sampleInBlock * invBlockSize;
-    float m = master->tickNoHooks();
+    float m = master->tickNoHooksNoSmoothing();
     
     for (int v = 0; v < processor.numVoicesActive; ++v)
     {
-        float amp = quickParams[OutputAmp][v]->tick();
-        float pan = quickParams[OutputPan][v]->tick();
+        float amp = quickParams[OutputAmp][v]->tickNoSmoothing();
+        float pan = quickParams[OutputPan][v]->tickNoSmoothing();
         amp = amp < 0.f ? 0.f : amp;
         pan = LEAF_clip(-1.f, pan, 1.f);
         

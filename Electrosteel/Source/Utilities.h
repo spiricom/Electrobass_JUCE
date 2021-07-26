@@ -68,8 +68,12 @@ public:
     //==============================================================================
     float tick();
     float tickNoHooks();
+    float tickNoSmoothing();
+    float tickNoHooksNoSmoothing();
     void tickSkews();
     void tickSkewsNoHooks();
+    void tickSkewsNoSmoothing();
+    void tickSkewsNoHooksNoSmoothing();
     
     float skip(int numSamples);
 

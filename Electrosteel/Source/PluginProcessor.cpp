@@ -241,6 +241,7 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
     {
         tSimplePoly_init(&strings[i], 1, &leaf);
         voiceNote[i] = 0;
+        voiceIsSounding[i] = false;
     }
     
     for (int i = 0; i < 12; ++i)
@@ -643,7 +644,7 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
     }
     output->frame();
 
-    float parallel = seriesParallel->tickNoHooks();
+    float parallel = seriesParallel->tickNoHooksNoSmoothing();
     
     int mpe = mpeMode ? 1 : 0;
     int impe = 1-mpe;
@@ -652,19 +653,28 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
     {
         for (int i = 0; i < ccParams.size(); ++i)
         {
-            ccParams[i]->tickSkewsNoHooks();
+            ccParams[i]->tickSkewsNoHooksNoSmoothing();
         }
         
-        float globalPitchBend = pitchBendParams[0]->tick();
+        float globalPitchBend = pitchBendParams[0]->tickNoSmoothing();
         
         float samples[2][NUM_STRINGS];
         float outputSamples[2];
         outputSamples[0] = 0.f;
         outputSamples[1] = 0.f;
         
+        for (int i = 0; i < envs.size(); ++i)
+        {
+            envs[i]->tick();
+        }
+        for (int i = 0; i < lfos.size(); ++i)
+        {
+            lfos[i]->tick();
+        }
+        
         for (int v = 0; v < numVoicesActive; ++v)
         {
-            float pitchBend = globalPitchBend + pitchBendParams[v+1]->tickNoHooks();
+            float pitchBend = globalPitchBend + pitchBendParams[v+1]->tickNoHooksNoSmoothing();
             float tempNote = (float)tSimplePoly_getPitch(&strings[v*mpe], v*impe);
             tempNote += resolvedCopedent[v];
             tempNote += pitchBend;
@@ -675,14 +685,6 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
             samples[1][v] = 0.f;
         }
         
-        for (int i = 0; i < envs.size(); ++i)
-        {
-            envs[i]->tick();
-        }
-        for (int i = 0; i < lfos.size(); ++i)
-        {
-            lfos[i]->tick();
-        }
         for (int i = 0; i < oscs.size(); ++i)
         {
             oscs[i]->tick(samples);

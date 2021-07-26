@@ -74,9 +74,9 @@ void Filter::tick(float* samples)
     
     for (int v = 0; v < processor.numVoicesActive; ++v)
     {
-        float midiCutoff = quickParams[FilterCutoff][v]->tick();
-        float keyFollow = quickParams[FilterKeyFollow][v]->tick();
-        float q = quickParams[FilterResonance][v]->tick();
+        float midiCutoff = quickParams[FilterCutoff][v]->tickNoSmoothing();
+        float keyFollow = quickParams[FilterKeyFollow][v]->tickNoSmoothing();
+        float q = quickParams[FilterResonance][v]->tickNoSmoothing();
         
         LEAF_clip(0.f, keyFollow, 1.f);
         
