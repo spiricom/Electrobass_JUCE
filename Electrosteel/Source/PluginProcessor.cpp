@@ -653,10 +653,10 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
     {
         for (int i = 0; i < ccParams.size(); ++i)
         {
-            ccParams[i]->tickSkewsNoHooksNoSmoothing();
+            ccParams[i]->tickSkewsNoHooks();
         }
         
-        float globalPitchBend = pitchBendParams[0]->tickNoSmoothing();
+        float globalPitchBend = pitchBendParams[0]->tickNoHooksNoSmoothing();
         
         float samples[2][NUM_STRINGS];
         float outputSamples[2];
@@ -784,15 +784,14 @@ void ESAudioProcessor::noteOff(int channel, int key, float velocity)
 {
     int i = mpeMode ? channelToString[channel]-1 : 0;
     if (i < 0) return;
-    // if we're monophonic, we need to allow fast voice stealing and returning
-    // to previous stolen notes without regard for the release envelopes
-    int v = tSimplePoly_noteOff(&strings[i], key);
+    
+    int v = tSimplePoly_markPendingNoteOff(&strings[i], key);
+    
     if (!mpeMode) i = v;
     
     if (v >= 0)
     {
         for (auto e : envs) e->noteOff(i, velocity);
-        for (auto o : lfos) o->noteOff(i, velocity);
     }
 }
 

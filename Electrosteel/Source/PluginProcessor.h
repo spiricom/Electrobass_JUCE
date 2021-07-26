@@ -160,6 +160,8 @@ public:
     
     HashMap<String, int> sourceMappingCounts;
     
+    tSimplePoly strings[NUM_STRINGS];
+    
 private:
     
     StringArray paramIds;
@@ -168,7 +170,6 @@ private:
     AudioProcessorValueTreeState vts;
     
     char dummy_memory[1];
-    tSimplePoly strings[NUM_STRINGS];
     
     float centsDeviation[12];
     int currentTuning;

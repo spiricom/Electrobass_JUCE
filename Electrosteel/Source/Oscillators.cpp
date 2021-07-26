@@ -325,8 +325,3 @@ void LowFreqOscillator::noteOn(int voice, float velocity)
         tTriangle_setPhase(&tri[voice], phaseReset);
     }
 }
-
-void LowFreqOscillator::noteOff(int voice, float velocity)
-{
-    
-}

@@ -103,13 +103,24 @@ void Envelope::tick()
         tADSRT_setLeakFactor(&envs[v], 0.99995f + 0.00005f*(1.f-leak));
 
         float value = tADSRT_tickNoInterp(&envs[v]);
-        processor.voiceIsSounding[v] = value > 0.f;
         
         sourceValues[0][v] = value;
         for (int i = 1; i < processor.numInvParameterSkews; ++i)
         {
             float invSkew = processor.quickInvParameterSkews[i];
             sourceValues[i][v] = powf(value, invSkew);
+        }
+        
+        if (processor.strings[0]->numVoices > 1)
+        {
+            if (processor.strings[0]->voices[v][0] == -2)
+            {
+                if (envs[v]->whichStage == env_idle)
+                {
+                    tSimplePoly_deactivateVoice(&processor.strings[0], v);
+                    processor.voiceIsSounding[v] = false;
+                }
+            }
         }
     }
 //    sampleInBlock++;
@@ -119,6 +130,7 @@ void Envelope::noteOn(int voice, float velocity)
 {
     if (useVelocity->getValue() == 0) velocity = 1.f;
     tADSRT_on(&envs[voice], velocity);
+    processor.voiceIsSounding[voice] = true;
 }
 
 void Envelope::noteOff(int voice, float velocity)
