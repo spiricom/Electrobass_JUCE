@@ -116,8 +116,9 @@ void Oscillator::tick(float output[][NUM_STRINGS])
         amp = amp < 0.f ? 0.f : amp;
         
         float note = processor.voiceNote[v];
-        float freq = mtof(LEAF_clip(0, note + pitch + fine*0.01f, 127));
-        freq = freq < 10.f ? 0.f : freq;
+        //float freq = mtof(LEAF_clip(0, note + pitch + fine*0.01f, 127));
+        float freq = mtof(LEAF_clip(0, note + fine*0.01f, 127)) + pitch * 100.f;
+        //freq = freq < 10.f ? 0.f : freq;
         
         float sample = 0.0f;
         

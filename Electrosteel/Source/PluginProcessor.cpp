@@ -798,7 +798,7 @@ void ESAudioProcessor::noteOff(int channel, int key, float velocity)
 void ESAudioProcessor::pitchBend(int channel, int data)
 {
     // Parameters need to be set with a 0. to 1. range, but will use their set range when accessed
-    float bend = data / 16383.f;
+    float bend = data * 0.000061038881768f; // 1.0 / 16383.0
     if (mpeMode)
     {
         vts.getParameter("PitchBend" + String(channelToString[channel]))->setValueNotifyingHost(bend);
@@ -811,7 +811,7 @@ void ESAudioProcessor::pitchBend(int channel, int data)
 
 void ESAudioProcessor::ctrlInput(int channel, int ctrl, int value)
 {
-    float v = value / 127.f;
+    float v = value * 0.007874015748031f; // 1.0f / 127.0f
     if (channel == 1)
     {
         if (1 <= ctrl && ctrl <= NUM_MACROS)

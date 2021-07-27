@@ -17,11 +17,14 @@ Output::Output(const String& n, ESAudioProcessor& p,
 AudioComponent(n, p, vts, cOutputParams, false)
 {
     master = std::make_unique<SmoothedParameter>(processor, vts, "Master", -1);
+    tOversampler_init(&os[0], MASTER_OVERSAMPLE, 0, &processor.leaf);
+    tOversampler_init(&os[1], MASTER_OVERSAMPLE, 0, &processor.leaf);
 }
 
 Output::~Output()
 {
-    
+    tOversampler_free(&os[0]);
+    tOversampler_free(&os[1]);
 }
 
 void Output::prepareToPlay (double sampleRate, int samplesPerBlock)
@@ -46,7 +49,7 @@ void Output::tick(float input[NUM_STRINGS], float output[2], int numChannels)
         amp = amp < 0.f ? 0.f : amp;
         pan = LEAF_clip(-1.f, pan, 1.f);
         
-        float sample = input[v] * amp * m;
+        float sample = input[v] * amp;
         
         // Porting over some code from
         // https://github.com/juce-framework/JUCE/blob/master/modules/juce_dsp/processors/juce_Panner.cpp
@@ -85,6 +88,14 @@ void Output::tick(float input[NUM_STRINGS], float output[2], int numChannels)
         }
         else output[0] += sample;
     }
-    
+    //JS - I added a final saturator - would sound a little better in the plugin with oversampling, too. Could just oversample the distortion by 4 and see how that feels.
+    output[0] = tOversampler_tick(&os[0], output[0], oversamplerArray, &tanhf);
+    output[1] = tOversampler_tick(&os[1], output[1], oversamplerArray, &tanhf);
+    output[0] = output[0] * m;
+    output[1] = output[1] * m;
+    //output[0] = tanf(output[0]) * 0.95f;
+    //output[1] = tanf(output[1]) * 0.95f;
+    //output[0] *= m;
+    //output[1] *= m;
     sampleInBlock++;
 }

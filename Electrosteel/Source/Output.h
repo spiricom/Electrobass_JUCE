@@ -12,7 +12,7 @@
 
 #include "Constants.h"
 #include "Utilities.h"
-
+#define MASTER_OVERSAMPLE 2
 //==============================================================================
 
 class Output : public AudioComponent
@@ -30,5 +30,7 @@ public:
 private:
     
     std::unique_ptr<SmoothedParameter> master;
+    tOversampler os[2];
+    float oversamplerArray[MASTER_OVERSAMPLE];
 };
 

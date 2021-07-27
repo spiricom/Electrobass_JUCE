@@ -138,6 +138,27 @@ void MappingTarget::update(bool directChange, bool sendListenerNotif)
     auto skew = main.getSkewFactor();
     setSkewFactor(skew);
     
+    if (model.currentSource != nullptr)
+    {
+        sliderEnabled = true;
+        String name = model.currentSource->name;
+        setTextColour(model.currentSource->colour);
+        setText(String(name.getTrailingIntValue()));
+        
+        setValue(model.end, sendListenerNotif ? sendNotification : dontSendNotification);
+    }
+    else
+    {
+        sliderEnabled = false;
+        setTextColour(Colours::transparentBlack);
+        setText("");
+        lastProportionalValue = 0;
+        // Guarantee a change event is sent to listeners and set to 0
+        // Feels like there should be a better way to do this...
+        setValue(0.f, sendListenerNotif ? sendNotification : dontSendNotification);
+        //        getParentComponent()->repaint();
+    }
+    
     // For initialization and when range is set directly by the target slider
     // as opposed to by the parent dial, which require additional handling
     if (directChange && model.currentSource != nullptr)
@@ -162,26 +183,7 @@ void MappingTarget::update(bool directChange, bool sendListenerNotif)
                               false, false, false);
     }
 
-    if (model.currentSource != nullptr)
-    {
-        sliderEnabled = true;
-        String name = model.currentSource->name;
-        setTextColour(model.currentSource->colour);
-        setText(String(name.getTrailingIntValue()));
-        
-        setValue(model.end, sendListenerNotif ? sendNotification : dontSendNotification);
-    }
-    else
-    {
-        sliderEnabled = false;
-        setTextColour(Colours::transparentBlack);
-        setText("");
-        
-        // Guarantee a change event is sent to listeners and set to 0
-        // Feels like there should be a better way to do this...
-        setValue(0.f, sendListenerNotif ? sendNotification : dontSendNotification);
-        //        getParentComponent()->repaint();
-    }
+
 }
 
 void MappingTarget::setText(String s)
