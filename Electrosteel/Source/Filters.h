@@ -29,14 +29,15 @@ public:
     
 private:
     
-    void (Filter::*filterTick)(float& sample, int v, float cutoff, float q);
-    void lowpassTick(float& sample, int v, float cutoff, float q);
-    void highpassTick(float& sample, int v, float cutoff, float q);
-    void bandpassTick(float& sample, int v, float cutoff, float q);
+    void (Filter::*filterTick)(float& sample, int v, float cutoff, float q, float morph);
+    void lowpassTick(float& sample, int v, float cutoff, float q, float morph);
+    void highpassTick(float& sample, int v, float cutoff, float q, float morph);
+    void bandpassTick(float& sample, int v, float cutoff, float q, float morph);
     
-    tEfficientSVF lowpass[NUM_STRINGS];
-    tEfficientSVF highpass[NUM_STRINGS];
-    tEfficientSVF bandpass[NUM_STRINGS];
+    //tVZFilter filters[NUM_STRINGS];
+    tSVF lowpass[NUM_STRINGS];
+    tSVF highpass[NUM_STRINGS];
+    tSVF bandpass[NUM_STRINGS];
     
     std::atomic<float>* afpFilterType;
     FilterType currentFilterType = FilterTypeNil;

@@ -42,11 +42,11 @@ private:
     void sawPulseTick(float& sample, int v, float freq, float shape);
     void sineTriTick(float& sample, int v, float freq, float shape);
     void userTick(float& sample, int v, float freq, float shape);
-    
-    tMBSaw saw[NUM_STRINGS];
-    tMBPulse pulse[NUM_STRINGS];
+    tSawtooth saw[NUM_STRINGS];
+    //tMBSaw saw[NUM_STRINGS];
+    //tMBPulse pulse[NUM_STRINGS];
     tCycle sine[NUM_STRINGS];
-    tMBTriangle tri[NUM_STRINGS];
+    //tMBTriangle tri[NUM_STRINGS];
     tWaveOscS wave[NUM_STRINGS];
     
     float* sourceValues[MAX_NUM_UNIQUE_SKEWS];

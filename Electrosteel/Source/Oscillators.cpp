@@ -26,10 +26,11 @@ MappingSourceModel(p, n, true, true, Colours::darkorange)
     
     for (int i = 0; i < NUM_STRINGS; i++)
     {
-        tMBSaw_init(&saw[i], &processor.leaf);
-        tMBPulse_init(&pulse[i], &processor.leaf);
+        tSawtooth_init(&saw[i], &processor.leaf);
+        //tMBSaw_init(&saw[i], &processor.leaf);
+        //tMBPulse_init(&pulse[i], &processor.leaf);
         tCycle_init(&sine[i], &processor.leaf);
-        tMBTriangle_init(&tri[i], &processor.leaf);
+        //tMBTriangle_init(&tri[i], &processor.leaf);
     }
     
     filterSend = std::make_unique<SmoothedParameter>(p, vts, n + " FilterSend", -1);
@@ -46,10 +47,11 @@ Oscillator::~Oscillator()
     
     for (int i = 0; i < NUM_STRINGS; i++)
     {
-        tMBSaw_free(&saw[i]);
-        tMBPulse_free(&pulse[i]);
+        //tMBSaw_free(&saw[i]);
+        //tMBPulse_free(&pulse[i]);
+        tSawtooth_free(&saw[i]);
         tCycle_free(&sine[i]);
-        tMBTriangle_free(&tri[i]);
+        //tMBTriangle_free(&tri[i]);
         if (waveTableFile.exists())
         {
             tWaveOscS_free(&wave[i]);
@@ -63,10 +65,11 @@ void Oscillator::prepareToPlay (double sampleRate, int samplesPerBlock)
     AudioComponent::prepareToPlay(sampleRate, samplesPerBlock);
     for (int i = 0; i < NUM_STRINGS; i++)
     {
-        tMBSaw_setSampleRate(&saw[i], sampleRate);
-        tMBPulse_setSampleRate(&pulse[i], sampleRate);
+        //tMBSaw_setSampleRate(&saw[i], sampleRate);
+        tSawtooth_setSampleRate(&saw[i], sampleRate);
+        //tMBPulse_setSampleRate(&pulse[i], sampleRate);
         tCycle_setSampleRate(&sine[i], sampleRate);
-        tMBTriangle_setSampleRate(&tri[i], sampleRate);
+        //tMBTriangle_setSampleRate(&tri[i], sampleRate);
         if (waveTableFile.exists())
         {
             tWaveOscS_setSampleRate(&wave[i], sampleRate);
@@ -117,7 +120,7 @@ void Oscillator::tick(float output[][NUM_STRINGS])
         
         float note = processor.voiceNote[v];
         //float freq = mtof(LEAF_clip(0, note + pitch + fine*0.01f, 127));
-        float freq = mtof(LEAF_clip(0, note + fine*0.01f, 127)) + pitch * 100.f;
+        float freq = mtof(LEAF_clip(0.0f, note + fine*0.01f, 127.0f)) + pitch * 100.f;
         //freq = freq < 10.f ? 0.f : freq;
         
         float sample = 0.0f;
@@ -139,8 +142,8 @@ void Oscillator::tick(float output[][NUM_STRINGS])
         
         float f = filterSend->tickNoHooksNoSmoothing();
         
-        output[0][v] += sample*f;
-        output[1][v] += sample*(1.f-f);
+        output[0][v] += sample*f * *afpEnabled;
+        output[1][v] += sample*(1.f-f) * *afpEnabled ;
     }
     
     sampleInBlock++;
@@ -148,18 +151,18 @@ void Oscillator::tick(float output[][NUM_STRINGS])
 
 void Oscillator::sawPulseTick(float& sample, int v, float freq, float shape)
 {
-    tMBSaw_setFreq(&saw[v], freq);
-    tMBPulse_setFreq(&pulse[v], freq);
-    sample += tMBSaw_tick(&saw[v]) * (1.0f - shape);
-    sample += tMBPulse_tick(&pulse[v]) * shape;
+    tSawtooth_setFreq(&saw[v], freq);
+    //tMBPulse_setFreq(&pulse[v], freq);
+    sample += tSawtooth_tick(&saw[v]) * (1.0f - shape);
+    //sample += tMBPulse_tick(&pulse[v]) * shape;
 }
 
 void Oscillator::sineTriTick(float& sample, int v, float freq, float shape)
 {
     tCycle_setFreq(&sine[v], freq);
-    tMBTriangle_setFreq(&tri[v], freq);
+    //tMBTriangle_setFreq(&tri[v], freq);
     sample += tCycle_tick(&sine[v]) * (1.0f - shape);
-    sample += tMBTriangle_tick(&tri[v]) * shape;
+    //sample += tMBTriangle_tick(&tri[v]) * shape;
 }
 
 void Oscillator::userTick(float& sample, int v, float freq, float shape)

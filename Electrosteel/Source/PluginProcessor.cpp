@@ -676,11 +676,23 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
         {
             float pitchBend = globalPitchBend + pitchBendParams[v+1]->tickNoHooksNoSmoothing();
             float tempNote = (float)tSimplePoly_getPitch(&strings[v*mpe], v*impe);
-            tempNote += resolvedCopedent[v];
-            tempNote += pitchBend;
-            float tempPitchClass = ((((int)tempNote) - keyCenter) % 12 );
-            float tunedNote = tempNote + centsDeviation[(int)tempPitchClass];
-            voiceNote[v] = tunedNote;
+            //tempNote += resolvedCopedent[v];
+            
+            //freeze pitch bend data on voices where a note off has happened and we are in the release phase
+            if (tSimplePoly_isOn(&strings[v*mpe], v*impe))
+            {
+                 tempNote += pitchBend;
+                 voicePrevBend[v] = pitchBend;
+            }
+            else
+            {
+                  tempNote += voicePrevBend[v];
+            }
+            //float tempPitchClass = ((((int)tempNote) - keyCenter) % 12 );
+            //float tunedNote = tempNote + centsDeviation[(int)tempPitchClass];
+            //voiceNote[v] = tunedNote;
+            voiceNote[v] = tempNote;
+            
             samples[0][v] = 0.f;
             samples[1][v] = 0.f;
         }

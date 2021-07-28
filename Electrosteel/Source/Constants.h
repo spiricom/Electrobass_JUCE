@@ -25,8 +25,8 @@
 #define NUM_ENVS 4
 #define NUM_LFOS 4
 
-#define EXP_BUFFER_SIZE 128
-#define DECAY_EXP_BUFFER_SIZE 512
+#define EXP_BUFFER_SIZE 2048
+#define DECAY_EXP_BUFFER_SIZE 2048
 
 #define MAX_NUM_UNIQUE_SKEWS 10
 
@@ -113,7 +113,7 @@ static const StringArray cFilterParams = {
 };
 static const std::vector<std::vector<float>> vFilterInit = {
     { 0.0f, 127.f, 72.f, 63.5f },   //Cutoff
-    { 0.25f, 200.f, 0.7f, 1.5f },   //Resonance
+    { 0.1f, 10.0f, 0.5f, 0.7f },   //Resonance
     { 0.0f, 1.f, 0.5f, 0.5f }   //KeyFollow
 };
 
