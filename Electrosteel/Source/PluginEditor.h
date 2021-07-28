@@ -29,6 +29,7 @@ typedef AudioProcessorValueTreeState::ComboBoxAttachment ComboBoxAttachment;
 class ESAudioProcessorEditor : public AudioProcessorEditor,
                                public Slider::Listener,
                                public Button::Listener,
+                               public Label::Listener,
                                public KeyListener,
                                public Timer,
                                public DragAndDropContainer
@@ -42,7 +43,7 @@ public:
     void resized() override;
 	void sliderValueChanged(Slider* slider) override;
 	void buttonClicked(juce::Button* button) override;
-	void buttonStateChanged(Button *button) override;
+    void labelTextChanged(Label* label) override;
     
     void mouseDown (const MouseEvent &event) override;
     bool keyPressed (const KeyPress &key, Component *originatingComponent) override;
@@ -50,8 +51,11 @@ public:
     
     void chooseFile(const FileChooser& chooser);
     
-    void getAllChildren(Component* component, Array<Component*> &children);
-    Array<Component*> getAllChildren();
+    void update();
+    void updatePedalToggle(bool state);
+    void updateMPEToggle(bool state);
+    void updateChannelStringButton(int whichButton, int inc);
+    void updateMidiKeyRangeSlider(int min, int max);
     
     ESAudioProcessor& processor;
     AudioProcessorValueTreeState& vts;
@@ -61,6 +65,12 @@ private:
     TabbedComponent tabs;
     
     Component tab1;
+    
+    std::unique_ptr<MappingSource> midiKeySource;
+    Slider midiKeyRangeSlider;
+    Label midiKeyMinLabel;
+    Label midiKeyMaxLabel;
+    DrawableRectangle macroBorder;
     OwnedArray<ESDial> macroDials;
     OwnedArray<Slider> pitchBendSliders;
     MidiKeyboardComponent keyboard;
@@ -68,6 +78,7 @@ private:
     OwnedArray<OscModule> oscModules;
     OwnedArray<FilterModule> filterModules;
     std::unique_ptr<OutputModule> outputModule;
+    ToggleButton pedalToggle;
     ESTabbedComponent envsAndLFOs;
     MappingSource* currentMappingSource;
     OwnedArray<TextButton> copedentButtons;

@@ -125,6 +125,11 @@ public:
     OwnedArray<SmoothedParameter> ccParams;
     OwnedArray<MappingSourceModel> ccSources;
     std::unique_ptr<SmoothedParameter> seriesParallel;
+    
+    float* midiKeyValues[MAX_NUM_UNIQUE_SKEWS];
+    std::unique_ptr<MappingSourceModel> midiKeySource;
+    int midiKeyMin = 21; // Default to A0
+    int midiKeyMax = 108; // Default to C8
 
     OwnedArray<SmoothedParameter> params;
     
@@ -162,6 +167,8 @@ public:
     
     tSimplePoly strings[NUM_STRINGS];
     
+    bool pedalControlsMaster = true;
+    
 private:
     
     StringArray paramIds;
@@ -171,7 +178,7 @@ private:
     
     char dummy_memory[1];
     
-    float centsDeviation[12];
+    float centsDeviation[NUM_STRINGS];
     int currentTuning;
     int keyCenter = 0;
     

@@ -17,9 +17,9 @@ Envelope::Envelope(const String& n, ESAudioProcessor& p,
 AudioComponent(n, p, vts, cEnvelopeParams, false),
 MappingSourceModel(p, n, true, false, Colours::deepskyblue)
 {
-    for (int i = 0; i < p.numInvParameterSkews; ++i)
+    for (int i = 0; i < processor.numInvParameterSkews; ++i)
     {
-        sourceValues[i] = (float*) leaf_alloc(&p.leaf, sizeof(float) * NUM_STRINGS);
+        sourceValues[i] = (float*) leaf_alloc(&processor.leaf, sizeof(float) * NUM_STRINGS);
         sources[i] = &sourceValues[i];
     }
     

@@ -16,9 +16,13 @@ Output::Output(const String& n, ESAudioProcessor& p,
                AudioProcessorValueTreeState& vts) :
 AudioComponent(n, p, vts, cOutputParams, false)
 {
-    master = std::make_unique<SmoothedParameter>(processor, vts, "Master", -1);
+    master = std::make_unique<SmoothedParameter>(processor, vts, "Master");
+    
+    int temp = processor.leaf.clearOnAllocation;
+    processor.leaf.clearOnAllocation = 1;
     tOversampler_init(&os[0], MASTER_OVERSAMPLE, 0, &processor.leaf);
     tOversampler_init(&os[1], MASTER_OVERSAMPLE, 0, &processor.leaf);
+    processor.leaf.clearOnAllocation = temp;
 }
 
 Output::~Output()
@@ -88,14 +92,30 @@ void Output::tick(float input[NUM_STRINGS], float output[2], int numChannels)
         }
         else output[0] += sample;
     }
+    
+    float pedGain = 1.f;
+    if (processor.pedalControlsMaster)
+    {
+        // this is to clip the gain settings so all the way down on the pedal isn't actually
+        // off, it let's a little signal through. Would be more efficient to fix the table to
+        // span a better range.
+        float volumeSmoothed = processor.ccParams.getLast()->get();
+        float volIdx = LEAF_clip(47.0f, ((volumeSmoothed * 80.0f) + 47.0f), 127.0f);
+        
+        //then interpolate the value
+        int volIdxInt = (int) volIdx;
+        float alpha = volIdx-volIdxInt;
+        int volIdxIntPlus = (volIdxInt + 1) & 127;
+        float omAlpha = 1.0f - alpha;
+        pedGain = volumeAmps128[volIdxInt] * omAlpha;
+        pedGain += volumeAmps128[volIdxIntPlus] * alpha;
+    }
+    
     //JS - I added a final saturator - would sound a little better in the plugin with oversampling, too. Could just oversample the distortion by 4 and see how that feels.
     output[0] = tOversampler_tick(&os[0], output[0], oversamplerArray, &tanhf);
     output[1] = tOversampler_tick(&os[1], output[1], oversamplerArray, &tanhf);
-    output[0] = output[0] * m;
-    output[1] = output[1] * m;
-    //output[0] = tanf(output[0]) * 0.95f;
-    //output[1] = tanf(output[1]) * 0.95f;
-    //output[0] *= m;
-    //output[1] *= m;
+    output[0] = output[0] * m * pedGain;
+    output[1] = output[1] * m * pedGain;
+    
     sampleInBlock++;
 }

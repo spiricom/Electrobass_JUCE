@@ -12,9 +12,8 @@
 #include "PluginProcessor.h"
 
 SmoothedParameter::SmoothedParameter(ESAudioProcessor& processor, AudioProcessorValueTreeState& vts,
-                                     String paramId, int voice) :
-processor(processor),
-voice(voice)
+                                     String paramId) :
+processor(processor)
 {
     raw = vts.getRawParameterValue(paramId);
     parameter = vts.getParameter(paramId);
@@ -361,7 +360,7 @@ toggleable(toggleable)
         params.add(new OwnedArray<SmoothedParameter>());
         for (int v = 0; v < NUM_STRINGS; ++v)
         {
-            params[i]->add(new SmoothedParameter(p, vts, pn, v));
+            params[i]->add(new SmoothedParameter(p, vts, pn));
             quickParams[i][v] = params[i]->getUnchecked(v);
         }
         for (int t = 0; t < 3; ++t)

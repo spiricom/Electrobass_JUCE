@@ -63,7 +63,7 @@ public:
     //==============================================================================
 //    SmoothedParameter() = default;
     SmoothedParameter(ESAudioProcessor& processor, AudioProcessorValueTreeState& vts,
-                      String paramId, int voice);
+                      String paramId);
     ~SmoothedParameter() {};
     //==============================================================================
     float tick();
@@ -95,7 +95,6 @@ public:
     
     void prepareToPlay(double sampleRate, int samplesPerBlock);
     
-    int getVoice() { return voice; }
     float getInvSkew() { return 1.f/range.skew; }
     NormalisableRange<float>& getRange() { return range; }
     float getRawValue() { return *raw; }
@@ -115,7 +114,6 @@ private:
     ParameterHook hooks[3];
     int numActiveHooks = 0;
     int whichHooks[3];
-    int voice;
 };
 
 //==============================================================================

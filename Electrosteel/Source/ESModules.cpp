@@ -49,6 +49,7 @@ outlineColour(Colours::transparentBlack)
     
     if (ac.isToggleable())
     {
+        enabledToggle.addListener(this);
         addAndMakeVisible(enabledToggle);
         buttonAttachments.add(new ButtonAttachment(vts, name, enabledToggle));
     }
@@ -118,18 +119,25 @@ chooser("Select wavetable file or folder...",
 {
     outlineColour = Colours::darkgrey;
     
-    // Pitch slider should snap to ints
+    // Pitch and freq dials should snap to ints
     getDial(OscPitch)->setRange(-24., 24., 1.);
+    getDial(OscFreq)->setRange(-2000., 2000., 1.);
     
-    double pitch = getDial(OscPitch)->getSlider().getValue();
-    double fine = getDial(OscFine)->getSlider().getValue()*0.01; // Fine is in cents for better precision
-    pitchLabel.setText(String(pitch+fine, 3), dontSendNotification);
     pitchLabel.setLookAndFeel(&laf);
     pitchLabel.setEditable(true);
     pitchLabel.setJustificationType(Justification::centred);
     pitchLabel.setColour(Label::backgroundColourId, Colours::darkgrey.withBrightness(0.2f));
     pitchLabel.addListener(this);
     addAndMakeVisible(pitchLabel);
+    
+    freqLabel.setLookAndFeel(&laf);
+    freqLabel.setEditable(true);
+    freqLabel.setJustificationType(Justification::centred);
+    freqLabel.setColour(Label::backgroundColourId, Colours::darkgrey.withBrightness(0.2f));
+    freqLabel.addListener(this);
+    addAndMakeVisible(freqLabel);
+    
+    displayPitch();
     
     RangedAudioParameter* set = vts.getParameter(ac.getName() + " ShapeSet");
     updateShapeCB();
@@ -171,29 +179,30 @@ void OscModule::resized()
 {
     ESModule::resized();
     
-    for (int i = 1; i < ac.getParamNames().size(); ++i)
-    {
-        dials[i]->setBoundsRelative(relLeftMargin + (relDialWidth*(i+1))+(relDialSpacing*i),
-                                    relTopMargin, relDialWidth, relDialHeight);
-    }
+    s->setBounds(4, 4, getWidth()*0.1f, enabledToggle.getHeight()-8);
     
-    pitchLabel.setBoundsRelative(relLeftMargin+relDialWidth+0.5f*relDialSpacing,
-                                 0.4f, relDialWidth, 0.2f);
+    pitchLabel.setBoundsRelative(relLeftMargin+0.5f*relDialWidth,
+                                 0.02f, relDialWidth+relDialSpacing, 0.16f);
     
-    shapeCB.setBoundsRelative(relLeftMargin+3*relDialWidth+relDialSpacing, 0.01f,
-                              relDialWidth+2*relDialSpacing, 0.16f);
+    freqLabel.setBoundsRelative(relLeftMargin+2*relDialWidth+1.5*relDialSpacing,
+                                 0.02f, relDialWidth+relDialSpacing, 0.16f);
     
-    sendSlider.setBoundsRelative(0.94f, 0.f, 0.06f, 1.0f);
+    shapeCB.setBoundsRelative(relLeftMargin+3*(relDialWidth+relDialSpacing), 0.02f,
+                              relDialWidth+relDialSpacing, 0.16f);
+    
+    sendSlider.setBoundsRelative(0.96f, 0.f, 0.04f, 1.0f);
+    
+    enabledToggle.setBoundsRelative(0.917f, 0.41f, 0.04f, 0.15f);
     
     f1Label.setBoundsRelative(0.9f, 0.05f, 0.06f, 0.15f);
     f2Label.setBoundsRelative(0.9f, 0.80f, 0.06f, 0.15f);
-    
-    s->setBounds(enabledToggle.getRight(), 4, getWidth()*0.15f, enabledToggle.getHeight()-8);
 }
 
 void OscModule::sliderValueChanged(Slider* slider)
 {
-    if (slider == &getDial(OscPitch)->getSlider() || slider == &getDial(OscFine)->getSlider() )
+    if (slider == &getDial(OscPitch)->getSlider() ||
+        slider == &getDial(OscFine)->getSlider() ||
+        slider == &getDial(OscFreq)->getSlider())
     {
         displayPitch();
     }
@@ -201,6 +210,15 @@ void OscModule::sliderValueChanged(Slider* slider)
     {
         dynamic_cast<ESDial*>(mt->getParentComponent())->sliderValueChanged(slider);
         displayPitchMapping(mt);
+    }
+}
+
+void OscModule::buttonClicked(Button* button)
+{
+    if (button == &enabledToggle)
+    {
+        sendSlider.setEnabled(enabledToggle.getToggleState());
+        sendSlider.setAlpha(enabledToggle.getToggleState() ? 1. : 0.5);
     }
 }
 
@@ -306,7 +324,15 @@ void OscModule::displayPitch()
     auto pitch = getDial(OscPitch)->getSlider().getValue();
     auto fine = getDial(OscFine)->getSlider().getValue()*0.01;
     pitchLabel.setColour(Label::textColourId, Colours::gold.withBrightness(0.95f));
-    pitchLabel.setText(String(pitch+fine, 3), dontSendNotification);
+    String text = pitch+fine >= 0 ? "+" : "";
+    text += String(pitch+fine, 3);
+    pitchLabel.setText(text, dontSendNotification);
+    
+    auto freq = getDial(OscFreq)->getSlider().getValue();
+    freqLabel.setColour(Label::textColourId, Colours::gold.withBrightness(0.95f));
+    text = freq >= 0 ? "+" : "";
+    text += String(int(freq)) + " Hz";
+    freqLabel.setText(text, dontSendNotification);
 }
 
 void OscModule::displayPitchMapping(MappingTarget* mt)
@@ -326,10 +352,10 @@ void OscModule::displayPitchMapping(MappingTarget* mt)
         {
             if (mt->getSkewFactor() != 1. && start != end)
             {
-                text = (start >= 0 ? "+" : "-");
-                text += String(fabs(start), 3) + "/";
-                text += (end >= 0 ? "+" : "-");
-                text += String(fabs(end), 3);
+                text = (start >= 0 ? "+" : "");
+                text += String(start, 3) + "/";
+                text += (end >= 0 ? "+" : "");
+                text += String(end, 3);
             }
             else
             {
@@ -339,8 +365,8 @@ void OscModule::displayPitchMapping(MappingTarget* mt)
         }
         else
         {
-            text = (end >= 0 ? "+" : "-");
-            text += String(fabs(end), 3);
+            text = (end >= 0 ? "+" : "");
+            text += String(end, 3);
         }
         pitchLabel.setText(text, dontSendNotification);
     }
@@ -354,10 +380,10 @@ void OscModule::displayPitchMapping(MappingTarget* mt)
         {
             if (mt->getSkewFactor() != 1. && start != end)
             {
-                text = (start >= 0 ? "+" : "-");
-                text += String(fabs(start), 3) + "/";
-                text += (end >= 0 ? "+" : "-");
-                text += String(fabs(end), 3);
+                text = (start >= 0 ? "+" : "");
+                text += String(start, 3) + "/";
+                text += (end >= 0 ? "+" : "");
+                text += String(end, 3);
             }
             else
             {
@@ -367,10 +393,36 @@ void OscModule::displayPitchMapping(MappingTarget* mt)
         }
         else
         {
-            text = (end >= 0 ? "+" : "-");
-            text += String(fabs(end), 3);
+            text = (end >= 0 ? "+" : "");
+            text += String(end, 3);
         }
         pitchLabel.setText(text, dontSendNotification);
+    }
+    else if (mt->getParentComponent() == getDial(OscFreq))
+    {
+        freqLabel.setColour(Label::textColourId, mt->getColour());
+        String text;
+        if (mt->isBipolar())
+        {
+            if (mt->getSkewFactor() != 1. && start != end)
+            {
+                text = (start >= 0 ? "+" : "");
+                text += String(int(start)) + "/";
+                text += (end >= 0 ? "+" : "");
+                text += String(int(end));
+            }
+            else
+            {
+                text = String::charToString(0xb1);
+                text += String(abs(mt->getModel().end));
+            }
+        }
+        else
+        {
+            text = (end >= 0 ? "+" : "");
+            text += String(int(end));
+        }
+        freqLabel.setText(text, dontSendNotification);
     }
 }
 

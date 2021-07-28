@@ -18,7 +18,7 @@ Oscillator::Oscillator(const String& n, ESAudioProcessor& p,
 AudioComponent(n, p, vts, cOscParams, true),
 MappingSourceModel(p, n, true, true, Colours::darkorange)
 {
-    for (int i = 0; i < p.numInvParameterSkews; ++i)
+    for (int i = 0; i < processor.numInvParameterSkews; ++i)
     {
         sourceValues[i] = (float*) leaf_alloc(&p.leaf, sizeof(float) * NUM_STRINGS);
         sources[i] = &sourceValues[i];
@@ -33,7 +33,7 @@ MappingSourceModel(p, n, true, true, Colours::darkorange)
         //tMBTriangle_init(&tri[i], &processor.leaf);
     }
     
-    filterSend = std::make_unique<SmoothedParameter>(p, vts, n + " FilterSend", -1);
+    filterSend = std::make_unique<SmoothedParameter>(p, vts, n + " FilterSend");
     
     afpShapeSet = vts.getRawParameterValue(n + " ShapeSet");
 }
@@ -109,24 +109,24 @@ void Oscillator::tick(float output[][NUM_STRINGS])
 
     for (int v = 0; v < processor.numVoicesActive; ++v)
     {
+        if (!processor.voiceIsSounding[v]) continue;
+        
         float pitch = quickParams[OscPitch][v]->tickNoSmoothing();
         float fine = quickParams[OscFine][v]->tickNoSmoothing();
+        float freq = quickParams[OscFreq][v]->tickNoSmoothing();
         float shape = quickParams[OscShape][v]->tickNoSmoothing();
         float amp = quickParams[OscAmp][v]->tickNoSmoothing();
-        
-        if (!processor.voiceIsSounding[v]) continue;
         
         amp = amp < 0.f ? 0.f : amp;
         
         float note = processor.voiceNote[v];
-        //float freq = mtof(LEAF_clip(0, note + pitch + fine*0.01f, 127));
-        float freq = mtof(LEAF_clip(0.0f, note + fine*0.01f, 127.0f)) + pitch * 100.f;
-        //freq = freq < 10.f ? 0.f : freq;
+        float finalFreq = mtof(LEAF_clip(0, note + pitch + fine*0.01f, 127)) + freq;
+        //freq = freq < 10.f ? 0.f : freq
         
         float sample = 0.0f;
         
         shape = LEAF_clip(0.f, shape, 1.f);
-        (this->*shapeTick)(sample, v, freq, shape);
+        (this->*shapeTick)(sample, v, finalFreq, shape);
     
         sample *= amp;
         

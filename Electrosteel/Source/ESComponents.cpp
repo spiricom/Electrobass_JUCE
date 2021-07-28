@@ -140,10 +140,35 @@ void MappingTarget::update(bool directChange, bool sendListenerNotif)
     
     if (model.currentSource != nullptr)
     {
+        // For initialization and when range is set directly by the target slider
+        // as opposed to by the parent dial, which require additional handling
+        if (directChange)
+        {
+            setRange(min-value, max-value, interval);
+            setValue(model.end, dontSendNotification);
+            lastProportionalValue = valueToProportionOfLength(getValue());
+            lastProportionalParentValue = main.valueToProportionOfLength(main.getValue());
+        }
+        else
+        {
+            auto proportionalParentDelta =
+            main.valueToProportionOfLength(main.getValue()) - lastProportionalParentValue;
+            overflowValue = lastProportionalValue + proportionalParentDelta;
+            
+            lastProportionalValue = overflowValue;
+            lastProportionalParentValue = main.valueToProportionOfLength(main.getValue());
+            
+            setRange(min-value, max-value, interval);
+            
+            model.setMappingRange(proportionOfLengthToValue(jlimit(0., 1., overflowValue)),
+                                  false, false, false);
+        }
+        
         sliderEnabled = true;
         String name = model.currentSource->name;
         setTextColour(model.currentSource->colour);
-        setText(String(name.getTrailingIntValue()));
+        if (name.getTrailingIntValue() > 0) setText(String(name.getTrailingIntValue()));
+        else setText(name.substring(0, 1));
         
         setValue(model.end, sendListenerNotif ? sendNotification : dontSendNotification);
     }
@@ -158,32 +183,6 @@ void MappingTarget::update(bool directChange, bool sendListenerNotif)
         setValue(0.f, sendListenerNotif ? sendNotification : dontSendNotification);
         //        getParentComponent()->repaint();
     }
-    
-    // For initialization and when range is set directly by the target slider
-    // as opposed to by the parent dial, which require additional handling
-    if (directChange && model.currentSource != nullptr)
-    {
-        setRange(min-value, max-value, interval);
-        setValue(model.end, dontSendNotification);
-        lastProportionalValue = valueToProportionOfLength(getValue());
-        lastProportionalParentValue = main.valueToProportionOfLength(main.getValue());
-    }
-    else
-    {
-        auto proportionalParentDelta =
-        main.valueToProportionOfLength(main.getValue()) - lastProportionalParentValue;
-        overflowValue = lastProportionalValue + proportionalParentDelta;
-        
-        lastProportionalValue = overflowValue;
-        lastProportionalParentValue = main.valueToProportionOfLength(main.getValue());
-        
-        setRange(min-value, max-value, interval);
-        
-        model.setMappingRange(proportionOfLengthToValue(jlimit(0., 1., overflowValue)),
-                              false, false, false);
-    }
-
-
 }
 
 void MappingTarget::setText(String s)
@@ -368,7 +367,7 @@ void ESDial::resized()
     
     if (t.isEmpty())
     {
-        slider.setBounds(area);
+        slider.setBounds(area.removeFromTop(area.getWidth()));
     }
     else
     {

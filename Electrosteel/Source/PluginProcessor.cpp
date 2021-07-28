@@ -33,21 +33,27 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
     
     for (int i = 0; i < NUM_MACROS; ++i)
     {
-        n = "M" + String(i+1);
+        n = i < NUM_GENERIC_MACROS ? "M" + String(i+1) : cUniqueMacroNames[i-NUM_GENERIC_MACROS];
         normRange = NormalisableRange<float>(0., 1.);
-        normRange.setSkewForCentre(.5);
-        invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
-        layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, 0.));
+        layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange,
+                                                           i == NUM_MACROS-1 ? 1.f : 0.f));
         paramIds.add(n);
     }
     
+    auto stringFromValueFunction = [] (float v, int length)
+    {
+        String asText (v, 3);
+        return length > 0 ? asText.substring (0, length) : asText;
+    };
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
         n = "PitchBend" + String(i);
         normRange = NormalisableRange<float>(-24., 24.);
         normRange.setSkewForCentre(.0);
         invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
-        layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, 0.));
+        layout.add (std::make_unique<AudioParameterFloat>
+                    (n, n, normRange, 0., String(), AudioProcessorParameter::genericParameter,
+                     stringFromValueFunction));
         paramIds.add(n);
     }
     
@@ -244,7 +250,7 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
         voiceIsSounding[i] = false;
     }
     
-    for (int i = 0; i < 12; ++i)
+    for (int i = 0; i < NUM_STRINGS; ++i)
     {
         centsDeviation[i] = 0.f;
     }
@@ -261,20 +267,39 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
         filt.add(new Filter("Filter" + String(i+1), *this, vts));
     }
     
-    seriesParallel = std::make_unique<SmoothedParameter>(*this, vts, "Filter Series-Parallel Mix", -1);
+    seriesParallel = std::make_unique<SmoothedParameter>(*this, vts, "Filter Series-Parallel Mix");
     
     for (int i = 0; i < NUM_MACROS; ++i)
     {
-        String n = "M" + String(i+1);
-        ccParams.add(new SmoothedParameter(*this, vts, n, -1));
-        ccSources.add(new MappingSourceModel(*this, n,
-                                             false, false, Colours::red.withSaturation(0.9f)));
-        for (int i = 0; i < invParameterSkews.size(); ++i)
+        String n;
+        Colour c;
+        if (i < NUM_GENERIC_MACROS)
         {
-            float** source = ccParams.getLast()->getValuePointerArray(i);
-            ccSources.getLast()->sources[i] = source;
+            n = "M" + String(i+1);
+            c = Colours::red.withSaturation(0.9f);
+        }
+        else
+        {
+            n = cUniqueMacroNames[i-NUM_GENERIC_MACROS];
+            c = Colours::red.withSaturation(0.5f);
+        }
+        
+        ccParams.add(new SmoothedParameter(*this, vts, n));
+        ccSources.add(new MappingSourceModel(*this, n, false, false, c));
+        for (int j = 0; j < invParameterSkews.size(); ++j)
+        {
+            float** source = ccParams.getLast()->getValuePointerArray(j);
+            ccSources.getLast()->sources[j] = source;
         }
         sourceIds.add(n);
+    }
+    
+    midiKeySource = std::make_unique<MappingSourceModel>(*this, "MIDI Pitch",
+                                                         true, false, Colours::white);
+    for (int i = 0; i < numInvParameterSkews; ++i)
+    {
+        midiKeyValues[i] = (float*) leaf_alloc(&leaf, sizeof(float) * NUM_STRINGS);
+        midiKeySource->sources[i] = &midiKeyValues[i];
     }
     
     for (int i = 0; i < NUM_ENVS; ++i)
@@ -295,7 +320,7 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
     
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
-        pitchBendParams.add(new SmoothedParameter(*this, vts, "PitchBend" + String(i), i-1));
+        pitchBendParams.add(new SmoothedParameter(*this, vts, "PitchBend" + String(i)));
         midiChannelNoteCount[i+1] = 0;
         midiChannelActivity[i+1] = 0;
         channelToString[i+1] = i;
@@ -358,6 +383,12 @@ ESAudioProcessor::~ESAudioProcessor()
     {
         tSimplePoly_free(&strings[i]);
     }
+    
+    for (int i = 0; i < numInvParameterSkews; ++i)
+    {
+        leaf_free(&leaf, (char*)midiKeyValues[i]);
+    }
+    
     params.clearQuick(false);
 }
 
@@ -786,6 +817,14 @@ void ESAudioProcessor::noteOn(int channel, int key, float velocity)
         
         if (v >= 0)
         {
+            key -= midiKeyMin;
+            float norm = key / float(midiKeyMax - midiKeyMin);
+            midiKeyValues[0][i] = jlimit(0.f, 1.f, norm);;
+            for (int s = 1; s < numInvParameterSkews; ++s)
+            {
+                float invSkew = quickInvParameterSkews[s];
+                midiKeyValues[s][i] = powf(norm, invSkew);
+            }
             for (auto e : envs) e->noteOn(i, velocity);
             for (auto o : lfos) o->noteOn(i, velocity);
         }
@@ -1048,6 +1087,9 @@ void ESAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     // Top level settings
     root.setProperty("editorScale", editorScale, nullptr);
     root.setProperty("mpeMode", mpeMode, nullptr);
+    root.setProperty("pedalControlsMaster", pedalControlsMaster, nullptr);
+    root.setProperty("midiKeyMin", midiKeyMin, nullptr);
+    root.setProperty("midiKeyMax", midiKeyMax, nullptr);
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
         root.setProperty("Ch" + String(i+1) + "String", channelToString[i+1], nullptr);
@@ -1110,6 +1152,9 @@ void ESAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
         // Top level settings
         editorScale = xml->getDoubleAttribute("editorScale", 1.05);
         setMPEMode(xml->getBoolAttribute("mpeMode", true));
+        pedalControlsMaster = xml->getBoolAttribute("pedalControlsVolume", true);
+        midiKeyMin = xml->getIntAttribute("midiKeyMin", 21);
+        midiKeyMax = xml->getIntAttribute("midiKeyMax", 108);
         
         for (int i = 0; i < NUM_CHANNELS; ++i)
         {
@@ -1161,6 +1206,11 @@ void ESAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
                 initialMappings.add(m);
             }
         }
+    }
+    
+    if (ESAudioProcessorEditor* editor = dynamic_cast<ESAudioProcessorEditor*>(getActiveEditor()))
+    {
+        editor->update();
     }
     
     DBG("Post set state: " + String(leaf.allocCount) + " " + String(leaf.freeCount));

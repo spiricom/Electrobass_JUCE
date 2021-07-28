@@ -25,6 +25,7 @@ typedef AudioProcessorValueTreeState::ComboBoxAttachment ComboBoxAttachment;
 
 class ESModule : public Component,
 public Slider::Listener,
+public Button::Listener,
 public Label::Listener,
 public ComboBox::Listener
 {
@@ -39,6 +40,7 @@ public:
     void paint(Graphics &g) override;
     
     void sliderValueChanged(Slider* slider) override;
+    void buttonClicked(Button* button) override {};
     void labelTextChanged(Label* label) override {};
     void comboBoxChanged(ComboBox *comboBox) override {};
     
@@ -83,6 +85,7 @@ public:
     
     void resized() override;
     void sliderValueChanged(Slider* slider) override;
+    void buttonClicked(Button* button) override;
     void labelTextChanged(Label* label) override;
     void comboBoxChanged(ComboBox *comboBox) override;
     
@@ -98,6 +101,7 @@ public:
 private:
     
     Label pitchLabel;
+    Label freqLabel;
     ComboBox shapeCB;
     Slider sendSlider;
     Label f1Label;
