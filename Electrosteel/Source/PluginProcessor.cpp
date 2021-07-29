@@ -862,11 +862,42 @@ void ESAudioProcessor::pitchBend(int channel, int data)
 
 void ESAudioProcessor::ctrlInput(int channel, int ctrl, int value)
 {
-    float v = value * 0.007874015748031f; // 1.0f / 127.0f
+    float v;
+    
     if (channel == 1)
     {
-        if (1 <= ctrl && ctrl <= NUM_MACROS)
+        if (ctrl == 17)
         {
+            v = value * 0.007874015748031f;
+            vts.getParameter("Y")->setValueNotifyingHost(v);
+        }
+        else if (ctrl == 18)
+        {
+            v = value * 0.007874015748031f;
+            vts.getParameter("X")->setValueNotifyingHost(v);
+        }
+        else if (ctrl == 19)
+        {
+            v = value * 0.007874015748031f;
+            vts.getParameter("A")->setValueNotifyingHost(v);
+        }
+        else if (ctrl == 20)
+        {
+            v = value * 0.007874015748031f;
+            vts.getParameter("B")->setValueNotifyingHost(v);
+        }
+        else if (ctrl == 21)
+        {
+            highByteVolume = value;
+        }
+        else if (ctrl == 22)
+        {
+            v = (value + (highByteVolume << 7)) * 0.0002442002442f; // divided by 4095
+            vts.getParameter("Ped")->setValueNotifyingHost(v);
+        }
+        else if (1 <= ctrl && ctrl <= NUM_MACROS)
+        {
+             v = value * 0.007874015748031f; // 1.0f / 127.0f
             vts.getParameter("M" + String(ctrl))->setValueNotifyingHost(v);
         }
     }

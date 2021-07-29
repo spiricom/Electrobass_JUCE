@@ -48,8 +48,8 @@ void Output::tick(float input[NUM_STRINGS], float output[2], int numChannels)
     
     for (int v = 0; v < processor.numVoicesActive; ++v)
     {
-        float amp = quickParams[OutputAmp][v]->tickNoSmoothing();
-        float pan = quickParams[OutputPan][v]->tickNoSmoothing();
+        float amp = quickParams[OutputAmp][v]->tick();
+        float pan = quickParams[OutputPan][v]->tick();
         amp = amp < 0.f ? 0.f : amp;
         pan = LEAF_clip(-1.f, pan, 1.f);
         

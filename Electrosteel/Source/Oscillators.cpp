@@ -111,11 +111,11 @@ void Oscillator::tick(float output[][NUM_STRINGS])
     {
         if (!processor.voiceIsSounding[v]) continue;
         
-        float pitch = quickParams[OscPitch][v]->tickNoSmoothing();
-        float fine = quickParams[OscFine][v]->tickNoSmoothing();
+        float pitch = quickParams[OscPitch][v]->tick();
+        float fine = quickParams[OscFine][v]->tick();
         float freq = quickParams[OscFreq][v]->tickNoSmoothing();
-        float shape = quickParams[OscShape][v]->tickNoSmoothing();
-        float amp = quickParams[OscAmp][v]->tickNoSmoothing();
+        float shape = quickParams[OscShape][v]->tick();
+        float amp = quickParams[OscAmp][v]->tick();
         
         amp = amp < 0.f ? 0.f : amp;
         
@@ -140,7 +140,7 @@ void Oscillator::tick(float output[][NUM_STRINGS])
         
         sample *= INV_NUM_OSCS;
         
-        float f = filterSend->tickNoHooksNoSmoothing();
+        float f = filterSend->tickNoHooks();
         
         output[0][v] += sample*f * *afpEnabled;
         output[1][v] += sample*(1.f-f) * *afpEnabled ;

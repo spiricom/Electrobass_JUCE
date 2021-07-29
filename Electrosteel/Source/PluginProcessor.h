@@ -115,6 +115,7 @@ public:
     LEAF leaf;
     float voiceNote[NUM_STRINGS];
     float voicePrevBend[NUM_STRINGS];
+    int highByteVolume;
     OwnedArray<Oscillator> oscs;
     OwnedArray<Filter> filt;
     OwnedArray<Envelope> envs;

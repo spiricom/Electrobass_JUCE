@@ -12,7 +12,7 @@
 
 #include "Constants.h"
 #include "Utilities.h"
-#define MASTER_OVERSAMPLE 2
+#define MASTER_OVERSAMPLE 8
 //==============================================================================
 
 class Output : public AudioComponent
