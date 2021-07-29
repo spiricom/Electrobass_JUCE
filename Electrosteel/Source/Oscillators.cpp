@@ -26,11 +26,15 @@ MappingSourceModel(p, n, true, true, Colours::darkorange)
     
     for (int i = 0; i < NUM_STRINGS; i++)
     {
-        tSawtooth_init(&saw[i], &processor.leaf);
-        //tMBSaw_init(&saw[i], &processor.leaf);
-        //tMBPulse_init(&pulse[i], &processor.leaf);
+        tMBSaw_init(&saw[i], &processor.leaf);
+        tMBPulse_init(&pulse[i], &processor.leaf);
         tCycle_init(&sine[i], &processor.leaf);
-        //tMBTriangle_init(&tri[i], &processor.leaf);
+        tMBTriangle_init(&tri[i], &processor.leaf);
+        
+        tMBSaw_init(&sawPaired[i], &processor.leaf);
+        tMBPulse_init(&pulsePaired[i], &processor.leaf);
+        tCycle_init(&sinePaired[i], &processor.leaf);
+        tMBTriangle_init(&triPaired[i], &processor.leaf);
     }
     
     filterSend = std::make_unique<SmoothedParameter>(p, vts, n + " FilterSend");
@@ -47,11 +51,16 @@ Oscillator::~Oscillator()
     
     for (int i = 0; i < NUM_STRINGS; i++)
     {
-        //tMBSaw_free(&saw[i]);
-        //tMBPulse_free(&pulse[i]);
-        tSawtooth_free(&saw[i]);
+        tMBSaw_free(&saw[i]);
+        tMBPulse_free(&pulse[i]);
         tCycle_free(&sine[i]);
-        //tMBTriangle_free(&tri[i]);
+        tMBTriangle_free(&tri[i]);
+        
+        tMBSaw_free(&sawPaired[i]);
+        tMBPulse_free(&pulsePaired[i]);
+        tCycle_free(&sinePaired[i]);
+        tMBTriangle_free(&triPaired[i]);
+        
         if (waveTableFile.exists())
         {
             tWaveOscS_free(&wave[i]);
@@ -65,11 +74,16 @@ void Oscillator::prepareToPlay (double sampleRate, int samplesPerBlock)
     AudioComponent::prepareToPlay(sampleRate, samplesPerBlock);
     for (int i = 0; i < NUM_STRINGS; i++)
     {
-        //tMBSaw_setSampleRate(&saw[i], sampleRate);
-        tSawtooth_setSampleRate(&saw[i], sampleRate);
-        //tMBPulse_setSampleRate(&pulse[i], sampleRate);
+        tMBSaw_setSampleRate(&saw[i], sampleRate);
+        tMBPulse_setSampleRate(&pulse[i], sampleRate);
         tCycle_setSampleRate(&sine[i], sampleRate);
-        //tMBTriangle_setSampleRate(&tri[i], sampleRate);
+        tMBTriangle_setSampleRate(&tri[i], sampleRate);
+        
+        tMBSaw_setSampleRate(&sawPaired[i], sampleRate);
+        tMBPulse_setSampleRate(&pulsePaired[i], sampleRate);
+        tCycle_setSampleRate(&sinePaired[i], sampleRate);
+        tMBTriangle_setSampleRate(&triPaired[i], sampleRate);
+        
         if (waveTableFile.exists())
         {
             tWaveOscS_setSampleRate(&wave[i], sampleRate);
@@ -86,11 +100,27 @@ void Oscillator::frame()
     currentShapeSet = OscShapeSet(int(*afpShapeSet));
     switch (currentShapeSet) {
         case SawPulseOscShapeSet:
-            shapeTick = &Oscillator::sawPulseTick;
+            shapeTick = &Oscillator::sawSquareTick;
             break;
             
         case SineTriOscShapeSet:
             shapeTick = &Oscillator::sineTriTick;
+            break;
+            
+        case SawOscShapeSet:
+            shapeTick = &Oscillator::sawTick;
+            break;
+            
+        case PulseOscShapeSet:
+            shapeTick = &Oscillator::pulseTick;
+            break;
+            
+        case SineOscShapeSet:
+            shapeTick = &Oscillator::sineTick;
+            break;
+            
+        case TriOscShapeSet:
+            shapeTick = &Oscillator::triTick;
             break;
             
         case UserOscShapeSet:
@@ -98,7 +128,7 @@ void Oscillator::frame()
             break;
             
         default:
-            shapeTick = &Oscillator::sawPulseTick;
+            shapeTick = &Oscillator::sawSquareTick;
             break;
     }
 }
@@ -149,20 +179,46 @@ void Oscillator::tick(float output[][NUM_STRINGS])
     sampleInBlock++;
 }
 
-void Oscillator::sawPulseTick(float& sample, int v, float freq, float shape)
+void Oscillator::sawSquareTick(float& sample, int v, float freq, float shape)
 {
-    tSawtooth_setFreq(&saw[v], freq);
-    //tMBPulse_setFreq(&pulse[v], freq);
-    sample += tSawtooth_tick(&saw[v]) * (1.0f - shape);
-    //sample += tMBPulse_tick(&pulse[v]) * shape;
+    tMBSaw_setFreq(&sawPaired[v], freq);
+    tMBPulse_setFreq(&pulsePaired[v], freq);
+    sample += tMBSaw_tick(&sawPaired[v]) * (1.0f - shape);
+    sample += tMBPulse_tick(&pulsePaired[v]) * shape;
 }
 
 void Oscillator::sineTriTick(float& sample, int v, float freq, float shape)
 {
+    tCycle_setFreq(&sinePaired[v], freq);
+    tMBTriangle_setFreq(&triPaired[v], freq);
+    sample += tCycle_tick(&sinePaired[v]) * (1.0f - shape);
+    sample += tMBTriangle_tick(&triPaired[v]) * shape;
+}
+
+void Oscillator::sawTick(float& sample, int v, float freq, float shape)
+{
+    tMBSaw_setFreq(&saw[v], freq);
+    sample += tMBSaw_tick(&saw[v]);
+}
+
+void Oscillator::pulseTick(float& sample, int v, float freq, float shape)
+{
+    tMBPulse_setFreq(&pulse[v], freq);
+    tMBPulse_setWidth(&pulse[v], shape*0.5f + 0.5f);
+    sample += tMBPulse_tick(&pulse[v]);
+}
+
+void Oscillator::sineTick(float& sample, int v, float freq, float shape)
+{
     tCycle_setFreq(&sine[v], freq);
-    //tMBTriangle_setFreq(&tri[v], freq);
-    sample += tCycle_tick(&sine[v]) * (1.0f - shape);
-    //sample += tMBTriangle_tick(&tri[v]) * shape;
+    sample += tCycle_tick(&sine[v]);
+}
+
+void Oscillator::triTick(float& sample, int v, float freq, float shape)
+{
+    tMBTriangle_setFreq(&tri[v], freq);
+    tMBTriangle_setWidth(&tri[v], shape*0.5f + 0.5f);
+    sample += tMBTriangle_tick(&tri[v]);
 }
 
 void Oscillator::userTick(float& sample, int v, float freq, float shape)
@@ -215,10 +271,15 @@ MappingSourceModel(p, n, true, true, Colours::chartreuse)
     
     for (int i = 0; i < NUM_STRINGS; i++)
     {
-        tSawtooth_init(&saw[i], &processor.leaf);
-        tSquare_init(&square[i], &processor.leaf);
+        tMBSaw_init(&saw[i], &processor.leaf);
+        tMBPulse_init(&pulse[i], &processor.leaf);
         tCycle_init(&sine[i], &processor.leaf);
-        tTriangle_init(&tri[i], &processor.leaf);
+        tMBTriangle_init(&tri[i], &processor.leaf);
+        
+        tMBSaw_init(&sawPaired[i], &processor.leaf);
+        tMBPulse_init(&pulsePaired[i], &processor.leaf);
+        tCycle_init(&sinePaired[i], &processor.leaf);
+        tMBTriangle_init(&triPaired[i], &processor.leaf);
     }
     
     phaseReset = 0.0f;
@@ -235,10 +296,15 @@ LowFreqOscillator::~LowFreqOscillator()
     
     for (int i = 0; i < NUM_STRINGS; i++)
     {
-        tSawtooth_free(&saw[i]);
-        tSquare_free(&square[i]);
+        tMBSaw_free(&saw[i]);
+        tMBPulse_free(&pulse[i]);
         tCycle_free(&sine[i]);
-        tTriangle_free(&tri[i]);
+        tMBTriangle_free(&tri[i]);
+        
+        tMBSaw_free(&sawPaired[i]);
+        tMBPulse_free(&pulsePaired[i]);
+        tCycle_free(&sinePaired[i]);
+        tMBTriangle_free(&triPaired[i]);
     }
 }
 
@@ -247,10 +313,15 @@ void LowFreqOscillator::prepareToPlay (double sampleRate, int samplesPerBlock)
     AudioComponent::prepareToPlay(sampleRate, samplesPerBlock);
     for (int i = 0; i < NUM_STRINGS; i++)
     {
-        tSawtooth_setSampleRate(&saw[i], sampleRate);
-        tSquare_setSampleRate(&square[i], sampleRate);
+        tMBSaw_setSampleRate(&saw[i], sampleRate);
+        tMBPulse_setSampleRate(&pulse[i], sampleRate);
         tCycle_setSampleRate(&sine[i], sampleRate);
-        tTriangle_setSampleRate(&tri[i], sampleRate);
+        tMBTriangle_setSampleRate(&tri[i], sampleRate);
+        
+        tMBSaw_setSampleRate(&sawPaired[i], sampleRate);
+        tMBPulse_setSampleRate(&pulsePaired[i], sampleRate);
+        tCycle_setSampleRate(&sinePaired[i], sampleRate);
+        tMBTriangle_setSampleRate(&triPaired[i], sampleRate);
     }
 }
 
@@ -267,6 +338,22 @@ void LowFreqOscillator::frame()
             
         case SawPulseLFOShapeSet:
             shapeTick = &LowFreqOscillator::sawSquareTick;
+            break;
+            
+        case SineLFOShapeSet:
+            shapeTick = &LowFreqOscillator::sineTick;
+            break;
+            
+        case TriLFOShapeSet:
+            shapeTick = &LowFreqOscillator::triTick;
+            break;
+            
+        case SawLFOShapeSet:
+            shapeTick = &LowFreqOscillator::sawTick;
+            break;
+            
+        case PulseLFOShapeSet:
+            shapeTick = &LowFreqOscillator::pulseTick;
             break;
             
         default:
@@ -305,27 +392,58 @@ void LowFreqOscillator::tick()
 
 void LowFreqOscillator::sawSquareTick(float& sample, int v, float rate, float shape)
 {
-    tSawtooth_setFreq(&saw[v], rate);
-    tSquare_setFreq(&square[v], rate);
-    sample += tSawtooth_tick(&saw[v]) * (1.0f - shape);
-    sample += tSquare_tick(&square[v]) * shape;
+    tMBSaw_setFreq(&sawPaired[v], rate);
+    tMBPulse_setFreq(&pulsePaired[v], rate);
+    sample += tMBSaw_tick(&sawPaired[v]) * (1.0f - shape);
+    sample += tMBPulse_tick(&pulsePaired[v]) * shape;
 }
 
 void LowFreqOscillator::sineTriTick(float& sample, int v, float rate, float shape)
 {
-    tCycle_setFreq(&sine[v], rate);
-    tTriangle_setFreq(&tri[v], rate);
-    sample += tCycle_tick(&sine[v]) * (1.0f - shape);
-    sample += tTriangle_tick(&tri[v]) * shape;
+    tCycle_setFreq(&sinePaired[v], rate);
+    tMBTriangle_setFreq(&triPaired[v], rate);
+    sample += tCycle_tick(&sinePaired[v]) * (1.0f - shape);
+    sample += tMBTriangle_tick(&triPaired[v]) * shape;
+}
+
+void LowFreqOscillator::sineTick(float& sample, int v, float freq, float shape)
+{
+    tCycle_setFreq(&sine[v], freq);
+    sample += tCycle_tick(&sine[v]);
+}
+
+void LowFreqOscillator::triTick(float& sample, int v, float freq, float shape)
+{
+    tMBTriangle_setFreq(&tri[v], freq);
+    tMBTriangle_setWidth(&tri[v], shape*0.5f + 0.5f);
+    sample += tMBTriangle_tick(&tri[v]);
+}
+
+void LowFreqOscillator::sawTick(float& sample, int v, float freq, float shape)
+{
+    tMBSaw_setFreq(&saw[v], freq);
+    sample += tMBSaw_tick(&saw[v]);
+}
+
+void LowFreqOscillator::pulseTick(float& sample, int v, float freq, float shape)
+{
+    tMBPulse_setFreq(&pulse[v], freq);
+    tMBPulse_setWidth(&pulse[v], shape*0.5f + 0.5f);
+    sample += tMBPulse_tick(&pulse[v]);
 }
 
 void LowFreqOscillator::noteOn(int voice, float velocity)
 {
     if (sync->getValue() > 0)
     {
-        tSawtooth_setPhase(&saw[voice], phaseReset);
-        tSquare_setPhase(&square[voice], phaseReset);
+        tMBSaw_setPhase(&saw[voice], phaseReset);
+        tMBPulse_setPhase(&pulse[voice], phaseReset);
         tCycle_setPhase(&sine[voice], phaseReset);
-        tTriangle_setPhase(&tri[voice], phaseReset);
+        tMBTriangle_setPhase(&tri[voice], phaseReset);
+        
+        tMBSaw_setPhase(&sawPaired[voice], phaseReset);
+        tMBPulse_setPhase(&pulsePaired[voice], phaseReset);
+        tCycle_setPhase(&sinePaired[voice], phaseReset);
+        tMBTriangle_setPhase(&triPaired[voice], phaseReset);
     }
 }

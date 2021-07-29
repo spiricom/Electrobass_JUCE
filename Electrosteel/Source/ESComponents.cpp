@@ -170,7 +170,7 @@ void MappingTarget::update(bool directChange, bool sendListenerNotif)
         if (name.getTrailingIntValue() > 0) setText(String(name.getTrailingIntValue()));
         else setText(name.substring(0, 1));
         
-        setValue(model.end, sendListenerNotif ? sendNotification : dontSendNotification);
+        setValue(model.end, sendListenerNotif ? sendNotificationAsync : dontSendNotification);
     }
     else
     {
@@ -180,7 +180,7 @@ void MappingTarget::update(bool directChange, bool sendListenerNotif)
         lastProportionalValue = 0;
         // Guarantee a change event is sent to listeners and set to 0
         // Feels like there should be a better way to do this...
-        setValue(0.f, sendListenerNotif ? sendNotification : dontSendNotification);
+        setValue(0.f, sendListenerNotif ? sendNotificationAsync : dontSendNotification);
         //        getParentComponent()->repaint();
     }
 }

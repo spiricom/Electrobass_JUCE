@@ -81,7 +81,6 @@ private:
     ToggleButton pedalToggle;
     ESTabbedComponent envsAndLFOs;
     MappingSource* currentMappingSource;
-    OwnedArray<TextButton> copedentButtons;
     ToggleButton mpeToggle;
     Slider seriesParallelSlider;
     Label seriesLabel;

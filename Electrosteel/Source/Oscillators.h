@@ -39,14 +39,25 @@ public:
 private:
     
     void (Oscillator::*shapeTick)(float& sample, int v, float freq, float shape);
-    void sawPulseTick(float& sample, int v, float freq, float shape);
+    void sawSquareTick(float& sample, int v, float freq, float shape);
     void sineTriTick(float& sample, int v, float freq, float shape);
+    void sawTick(float& sample, int v, float freq, float shape);
+    void pulseTick(float& sample, int v, float freq, float shape);
+    void sineTick(float& sample, int v, float freq, float shape);
+    void triTick(float& sample, int v, float freq, float shape);
     void userTick(float& sample, int v, float freq, float shape);
-    tSawtooth saw[NUM_STRINGS];
-    //tMBSaw saw[NUM_STRINGS];
-    //tMBPulse pulse[NUM_STRINGS];
+    
+    tMBSaw saw[NUM_STRINGS];
+    tMBPulse pulse[NUM_STRINGS];
     tCycle sine[NUM_STRINGS];
-    //tMBTriangle tri[NUM_STRINGS];
+    tMBTriangle tri[NUM_STRINGS];
+    
+    // Using seperate objects for pairs to easily maintain phase relation
+    tMBSaw sawPaired[NUM_STRINGS];
+    tMBPulse pulsePaired[NUM_STRINGS];
+    tCycle sinePaired[NUM_STRINGS];
+    tMBTriangle triPaired[NUM_STRINGS];
+    
     tWaveOscS wave[NUM_STRINGS];
     
     float* sourceValues[MAX_NUM_UNIQUE_SKEWS];
@@ -90,13 +101,24 @@ private:
     void sawSquareTick(float& sample, int v, float freq, float shape);
     void sineTriTick(float& sample, int v, float freq, float shape);
     void userTick(float& sample, int v, float freq, float shape);
+    void sawTick(float& sample, int v, float freq, float shape);
+    void pulseTick(float& sample, int v, float freq, float shape);
+    void sineTick(float& sample, int v, float freq, float shape);
+    void triTick(float& sample, int v, float freq, float shape);
     
     RangedAudioParameter* sync;
     
-    tSawtooth saw[NUM_STRINGS];
-    tSquare square[NUM_STRINGS];
+    tMBSaw saw[NUM_STRINGS];
+    tMBPulse pulse[NUM_STRINGS];
     tCycle sine[NUM_STRINGS];
-    tTriangle tri[NUM_STRINGS];
+    tMBTriangle tri[NUM_STRINGS];
+    
+    // Using seperate objects for pairs to easily maintain phase relation
+    tMBSaw sawPaired[NUM_STRINGS];
+    tMBPulse pulsePaired[NUM_STRINGS];
+    tCycle sinePaired[NUM_STRINGS];
+    tMBTriangle triPaired[NUM_STRINGS];
+    
     tWaveOscS wave[NUM_STRINGS];
     
     float* sourceValues[MAX_NUM_UNIQUE_SKEWS];

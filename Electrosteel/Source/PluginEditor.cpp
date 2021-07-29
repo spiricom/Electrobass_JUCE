@@ -197,19 +197,6 @@ chooser("Select a .wav file to load...", {}, "*.wav")
         }
     }
     
-    for (int i = 0; i < CopedentColumnNil; ++i)
-    {
-        copedentButtons.add(new TextButton(cCopedentColumnNames[i]));
-        copedentButtons[i]->setClickingTogglesState(true);
-        copedentButtons[i]->setLookAndFeel(&laf);
-        if (i != 0)
-        {
-            tab1.addAndMakeVisible(copedentButtons[i]);
-            buttonAttachments.add(new ButtonAttachment(vts, cCopedentColumnNames[i],
-                                                       *copedentButtons[i]));
-        }
-    }
-    
     //==============================================================================
     // TAB2 ========================================================================
     addAndMakeVisible(tab2);
@@ -263,8 +250,6 @@ ESAudioProcessorEditor::~ESAudioProcessorEditor()
     seriesLabel.setLookAndFeel(nullptr);
     parallelLabel.setLookAndFeel(nullptr);
     envsAndLFOs.setLookAndFeel(nullptr);
-    for (int i = 0; i < CopedentColumnNil; ++i)
-    copedentButtons[i]->setLookAndFeel(nullptr);
     
     sendOutButton.setLookAndFeel(nullptr);
     
@@ -350,13 +335,7 @@ void ESAudioProcessorEditor::resized()
     midiKeyMaxLabel.setBounds(x-30, y, 30, 24*s - 4);
     midiKeyRangeSlider.setBounds(0, y + 24*s - 4, x, 11*s + 4);
     
-    copedentButtons[1]->setBounds(x, y-1, align, 35*s);
-    for (int i = 2; i < CopedentColumnNil; ++i)
-    {
-        copedentButtons[i]->setBounds(copedentButtons[i-1]->getRight(), y-1, align, 35*s);
-    }
-    
-    pitchBendSliders[0]->setBounds(0, copedentButtons[1]->getBottom(), x, 24*s);
+    pitchBendSliders[0]->setBounds(0, midiKeyRangeSlider.getBottom(), x, 24*s);
     
     int r = (10*align) % 12;
     int w = (10*align) / 12;
@@ -366,7 +345,7 @@ void ESAudioProcessorEditor::resized()
     for (int i = 1; i < NUM_CHANNELS; ++i)
     {
         pitchBendSliders[i]->setBounds(channelStringButtons[i-1]->getRight(),
-                                       copedentButtons[1]->getBottom(),
+                                       midiKeyRangeSlider.getBottom(),
                                        w + (r > 0 ? 1 : 0), 24*s);
         channelStringButtons[i]->setBounds(channelStringButtons[i-1]->getRight(), y,
                                            w + (r-- > 0 ? 1 : 0), 35*s);

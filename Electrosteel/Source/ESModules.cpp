@@ -229,8 +229,13 @@ void OscModule::labelTextChanged(Label* label)
         auto value = pitchLabel.getText().getDoubleValue();
         int i = value;
         double f = value-i;
-        getDial(OscPitch)->getSlider().setValue(i);
-        getDial(OscFine)->getSlider().setValue(f*100.);
+        getDial(OscPitch)->getSlider().setValue(i, sendNotificationAsync);
+        getDial(OscFine)->getSlider().setValue(f*100., sendNotificationAsync);
+    }
+    else if (label == &freqLabel)
+    {
+        auto value = freqLabel.getText().getDoubleValue();
+        getDial(OscFreq)->getSlider().setValue(value, sendNotificationAsync);
     }
 }
 

@@ -90,12 +90,20 @@ typedef enum _OscShapeSet
 {
     SawPulseOscShapeSet = 0,
     SineTriOscShapeSet,
+    SawOscShapeSet,
+    PulseOscShapeSet,
+    SineOscShapeSet,
+    TriOscShapeSet,
     UserOscShapeSet,
     OscShapeSetNil
 } OscShapeSet;
 static const StringArray oscShapeSetNames = {
-    "Saw-Pulse",
+    "Saw-Square",
     "Sine-Tri",
+    "Saw",
+    "Pulse",
+    "Sine",
+    "Tri",
     "Select file..."
 };
 
@@ -123,11 +131,19 @@ typedef enum _LFOShapeSet
 {
     SineTriLFOShapeSet = 0,
     SawPulseLFOShapeSet,
+    SineLFOShapeSet,
+    TriLFOShapeSet,
+    SawLFOShapeSet,
+    PulseLFOShapeSet,
     LFOShapeSetNil
 } LFOShapeSet;
 static const StringArray lfoShapeSetNames = {
     "Sine-Tri",
-    "Saw-Square"
+    "Saw-Square",
+    "Sine",
+    "Tri",
+    "Saw",
+    "Pulse"
 };
 
 //==============================================================================
