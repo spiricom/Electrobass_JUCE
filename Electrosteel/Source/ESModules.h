@@ -184,6 +184,7 @@ public:
     void resized() override;
     void sliderValueChanged(Slider* slider) override;
     void labelTextChanged(Label* label) override;
+    void comboBoxChanged(ComboBox *comboBox) override;
     
     void mouseEnter(const MouseEvent &) override;
     void mouseExit(const MouseEvent &) override;

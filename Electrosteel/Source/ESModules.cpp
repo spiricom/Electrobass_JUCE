@@ -289,6 +289,25 @@ void OscModule::comboBoxChanged(ComboBox *comboBox)
             vts.getParameter(ac.getName() + " ShapeSet")->setValueNotifyingHost(normValue);
             updateShapeCB();
         }
+        
+        if (shapeCB.getSelectedItemIndex() == UserOscShapeSet)
+        {
+            // Maybe should check that the loaded table has more
+            // than one waveform and set alpha accordingly
+            getDial(OscShape)->setAlpha(1.f);
+            getDial(OscShape)->setInterceptsMouseClicks(true, true);
+        }
+        else if (shapeCB.getSelectedItemIndex() > SineTriOscShapeSet &&
+                 shapeCB.getSelectedItemIndex() != PulseOscShapeSet)
+        {
+            getDial(OscShape)->setAlpha(0.5f);
+            getDial(OscShape)->setInterceptsMouseClicks(false, false);
+        }
+        else
+        {
+            getDial(OscShape)->setAlpha(1.f);
+            getDial(OscShape)->setInterceptsMouseClicks(true, true);
+        }
     }
 }
 
@@ -660,6 +679,24 @@ void LFOModule::labelTextChanged(Label* label)
     {
         auto value = rateLabel.getText().getDoubleValue();
         getDial(LowFreqRate)->getSlider().setValue(value);
+    }
+}
+
+void LFOModule::comboBoxChanged(ComboBox *comboBox)
+{
+    if (comboBox == &shapeCB)
+    {
+        if (shapeCB.getSelectedItemIndex() > SawPulseLFOShapeSet &&
+            shapeCB.getSelectedItemIndex() != PulseLFOShapeSet)
+        {
+            getDial(LowFreqShape)->setAlpha(0.5f);
+            getDial(LowFreqShape)->setInterceptsMouseClicks(false, false);
+        }
+        else
+        {
+            getDial(LowFreqShape)->setAlpha(1.f);
+            getDial(LowFreqShape)->setInterceptsMouseClicks(true, true);
+        }
     }
 }
 
