@@ -52,16 +52,18 @@ public:
     void chooseFile(const FileChooser& chooser);
     
     void update();
-    void updatePedalToggle(bool state);
-    void updateMPEToggle(bool state);
-    void updateChannelStringButton(int whichButton, int inc);
-    void updateMidiKeyRangeSlider(int min, int max);
-    void updateRandomValueLabel(float value);
     
     ESAudioProcessor& processor;
     AudioProcessorValueTreeState& vts;
     
 private:
+    
+    void updatePedalToggle(bool state);
+    void updateMPEToggle(bool state);
+    void updateStringChannel(int string, int ch);
+    void updateMacroControl(int macro, int ctrl);
+    void updateMidiKeyRangeSlider(int min, int max);
+    void updateRandomValueLabel(float value);
     
     TabbedComponent tabs;
     
@@ -78,7 +80,7 @@ private:
     OwnedArray<ESDial> macroDials;
     OwnedArray<Slider> pitchBendSliders;
     MidiKeyboardComponent keyboard;
-    OwnedArray<TextButton> channelStringButtons;
+    OwnedArray<TextButton> stringActivityButtons;
     OwnedArray<OscModule> oscModules;
     OwnedArray<FilterModule> filterModules;
     std::unique_ptr<OutputModule> outputModule;
@@ -92,6 +94,13 @@ private:
     
     Component tab2;
     CopedentTable copedentTable;
+    
+    Component tab3;
+    /* ToggleButton mpeToggle */// Declared above but will be include in this tab too
+    OwnedArray<Label> macroControlEntries;
+    OwnedArray<Label> macroControlLabels;
+    OwnedArray<Label> stringChannelEntries;
+    OwnedArray<Label> stringChannelLabels;
     
     TextButton sendOutButton;
     Label versionLabel;

@@ -99,14 +99,10 @@ void MappingTarget::paint(Graphics& g)
 {
     Slider::paint(g);
     
-    if (model.currentScalarSource != nullptr)
-    {
-        g.setFont(laf.getPopupMenuFont());
-        g.setColour(model.currentScalarSource->colour);
-        String text;
-        int trailing = model.currentScalarSource->name.getTrailingIntValue();
-        if (trailing > 0) text = String(trailing);
-        else text = model.currentScalarSource->name.substring(0, 1);
+//    if (model.currentScalarSource != nullptr)
+//    {
+//        g.setFont(laf.getPopupMenuFont());
+//        g.setColour(model.currentScalarSource->colour);
         
 //        Justification just =
 //        model.currentScalarSource == nullptr ? Justification::centred : Justification::centredLeft;
@@ -116,9 +112,9 @@ void MappingTarget::paint(Graphics& g)
         
 //        int x = (label->getWidth()/2) + 2;
 //        int w = x - 4;
-//        g.drawFittedText(text, x, 4, w, w*0.7, Justification::centred, 1);
-        g.fillEllipse(getWidth()-5, 3, 3, 3);
-    }
+//        g.drawFittedText(getScalarString(), x, 4, w, w*0.7, Justification::centred, 1);
+//        g.fillEllipse(getWidth()-5, 3, 3, 3);
+//    }
 }
 
 void MappingTarget::resized()
@@ -214,8 +210,6 @@ void MappingTarget::update(bool directChange, bool sendListenerNotif)
         setValue(0.f, sendListenerNotif ? sendNotificationAsync : dontSendNotification);
         //        getParentComponent()->repaint();
     }
-    
-    repaint();
 }
 
 void MappingTarget::setText(String s)
@@ -242,16 +236,22 @@ void MappingTarget::setMappingRange(float end, bool directChange, bool sendListe
 void MappingTarget::setMappingScalar(MappingSource* source)
 {
     model.setMappingScalar(&source->getModel(), true);
+    // The parent dial draw some stuff based on this so we'll repaint
+    getParentComponent()->repaint();
 }
 
 void MappingTarget::removeMapping()
 {
     model.removeMapping(true);
+    // The parent dial draw some stuff based on this so we'll repaint
+    getParentComponent()->repaint();
 }
 
 void MappingTarget::removeScalar()
 {
     model.removeScalar(true);
+    // The parent dial draw some stuff based on this so we'll repaint
+    getParentComponent()->repaint();
 }
 
 Label* MappingTarget::getValueLabel()
@@ -266,6 +266,18 @@ Label* MappingTarget::getValueLabel()
         }
     }
     return nullptr;
+}
+
+String MappingTarget::getScalarString()
+{
+    String text = String();
+    if (model.currentScalarSource != nullptr)
+    {
+        int trailing = model.currentScalarSource->name.getTrailingIntValue();
+        if (trailing > 0) text = String(trailing);
+        else text = model.currentScalarSource->name.substring(0, 1);
+    }
+    return text;
 }
 
 void MappingTarget::menuCallback(int result, MappingTarget* target)
@@ -383,7 +395,8 @@ void ESDial::paint(Graphics& g)
         Path arc;
         arc.addArc(rx - b*4, ry - b*4, rw + b*8, rw + b*8, currentAngle, angle, true);
         
-        Rectangle<int> inner = slider.getBounds().expanded(ringWidth*(i-1) + 1, ringWidth*(i-1) + 1);
+        Rectangle<int> inner = slider.getBounds().expanded(ringWidth*(i-1) + 1,
+                                                           ringWidth*(i-1) + 1);
         
         x = inner.getX();
         y = inner.getY();
@@ -401,6 +414,28 @@ void ESDial::paint(Graphics& g)
         arc.addArc(rx2 - b2*4, ry2 - b2*4, rw2 + b2*8, rw2 + b2*8, angle, currentAngle, false);
         g.setColour(t[i]->getColour());
         g.fillPath(arc);
+        
+        String text = t[i]->getScalarString();
+        if (text.isNotEmpty())
+        {
+            int w = t[i]->getWidth()*0.55f;
+            int h = t[i]->getHeight()*0.55f;
+            int x = t[i]->getX();
+            if (i == 1) x += (t[i]->getWidth()-w)/2;
+            else if (i == 2) x += t[i]->getWidth()-w-1;
+            int y = t[i]->getY()-h;
+            
+            // Draw a little box on top of
+            g.setColour(Colours::grey);
+            g.drawVerticalLine(x, y, t[i]->getY());
+            g.drawVerticalLine(x+w, y, t[i]->getY());
+            g.drawHorizontalLine(y, x, x+w);
+            
+            g.setFont(laf.getPopupMenuFont().withHeight(h));
+            g.setColour(t[i]->getScalarColour());
+            g.drawFittedText(text, x+1, y+1, w-1, h-1,
+                             Justification::centred, 1);
+        }
         
         if (t[i]->isBipolar())
         {

@@ -77,7 +77,7 @@ public:
     void toggleSustain();
     
     //==============================================================================
-    bool midiChannelIsActive(int channel);
+    bool stringIsActive(int string);
     
     //==============================================================================
     bool getMPEMode();
@@ -143,9 +143,10 @@ public:
     
     struct Mapping
     {
-        String sourceName;
-        String targetName;
-        float value;
+        String sourceName = String();
+        String scalarName = String();
+        String targetName = String();
+        float value = 0.f;
     };
     
     Array<Mapping> initialMappings;
@@ -156,8 +157,6 @@ public:
     float copedentFundamental;
     String copedentName = "";
     int copedentNumber = 0;
-    
-    int channelToString[NUM_CHANNELS+1];
     
     bool voiceIsSounding[NUM_STRINGS];
     
@@ -173,6 +172,14 @@ public:
     tSimplePoly strings[NUM_STRINGS];
     
     bool pedalControlsMaster = true;
+    
+    // +1 because we'll treat pedal as 2 macros for ccs
+    int macroCCNumbers[NUM_MACROS+1];
+    HashMap<int, int> ccNumberToMacroMap;
+    
+    // +1 because 0 no string/global pitch bend
+    int stringChannels[NUM_STRINGS+1];
+    HashMap<int, int> channelToStringMap;
     
 private:
     
@@ -192,9 +199,8 @@ private:
     
     bool mpeMode = true;
     
-    int midiChannelNoteCount[NUM_CHANNELS+1];
-    int midiChannelActivity[NUM_CHANNELS+1];
-    int midiChannelActivityTimeout;
+    int stringActivity[NUM_STRINGS+1];
+    int stringActivityTimeout;
     
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ESAudioProcessor)

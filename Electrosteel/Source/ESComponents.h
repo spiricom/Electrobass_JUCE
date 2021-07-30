@@ -61,6 +61,11 @@ public:
         if (model.currentSource == nullptr) return Colours::transparentBlack;
         else return model.currentSource->colour;
     }
+    Colour getScalarColour()
+    {
+        if (model.currentScalarSource == nullptr) return Colours::transparentBlack;
+        else return model.currentScalarSource->colour;
+    }
     
     MappingTargetModel& getModel() { return model; }
     bool isBipolar() { return model.bipolar; }
@@ -87,6 +92,7 @@ public:
     void removeScalar();
     
     Label* getValueLabel();
+    String getScalarString();
     
     static void menuCallback(int result, MappingTarget* target);
     

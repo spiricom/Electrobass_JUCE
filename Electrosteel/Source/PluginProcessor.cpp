@@ -269,8 +269,11 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
     
     seriesParallel = std::make_unique<SmoothedParameter>(*this, vts, "Filter Series-Parallel Mix");
     
+    macroCCNumbers[PEDAL_MACRO_ID+1] = NUM_MACROS+1;
     for (int i = 0; i < NUM_MACROS; ++i)
     {
+        macroCCNumbers[i] = i+1;
+        
         String n;
         Colour c;
         if (i < NUM_GENERIC_MACROS)
@@ -292,6 +295,11 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
             ccSources.getLast()->sources[j] = source;
         }
         sourceIds.add(n);
+    }
+    for (int i = 1; i <= 127; ++i) ccNumberToMacroMap.set(i, -1);
+    for (int i = 0; i < NUM_MACROS+1; ++i)
+    {
+        ccNumberToMacroMap.set(macroCCNumbers[i], i);
     }
     
     midiKeySource = std::make_unique<MappingSourceModel>(*this, "MIDI Pitch",
@@ -329,9 +337,14 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
         pitchBendParams.add(new SmoothedParameter(*this, vts, "PitchBend" + String(i)));
-        midiChannelNoteCount[i+1] = 0;
-        midiChannelActivity[i+1] = 0;
-        channelToString[i+1] = i;
+    }
+    
+    for (int i = 1; i <= 16; ++i) channelToStringMap.set(i, -1);
+    for (int i = 0; i < NUM_STRINGS+1; ++i)
+    {
+        stringChannels[i] = i+1;
+        channelToStringMap.set(stringChannels[i], i);
+        stringActivity[i] = 0;
     }
     
     //==============================================================================
@@ -404,7 +417,7 @@ ESAudioProcessor::~ESAudioProcessor()
 //==============================================================================
 void ESAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    midiChannelActivityTimeout = sampleRate/samplesPerBlock/2;
+    stringActivityTimeout = sampleRate/samplesPerBlock/2;
     LEAF_setSampleRate(&leaf, sampleRate);
     
     DBG("Pre prepare: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
@@ -445,6 +458,7 @@ void ESAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
         for (Mapping m : initialMappings)
         {
             targetMap[m.targetName]->setMapping(sourceMap[m.sourceName], m.value, false);
+            targetMap[m.targetName]->setMappingScalar(sourceMap[m.scalarName], false);
         }
         initialMappings.clear();
     }
@@ -765,7 +779,7 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
     }
     
     for (int i = 0; i < NUM_CHANNELS; ++i)
-        if (midiChannelActivity[i] > 0) midiChannelActivity[i]--;
+        if (stringActivity[i] > 0) stringActivity[i]--;
 }
 
 //==============================================================================
@@ -782,13 +796,11 @@ juce::AudioProcessorEditor* ESAudioProcessor::createEditor()
 //==============================================================================
 void ESAudioProcessor::handleNoteOn(MidiKeyboardState*, int midiChannel, int midiNoteNumber, float velocity)
 {
-    if (mpeMode) midiChannelNoteCount[midiChannel]++;
     noteOn(midiChannel, midiNoteNumber, velocity);
 }
 
 void ESAudioProcessor::handleNoteOff(MidiKeyboardState*, int midiChannel, int midiNoteNumber, float velocity)
 {
-    if (mpeMode) midiChannelNoteCount[midiChannel]--;
     noteOff(midiChannel, midiNoteNumber, velocity);
 }
 
@@ -802,7 +814,6 @@ void ESAudioProcessor::handleMidiMessage(const MidiMessage& m)
     else
     {
         int channel = mpeMode ? m.getChannel() : 1;
-        if (mpeMode) midiChannelActivity[channel] = midiChannelActivityTimeout;
         if (m.isPitchWheel())
         {
             pitchBend(channel, m.getPitchWheelValue());
@@ -816,7 +827,7 @@ void ESAudioProcessor::handleMidiMessage(const MidiMessage& m)
 
 void ESAudioProcessor::noteOn(int channel, int key, float velocity)
 {
-    int i = mpeMode ? channelToString[channel]-1 : 0;
+    int i = mpeMode ? channelToStringMap[channel]-1 : 0;
     if (i < 0) return;
     if (!velocity) noteOff(channel, key, velocity);
     else
@@ -846,7 +857,7 @@ void ESAudioProcessor::noteOn(int channel, int key, float velocity)
 
 void ESAudioProcessor::noteOff(int channel, int key, float velocity)
 {
-    int i = mpeMode ? channelToString[channel]-1 : 0;
+    int i = mpeMode ? channelToStringMap[channel]-1 : 0;
     if (i < 0) return;
     
     int v = tSimplePoly_markPendingNoteOff(&strings[i], key);
@@ -861,11 +872,13 @@ void ESAudioProcessor::noteOff(int channel, int key, float velocity)
 
 void ESAudioProcessor::pitchBend(int channel, int data)
 {
-    // Parameters need to be set with a 0. to 1. range, but will use their set range when accessed
-    float bend = data * 0.000061038881768f; // 1.0 / 16383.0
+    float bend = data * INV_16383;
     if (mpeMode)
     {
-        vts.getParameter("PitchBend" + String(channelToString[channel]))->setValueNotifyingHost(bend);
+        int string = channelToStringMap[channel];
+        if (string < 0) return;
+        stringActivity[string] = stringActivityTimeout;
+        vts.getParameter("PitchBend" + String(string))->setValueNotifyingHost(bend);
     }
     else
     {
@@ -877,41 +890,32 @@ void ESAudioProcessor::ctrlInput(int channel, int ctrl, int value)
 {
     float v;
     
-    if (channel == 1)
+    if (channel == stringChannels[0])
     {
-        if (ctrl == 17)
+        stringActivity[0] = stringActivityTimeout;
+        
+        int m = ccNumberToMacroMap[ctrl];
+        
+        if (0 <= m && m < NUM_GENERIC_MACROS)
         {
-            v = value * 0.007874015748031f;
-            vts.getParameter("Y")->setValueNotifyingHost(v);
+            v = value * INV_127;
+            vts.getParameter("M" + String(m+1))->setValueNotifyingHost(v);
         }
-        else if (ctrl == 18)
+        else if (NUM_GENERIC_MACROS <= m && m < PEDAL_MACRO_ID)
         {
-            v = value * 0.007874015748031f;
-            vts.getParameter("X")->setValueNotifyingHost(v);
+            v = value * INV_127;
+            vts.getParameter(cUniqueMacroNames[m-NUM_GENERIC_MACROS])
+            ->setValueNotifyingHost(v);
         }
-        else if (ctrl == 19)
-        {
-            v = value * 0.007874015748031f;
-            vts.getParameter("A")->setValueNotifyingHost(v);
-        }
-        else if (ctrl == 20)
-        {
-            v = value * 0.007874015748031f;
-            vts.getParameter("B")->setValueNotifyingHost(v);
-        }
-        else if (ctrl == 21)
+        // Pedal is a special case and will use 2 CCs
+        else if (m == PEDAL_MACRO_ID)
         {
             highByteVolume = value;
         }
-        else if (ctrl == 22)
+        else if (m == PEDAL_MACRO_ID+1)
         {
-            v = (value + (highByteVolume << 7)) * 0.0002442002442f; // divided by 4095
+            v = (value + (highByteVolume << 7)) * INV_4095;
             vts.getParameter("Ped")->setValueNotifyingHost(v);
-        }
-        else if (1 <= ctrl && ctrl <= NUM_MACROS)
-        {
-             v = value * 0.007874015748031f; // 1.0f / 127.0f
-            vts.getParameter("M" + String(ctrl))->setValueNotifyingHost(v);
         }
     }
 }
@@ -937,9 +941,15 @@ void ESAudioProcessor::toggleSustain()
 }
 
 //==============================================================================
-bool ESAudioProcessor::midiChannelIsActive(int channel)
+bool ESAudioProcessor::stringIsActive(int string)
 {
-    return midiChannelNoteCount[channel] + midiChannelActivity[channel] > 0;
+    if (string == 0) return stringActivity[0] > 0;
+    
+    int isOn;
+    if (mpeMode) isOn = tSimplePoly_isOn(&strings[string-1], 0);
+    else isOn = tSimplePoly_isOn(&strings[0], string-1);
+    
+    return isOn + stringActivity[string] > 0;
 }
 
 //==============================================================================
@@ -1134,9 +1144,15 @@ void ESAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     root.setProperty("pedalControlsMaster", pedalControlsMaster, nullptr);
     root.setProperty("midiKeyMin", midiKeyMin, nullptr);
     root.setProperty("midiKeyMax", midiKeyMax, nullptr);
-    for (int i = 0; i < NUM_CHANNELS; ++i)
+    
+    for (int i = 0; i < NUM_MACROS+1; ++i)
     {
-        root.setProperty("Ch" + String(i+1) + "String", channelToString[i+1], nullptr);
+        root.setProperty("M" + String(i+1) + "CC", macroCCNumbers[i], nullptr);
+    }
+    
+    for (int i = 0; i < NUM_STRINGS+1; ++i)
+    {
+        root.setProperty("String" + String(i) + "Ch", stringChannels[i], nullptr);
     }
     
     for (int i = 0; i < NUM_OSCS; ++i)
@@ -1172,8 +1188,14 @@ void ESAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     {
         if (MappingSourceModel* source = target->currentSource)
         {
+            String scalarName = String();
+            if (target->currentScalarSource != nullptr)
+            {
+                scalarName = target->currentScalarSource->name;
+            }
             ValueTree mapping ("m" + String(i++));
             mapping.setProperty("s", source->name, nullptr);
+            mapping.setProperty("l", scalarName, nullptr);
             mapping.setProperty("t", target->name, nullptr);
             mapping.setProperty("v", target->end, nullptr);
             mappings.addChild(mapping, -1, nullptr);
@@ -1200,9 +1222,18 @@ void ESAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
         midiKeyMin = xml->getIntAttribute("midiKeyMin", 21);
         midiKeyMax = xml->getIntAttribute("midiKeyMax", 108);
         
-        for (int i = 0; i < NUM_CHANNELS; ++i)
+        for (int i = 1; i <= 127; ++i) ccNumberToMacroMap.set(i, -1);
+        for (int i = 0; i < NUM_MACROS+1; ++i)
         {
-            channelToString[i+1] = xml->getIntAttribute("Ch" + String(i+1) + "String", i);
+            macroCCNumbers[i] = xml->getIntAttribute("M" + String(i+1) + "CC", i+1);
+            ccNumberToMacroMap.set(macroCCNumbers[i], i);
+        }
+        
+        for (int i = 1; i <= 16; ++i) channelToStringMap.set(i, -1);
+        for (int i = 0; i < NUM_STRINGS+1; ++i)
+        {
+            stringChannels[i] = xml->getIntAttribute("String" + String(i) + "Ch", i+1);
+            channelToStringMap.set(stringChannels[i], i);
         }
         
         for (int i = 0; i < NUM_OSCS; ++i)
@@ -1245,6 +1276,7 @@ void ESAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
             {
                 Mapping m;
                 m.sourceName = child->getStringAttribute("s");
+                m.scalarName = child->getStringAttribute("l");
                 m.targetName = child->getStringAttribute("t");
                 m.value = child->getDoubleAttribute("v");
                 initialMappings.add(m);

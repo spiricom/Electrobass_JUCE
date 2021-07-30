@@ -20,7 +20,7 @@ processor(processor)
     range = parameter->getNormalisableRange();
     for (int i = 0; i < 3; ++i)
     {
-        hooks[i] = ParameterHook("", &value0, 0.0f, 0.0f);
+        hooks[i] = ParameterHook("", &value0, 0.0f, 0.0f, "", &value1);
         whichHooks[i] = 0;
     }
     processor.params.add(this);

@@ -20,19 +20,16 @@ class ParameterHook
 {
 public:
     //==============================================================================
-    ParameterHook() :
-    sourceName(""),
-    hook(&value0),
-    min(0.0f),
-    length(0.0f)
-    {
-    }
+    ParameterHook() = default;
     
-    ParameterHook(String sourceName, float* hook, float min, float max) :
+    ParameterHook(String sourceName, float* hook, float min, float max,
+                  String scalarName, float* scalar) :
     sourceName(sourceName),
     hook(hook),
     min(min),
-    length(max-min)
+    length(max-min),
+    scalarName(scalarName),
+    scalar(scalar)
     {
     }
     
@@ -52,10 +49,6 @@ public:
     float min, length;
     String scalarName;
     float* scalar;
-
-private:
-    float value0 = 0.0f;
-    float value1 = 1.0f;
 };
 
 //==============================================================================
