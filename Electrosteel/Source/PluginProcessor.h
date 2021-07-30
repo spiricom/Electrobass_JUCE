@@ -131,6 +131,10 @@ public:
     std::unique_ptr<MappingSourceModel> midiKeySource;
     int midiKeyMin = 21; // Default to A0
     int midiKeyMax = 108; // Default to C8
+    
+    float* randomValues[MAX_NUM_UNIQUE_SKEWS];
+    float lastRandomValue = 0.f;
+    std::unique_ptr<MappingSourceModel> randomSource;
 
     OwnedArray<SmoothedParameter> params;
     

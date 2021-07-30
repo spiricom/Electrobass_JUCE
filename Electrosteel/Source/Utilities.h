@@ -44,15 +44,18 @@ public:
         // Significant bottleneck; gets called for each hook for each param
         // for each voice every tick so if there's any possible
         // optimization here it should be impactful
-        return ((*hook * length) + min);
+        return ((*hook * length) + min) * *scalar;
     }
 
     String sourceName;
     float* hook;
     float min, length;
+    String scalarName;
+    float* scalar;
 
 private:
     float value0 = 0.0f;
+    float value1 = 1.0f;
 };
 
 //==============================================================================
@@ -85,10 +88,10 @@ public:
     ParameterHook& getHook(int index);
     void setHook(const String& sourceName, int index,
                  const float* hook, float min, float max);
-    void resetHook(int index);
-    void updateHook(int index, const float* hook);
-    
     void setHookRange(int index, float min, float max);
+    void setHookScalar(const String& scalarName, int index, float* scalar);
+    void resetHook(int index);
+    void resetHookScalar(int index);
     
     float getStart();
     float getEnd();
@@ -110,10 +113,12 @@ private:
     float* valuePointer = &value;
     float values[MAX_NUM_UNIQUE_SKEWS];
     float* valuePointers[MAX_NUM_UNIQUE_SKEWS];
-    float value0 = 0.0f;
     ParameterHook hooks[3];
     int numActiveHooks = 0;
     int whichHooks[3];
+    
+    float value0 = 0.0f;
+    float value1 = 1.0f;
 };
 
 //==============================================================================
@@ -157,9 +162,11 @@ public:
     void prepareToPlay();
 
     void setMapping(MappingSourceModel* source, float end, bool sendChangeEvent);
-    void removeMapping(bool sendChangeEvent);
     void setMappingRange(float end, bool sendChangeEvent,
                          bool sendListenerNotif, bool updateSlider);
+    void setMappingScalar(MappingSourceModel* source, bool sendChangeEvent);
+    void removeMapping(bool sendChangeEvent);
+    void removeScalar(bool sendChangeEvent);
     
     bool isBipolar() { return bipolar; }
     
@@ -168,7 +175,8 @@ public:
     ESAudioProcessor& processor;
     
     String name;
-    MappingSourceModel* currentSource;
+    MappingSourceModel* currentSource = nullptr;
+    MappingSourceModel* currentScalarSource = nullptr;
     OwnedArray<SmoothedParameter>& targetParameters;
     int index;
     float start, end;

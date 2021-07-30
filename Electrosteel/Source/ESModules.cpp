@@ -13,10 +13,30 @@
 
 //==============================================================================
 //==============================================================================
+ESComponent::ESComponent() :
+outlineColour(Colours::transparentBlack)
+{
+    setInterceptsMouseClicks(false, true);
+}
 
-ESModule::ESModule(ESAudioProcessorEditor& editor, AudioProcessorValueTreeState& vts, AudioComponent& ac,
-                   float relLeftMargin, float relDialWidth, float relDialSpacing,
-                   float relTopMargin, float relDialHeight) :
+ESComponent::~ESComponent()
+{
+    
+}
+
+void ESComponent::paint(Graphics &g)
+{
+    Rectangle<int> area = getLocalBounds();
+    
+    g.setColour(outlineColour);
+    g.drawRect(area);
+}
+
+//==============================================================================
+
+ESModule::ESModule(ESAudioProcessorEditor& editor, AudioProcessorValueTreeState& vts,
+                   AudioComponent& ac, float relLeftMargin, float relDialWidth,
+                   float relDialSpacing, float relTopMargin, float relDialHeight) :
 editor(editor),
 vts(vts),
 ac(ac),
@@ -24,11 +44,8 @@ relLeftMargin(relLeftMargin),
 relDialWidth(relDialWidth),
 relDialSpacing(relDialSpacing),
 relTopMargin(relTopMargin),
-relDialHeight(relDialHeight),
-outlineColour(Colours::transparentBlack)
+relDialHeight(relDialHeight)
 {
-    setInterceptsMouseClicks(false, true);
-    
     String& name = ac.getName();
     StringArray& paramNames = ac.getParamNames();
     for (int i = 0; i < paramNames.size(); i++)
@@ -60,14 +77,6 @@ ESModule::~ESModule()
     sliderAttachments.clear();
     buttonAttachments.clear();
     comboBoxAttachments.clear();
-}
-
-void ESModule::paint(Graphics &g)
-{
-    Rectangle<int> area = getLocalBounds();
-    
-    g.setColour(outlineColour);
-    g.drawRect(area);
 }
 
 void ESModule::resized()
@@ -113,7 +122,7 @@ ESDial* ESModule::getDial (int index)
 
 OscModule::OscModule(ESAudioProcessorEditor& editor, AudioProcessorValueTreeState& vts,
                      AudioComponent& ac) :
-ESModule(editor, vts, ac, 0.05f, 0.132f, 0.05f, 0.18f, 0.78f),
+ESModule(editor, vts, ac, 0.05f, 0.132f, 0.05f, 0.18f, 0.8f),
 chooser("Select wavetable file or folder...",
               File::getSpecialLocation(File::userDocumentsDirectory))
 {
@@ -436,7 +445,7 @@ void OscModule::displayPitchMapping(MappingTarget* mt)
 
 FilterModule::FilterModule(ESAudioProcessorEditor& editor, AudioProcessorValueTreeState& vts,
                            AudioComponent& ac) :
-ESModule(editor, vts, ac, 0.05f, 0.2f, 0.05f, 0.2f, 0.7f)
+ESModule(editor, vts, ac, 0.04f, 0.22f, 0.04f, 0.2f, 0.7f)
 {
     outlineColour = Colours::darkgrey;
     
@@ -470,12 +479,12 @@ void FilterModule::resized()
     
     for (int i = 1; i < ac.getParamNames().size(); ++i)
     {
-        dials[i]->setBoundsRelative(relLeftMargin + (relDialWidth*(i+1))+(relDialSpacing*i),
+        dials[i]->setBoundsRelative((relDialWidth*(i+1))+(relDialSpacing*i),
                                     relTopMargin, relDialWidth, relDialHeight);
     }
     
     cutoffLabel.setBoundsRelative(relLeftMargin+relDialWidth+0.5f*relDialSpacing,
-                                  0.42f, relDialWidth, 0.16f);
+                                  0.42f, relDialWidth-relLeftMargin, 0.16f);
     
     typeCB.setBounds(enabledToggle.getRight(), 4, getWidth()*0.3f, enabledToggle.getHeight()-4);
 //    typeCB.setBoundsRelative(relLeftMargin, 0.01f, relDialWidth+relDialSpacing, 0.16f);
@@ -561,7 +570,7 @@ void FilterModule::displayCutoffMapping(MappingTarget* mt)
 
 EnvModule::EnvModule(ESAudioProcessorEditor& editor, AudioProcessorValueTreeState& vts,
                      AudioComponent& ac) :
-ESModule(editor, vts, ac, 0.04f, 0.13f, 0.0675f, 0.16f, 0.84f)
+ESModule(editor, vts, ac, 0.03f, 0.14f, 0.06f, 0.16f, 0.84f)
 {
     velocityToggle.setButtonText("Scale to velocity");
     addAndMakeVisible(velocityToggle);
@@ -587,7 +596,7 @@ void EnvModule::resized()
 
 LFOModule::LFOModule(ESAudioProcessorEditor& editor, AudioProcessorValueTreeState& vts,
                      AudioComponent& ac) :
-ESModule(editor, vts, ac, 0.12f, 0.13f, 0.185f, 0.16f, 0.84f),
+ESModule(editor, vts, ac, 0.12f, 0.14f, 0.17f, 0.16f, 0.84f),
 chooser("Select wavetable file or folder...",
         File::getSpecialLocation(File::userDocumentsDirectory))
 {
@@ -712,7 +721,7 @@ void LFOModule::displayRateMapping(MappingTarget* mt)
 
 OutputModule::OutputModule(ESAudioProcessorEditor& editor, AudioProcessorValueTreeState& vts,
                            AudioComponent& ac) :
-ESModule(editor, vts, ac, 0.1f, 0.2f, 0.1f, 0.125f, 0.75f)
+ESModule(editor, vts, ac, 0.088f, 0.22f, 0.088f, 0.125f, 0.75f)
 {
     outlineColour = Colours::darkgrey;
     

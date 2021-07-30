@@ -302,6 +302,14 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
         midiKeySource->sources[i] = &midiKeyValues[i];
     }
     
+    randomSource = std::make_unique<MappingSourceModel>(*this, "Random on Attack",
+                                                         true, false, Colours::white);
+    for (int i = 0; i < numInvParameterSkews; ++i)
+    {
+        randomValues[i] = (float*) leaf_alloc(&leaf, sizeof(float) * NUM_STRINGS);
+        randomSource->sources[i] = &randomValues[i];
+    }
+    
     for (int i = 0; i < NUM_ENVS; ++i)
     {
         String n = "Envelope" + String(i+1);
@@ -387,6 +395,7 @@ ESAudioProcessor::~ESAudioProcessor()
     for (int i = 0; i < numInvParameterSkews; ++i)
     {
         leaf_free(&leaf, (char*)midiKeyValues[i]);
+        leaf_free(&leaf, (char*)randomValues[i]);
     }
     
     params.clearQuick(false);
@@ -819,11 +828,15 @@ void ESAudioProcessor::noteOn(int channel, int key, float velocity)
         {
             key -= midiKeyMin;
             float norm = key / float(midiKeyMax - midiKeyMin);
-            midiKeyValues[0][i] = jlimit(0.f, 1.f, norm);;
+            midiKeyValues[0][i] = jlimit(0.f, 1.f, norm);
+            float r = leaf.random();
+            randomValues[0][i] = r;
+            lastRandomValue = r;
             for (int s = 1; s < numInvParameterSkews; ++s)
             {
                 float invSkew = quickInvParameterSkews[s];
                 midiKeyValues[s][i] = powf(norm, invSkew);
+                randomValues[s][i] = powf(r, invSkew);
             }
             for (auto e : envs) e->noteOn(i, velocity);
             for (auto o : lfos) o->noteOn(i, velocity);

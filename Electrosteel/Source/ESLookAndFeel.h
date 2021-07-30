@@ -19,9 +19,7 @@ public:
     ~ESLookAndFeel();
     
     Font getPopupMenuFont (void) override;
-    
     Font getTextButtonFont (TextButton& b, int buttonHeight) override;
-    
     Font getLabelFont (Label& label) override;
     
     void drawButtonBackground (Graphics& g,

@@ -48,6 +48,10 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     // TAB1 ========================================================================
     addAndMakeVisible(tab1);
     
+    currentMappingSource = nullptr;
+    uniqueMacroComponent.setOutlineColour(Colours::darkgrey);
+    tab1.addAndMakeVisible(uniqueMacroComponent);
+    
     for (int i = 0; i < NUM_MACROS; ++i)
     {
         String n = i < NUM_GENERIC_MACROS ? "M" + String(i+1) :
@@ -55,35 +59,48 @@ chooser("Select a .wav file to load...", {}, "*.wav")
         
         macroDials.add(new ESDial(*this, n, n, true, false));
         sliderAttachments.add(new SliderAttachment(vts, n, macroDials[i]->getSlider()));
-        tab1.addAndMakeVisible(macroDials[i]);
+        
+        if (i < NUM_GENERIC_MACROS) tab1.addAndMakeVisible(macroDials[i]);
+        else uniqueMacroComponent.addAndMakeVisible(macroDials[i]);
     }
-    currentMappingSource = nullptr;
-    macroBorder.setFill(Colours::darkgrey);
-    tab1.addAndMakeVisible(macroBorder);
+    
+    midiKeyComponent.setOutlineColour(Colours::darkgrey);
+    tab1.addAndMakeVisible(midiKeyComponent);
     
     midiKeySource =
     std::make_unique<MappingSource>(*this, *processor.midiKeySource, "MIDI Pitch");
-    tab1.addAndMakeVisible(midiKeySource.get());
+    midiKeyComponent.addAndMakeVisible(midiKeySource.get());
     
     midiKeyRangeSlider.setSliderStyle(Slider::SliderStyle::TwoValueHorizontal);
     midiKeyRangeSlider.setTextBoxStyle(Slider::TextEntryBoxPosition::NoTextBox, true, 10, 10);
     midiKeyRangeSlider.setRange(0, 127, 1);
     midiKeyRangeSlider.addListener(this);
-    tab1.addAndMakeVisible(midiKeyRangeSlider);
+    midiKeyComponent.addAndMakeVisible(midiKeyRangeSlider);
     
     midiKeyMinLabel.setLookAndFeel(&laf);
     midiKeyMinLabel.setEditable(true);
     midiKeyMinLabel.setJustificationType(Justification::centred);
     midiKeyMinLabel.setColour(Label::backgroundColourId, Colours::darkgrey.withBrightness(0.2f));
     midiKeyMinLabel.addListener(this);
-    tab1.addAndMakeVisible(midiKeyMinLabel);
+    midiKeyComponent.addAndMakeVisible(midiKeyMinLabel);
     
     midiKeyMaxLabel.setLookAndFeel(&laf);
     midiKeyMaxLabel.setEditable(true);
     midiKeyMaxLabel.setJustificationType(Justification::centred);
     midiKeyMaxLabel.setColour(Label::backgroundColourId, Colours::darkgrey.withBrightness(0.2f));
     midiKeyMaxLabel.addListener(this);
-    tab1.addAndMakeVisible(midiKeyMaxLabel);
+    midiKeyComponent.addAndMakeVisible(midiKeyMaxLabel);
+    
+    randomSource =
+    std::make_unique<MappingSource>(*this, *processor.randomSource, "Random on Attack");
+    tab1.addAndMakeVisible(randomSource.get());
+    
+    randomValueLabel.setLookAndFeel(&laf);
+    randomValueLabel.setEditable(false);
+    randomValueLabel.setJustificationType(Justification::centred);
+    randomValueLabel.setColour(Label::backgroundColourId, Colours::darkgrey.withBrightness(0.2f));
+    randomValueLabel.addListener(this);
+    tab1.addAndMakeVisible(randomValueLabel);
     
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
@@ -257,6 +274,8 @@ ESAudioProcessorEditor::~ESAudioProcessorEditor()
     midiKeyMinLabel.setLookAndFeel(nullptr);
     midiKeyMaxLabel.setLookAndFeel(nullptr);
     
+    randomValueLabel.setLookAndFeel(nullptr);
+    
     sliderAttachments.clear();
     buttonAttachments.clear();
 }
@@ -315,27 +334,35 @@ void ESAudioProcessorEditor::resized()
     pedalToggle.setBounds(805, 500, 130, 30);
     
     const float knobSize = 40.0f*s;
-    for (int i = 0; i < NUM_MACROS; ++i)
+    for (int i = 0; i < NUM_GENERIC_MACROS; ++i)
     {
-        int gap = i >= 16 ? 11*s : 0;
-        macroDials[i]->setBounds(6*s + (knobSize+2)*i + gap, 523*s, knobSize, knobSize*1.8f);
-        if (i == 16)
-        {
-            macroBorder.setRectangle(Rectangle<float>(6*s + (knobSize+2)*i + 3,
-                                                      outputModule->getBottom(), 1, 68));
-        }
+        macroDials[i]->setBounds(6*s + (knobSize+2)*i, 523*s, knobSize, knobSize*1.8f);
+    }
+    
+    uniqueMacroComponent.setBounds(6*s + (knobSize+2)*NUM_GENERIC_MACROS + 3,
+                                   outputModule->getBottom()-1, 300, 69);
+    
+    for (int i = NUM_GENERIC_MACROS; i < NUM_MACROS; ++i)
+    {
+        macroDials[i]->setBounds(11*s + (knobSize+2)*(i-NUM_GENERIC_MACROS) - 3,
+                                 523*s - uniqueMacroComponent.getY(),
+                                 knobSize, knobSize*1.8f);
     }
     
     int align = 78*s;
     int x = 900*s - 10*align;
-    int y = 580*s;
+    int y = 582*s;
     
-    midiKeySource->setBounds(30, y+1 + 2, x-60, 24*s - 8);
-    midiKeyMinLabel.setBounds(0, y, 30, 24*s - 4);
-    midiKeyMaxLabel.setBounds(x-30, y, 30, 24*s - 4);
-    midiKeyRangeSlider.setBounds(0, y + 24*s - 4, x, 11*s + 4);
+    midiKeyComponent.setBounds(-1, y-2, 760, 33);
+    midiKeySource->setBounds(4, 7, x-40, 22*s - 4);
+    midiKeyMinLabel.setBounds(midiKeySource->getRight()+4, 7, 40, 22*s - 4);
+    midiKeyRangeSlider.setBounds(midiKeyMinLabel.getRight(), 7, 570, 22*s - 4);
+    midiKeyMaxLabel.setBounds(midiKeyRangeSlider.getRight(), 7, 40, 22*s - 4);
     
-    pitchBendSliders[0]->setBounds(0, midiKeyRangeSlider.getBottom(), x, 24*s);
+    randomSource->setBounds(midiKeyComponent.getRight()+4, y+5, x+2, 22*s - 4);
+    randomValueLabel.setBounds(randomSource->getRight()+4, y+5, 40, 22*s - 4);
+    
+    pitchBendSliders[0]->setBounds(0, midiKeyComponent.getBottom()-1, x, 26*s);
     
     int r = (10*align) % 12;
     int w = (10*align) / 12;
@@ -345,8 +372,8 @@ void ESAudioProcessorEditor::resized()
     for (int i = 1; i < NUM_CHANNELS; ++i)
     {
         pitchBendSliders[i]->setBounds(channelStringButtons[i-1]->getRight(),
-                                       midiKeyRangeSlider.getBottom(),
-                                       w + (r > 0 ? 1 : 0), 24*s);
+                                       midiKeyComponent.getBottom()-1,
+                                       w + (r > 0 ? 1 : 0), 26*s);
         channelStringButtons[i]->setBounds(channelStringButtons[i-1]->getRight(), y,
                                            w + (r-- > 0 ? 1 : 0), 35*s);
     }
@@ -457,6 +484,7 @@ void ESAudioProcessorEditor::timerCallback()
     {
         channelStringButtons[i]->setToggleState(processor.midiChannelIsActive(i+1), dontSendNotification);
     }
+    updateRandomValueLabel(processor.lastRandomValue);
 }
 
 void ESAudioProcessorEditor::update()
@@ -468,6 +496,7 @@ void ESAudioProcessorEditor::update()
         updateChannelStringButton(i, 0);
     }
     updateMidiKeyRangeSlider(processor.midiKeyMin, processor.midiKeyMax);
+    updateRandomValueLabel(processor.lastRandomValue);
 }
 
 void ESAudioProcessorEditor::updatePedalToggle(bool state)
@@ -509,4 +538,9 @@ void ESAudioProcessorEditor::updateMidiKeyRangeSlider(int min, int max)
                                           dontSendNotification);
     midiKeyMinLabel.setText(String(processor.midiKeyMin), dontSendNotification);
     midiKeyMaxLabel.setText(String(processor.midiKeyMax), dontSendNotification);
+}
+
+void ESAudioProcessorEditor::updateRandomValueLabel(float value)
+{
+    randomValueLabel.setText(String(value, 3), dontSendNotification);
 }

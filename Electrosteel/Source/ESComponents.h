@@ -69,6 +69,7 @@ public:
     bool isInterestedInDragSource(const SourceDetails &dragSourceDetails) override;
     void itemDropped(const SourceDetails &dragSourceDetails) override;
     
+    void paint(Graphics&) override;
     void resized() override;
     
     void mouseDown(const MouseEvent& event) override;
@@ -80,10 +81,13 @@ public:
     void setTextColour(Colour colour);
     
     void setMapping(MappingSource* source, float end);
-    void removeMapping();
-    
     void setMappingRange(float end, bool directChange, bool sendListenerNotif);
-
+    void setMappingScalar(MappingSource* source);
+    void removeMapping();
+    void removeScalar();
+    
+    Label* getValueLabel();
+    
     static void menuCallback(int result, MappingTarget* target);
     
 private:

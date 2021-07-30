@@ -91,7 +91,34 @@ bool MappingTarget::isInterestedInDragSource(const SourceDetails &dragSourceDeta
 void MappingTarget::itemDropped(const SourceDetails &dragSourceDetails)
 {
     MappingSource* source = dynamic_cast<MappingSource*>(dragSourceDetails.sourceComponent.get());
-    setMapping(source, 0.f);
+    if (model.currentSource == nullptr) setMapping(source, 0.f);
+    else setMappingScalar(source);
+}
+
+void MappingTarget::paint(Graphics& g)
+{
+    Slider::paint(g);
+    
+    if (model.currentScalarSource != nullptr)
+    {
+        g.setFont(laf.getPopupMenuFont());
+        g.setColour(model.currentScalarSource->colour);
+        String text;
+        int trailing = model.currentScalarSource->name.getTrailingIntValue();
+        if (trailing > 0) text = String(trailing);
+        else text = model.currentScalarSource->name.substring(0, 1);
+        
+//        Justification just =
+//        model.currentScalarSource == nullptr ? Justification::centred : Justification::centredLeft;
+//        Label* label = getValueLabel();
+//        label->setJustificationType(just);
+//        label->setBorderSize(BorderSize<int>(0, 1, 0, 0));
+        
+//        int x = (label->getWidth()/2) + 2;
+//        int w = x - 4;
+//        g.drawFittedText(text, x, 4, w, w*0.7, Justification::centred, 1);
+        g.fillEllipse(getWidth()-5, 3, 3, 3);
+    }
 }
 
 void MappingTarget::resized()
@@ -108,6 +135,10 @@ void MappingTarget::mouseDown(const MouseEvent& event)
             PopupMenu menu;
             menu.setLookAndFeel(&laf);
             menu.addItem(1, "Remove");
+            if (model.currentScalarSource != nullptr)
+            {
+                menu.addItem(2, "Remove Scalar (" + String(model.currentScalarSource->name) + ")");
+            }
             menu.showMenuAsync(PopupMenu::Options(),
                                ModalCallbackFunction::forComponent (menuCallback, this) );
         }
@@ -169,7 +200,7 @@ void MappingTarget::update(bool directChange, bool sendListenerNotif)
         setTextColour(model.currentSource->colour);
         if (name.getTrailingIntValue() > 0) setText(String(name.getTrailingIntValue()));
         else setText(name.substring(0, 1));
-        
+
         setValue(model.end, sendListenerNotif ? sendNotificationAsync : dontSendNotification);
     }
     else
@@ -183,6 +214,8 @@ void MappingTarget::update(bool directChange, bool sendListenerNotif)
         setValue(0.f, sendListenerNotif ? sendNotificationAsync : dontSendNotification);
         //        getParentComponent()->repaint();
     }
+    
+    repaint();
 }
 
 void MappingTarget::setText(String s)
@@ -201,14 +234,38 @@ void MappingTarget::setMapping(MappingSource* source, float end)
     model.setMapping(&source->getModel(), end, true);
 }
 
+void MappingTarget::setMappingRange(float end, bool directChange, bool sendListenerNotif)
+{
+    model.setMappingRange(end, true, directChange, sendListenerNotif);
+}
+
+void MappingTarget::setMappingScalar(MappingSource* source)
+{
+    model.setMappingScalar(&source->getModel(), true);
+}
+
 void MappingTarget::removeMapping()
 {
     model.removeMapping(true);
 }
 
-void MappingTarget::setMappingRange(float end, bool directChange, bool sendListenerNotif)
+void MappingTarget::removeScalar()
 {
-    model.setMappingRange(end, true, directChange, sendListenerNotif);
+    model.removeScalar(true);
+}
+
+Label* MappingTarget::getValueLabel()
+{
+    // Kind of a hack; find the child label of this slider so we can set it's justification
+    // The label is not otherwise accessible
+    for (auto child : getChildren())
+    {
+        if (auto* label = dynamic_cast<Label*> (child))
+        {
+            return label;
+        }
+    }
+    return nullptr;
 }
 
 void MappingTarget::menuCallback(int result, MappingTarget* target)
@@ -216,6 +273,10 @@ void MappingTarget::menuCallback(int result, MappingTarget* target)
     if (result == 1)
     {
         target->removeMapping();
+    }
+    else if (result == 2)
+    {
+        target->removeScalar();
     }
 }
 

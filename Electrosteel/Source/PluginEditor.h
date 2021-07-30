@@ -56,6 +56,7 @@ public:
     void updateMPEToggle(bool state);
     void updateChannelStringButton(int whichButton, int inc);
     void updateMidiKeyRangeSlider(int min, int max);
+    void updateRandomValueLabel(float value);
     
     ESAudioProcessor& processor;
     AudioProcessorValueTreeState& vts;
@@ -66,11 +67,14 @@ private:
     
     Component tab1;
     
+    ESComponent midiKeyComponent;
     std::unique_ptr<MappingSource> midiKeySource;
     Slider midiKeyRangeSlider;
     Label midiKeyMinLabel;
     Label midiKeyMaxLabel;
-    DrawableRectangle macroBorder;
+    std::unique_ptr<MappingSource> randomSource;
+    Label randomValueLabel;
+    ESComponent uniqueMacroComponent;
     OwnedArray<ESDial> macroDials;
     OwnedArray<Slider> pitchBendSliders;
     MidiKeyboardComponent keyboard;

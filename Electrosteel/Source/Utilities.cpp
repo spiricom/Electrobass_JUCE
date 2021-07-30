@@ -165,6 +165,18 @@ void SmoothedParameter::setHook(const String& sourceName, int index,
     if (numActiveHooks < 3) whichHooks[numActiveHooks++] = index;
 }
 
+void SmoothedParameter::setHookRange(int index, float min, float max)
+{
+    hooks[index].min = min;
+    hooks[index].length = max-min;
+}
+
+void SmoothedParameter::setHookScalar(const String& scalarName, int index, float* scalar)
+{
+    hooks[index].scalarName = scalarName;
+    hooks[index].scalar = scalar;
+}
+
 void SmoothedParameter::resetHook(int index)
 {
     if (hooks[index].hook == &value0) return;
@@ -173,6 +185,8 @@ void SmoothedParameter::resetHook(int index)
     hooks[index].hook = &value0;
     hooks[index].min = 0.0f;
     hooks[index].length = 0.0f;
+    hooks[index].scalarName = "";
+    hooks[index].scalar = &value1;
     
     numActiveHooks--;
     // If this hook was at the start or middle of the active
@@ -189,15 +203,10 @@ void SmoothedParameter::resetHook(int index)
     }
 }
 
-void SmoothedParameter::updateHook(int index, const float* hook)
+void SmoothedParameter::resetHookScalar(int index)
 {
-    hooks[index].hook = (float*)hook;
-}
-
-void SmoothedParameter::setHookRange(int index, float min, float max)
-{
-    hooks[index].min = min;
-    hooks[index].length = max-min;
+    hooks[index].scalarName = "";
+    hooks[index].scalar = &value1;
 }
 
 float SmoothedParameter::getStart()
@@ -252,7 +261,6 @@ MappingTargetModel::MappingTargetModel(ESAudioProcessor& p, const String &name,
                                        int index) :
 processor(p),
 name(name),
-currentSource(nullptr),
 targetParameters(targetParameters),
 index(index)
 {
@@ -303,21 +311,6 @@ void MappingTargetModel::setMapping(MappingSourceModel* source, float e, bool se
     if (onMappingChange != nullptr) onMappingChange(true, sendChangeEvent);
 }
 
-void MappingTargetModel::removeMapping(bool sendChangeEvent)
-{
-    processor.sourceMappingCounts.getReference(currentSource->name)--;
-    
-    currentSource = nullptr;
-    start = end = 0.f;
-    
-    for (auto param : targetParameters)
-    {
-        param->resetHook(index);
-    }
-    
-    if (onMappingChange != nullptr) onMappingChange(true, sendChangeEvent);
-}
-
 void MappingTargetModel::setMappingRange(float e, bool sendChangeEvent,
                                          bool directChange, bool sendListenerNotif)
 {
@@ -341,6 +334,66 @@ void MappingTargetModel::setMappingRange(float e, bool sendChangeEvent,
     DBG(String(start) + " " + String(end));
     
     if (onMappingChange != nullptr && sendChangeEvent) onMappingChange(directChange, sendListenerNotif);
+}
+
+void MappingTargetModel::setMappingScalar(MappingSourceModel* source, bool sendChangeEvent)
+{
+    if (source == nullptr) return;
+    
+    if (currentScalarSource != nullptr)
+    {
+        processor.sourceMappingCounts.getReference(currentScalarSource->name)--;
+    }
+    processor.sourceMappingCounts.getReference(source->name)++;
+    
+    currentScalarSource = source;
+    
+    int i = 0;
+    int n = source->getNumSourcePointers();
+    
+    float* sourceArray = *source->getValuePointerArray(0);
+    for (auto param : targetParameters)
+    {
+        param->setHookScalar(source->name, index, &sourceArray[i%n]);
+        i++;
+    }
+    
+    if (onMappingChange != nullptr) onMappingChange(true, sendChangeEvent);
+}
+
+void MappingTargetModel::removeMapping(bool sendChangeEvent)
+{
+    processor.sourceMappingCounts.getReference(currentSource->name)--;
+    
+    currentSource = nullptr;
+    currentScalarSource = nullptr;
+    
+    start = end = 0.f;
+    
+    for (auto param : targetParameters)
+    {
+        param->resetHook(index);
+    }
+    
+    if (onMappingChange != nullptr) onMappingChange(true, sendChangeEvent);
+}
+
+void MappingTargetModel::removeScalar(bool sendChangeEvent)
+{
+    processor.sourceMappingCounts.getReference(currentScalarSource->name)--;
+    if (currentScalarSource != nullptr)
+    {
+        processor.sourceMappingCounts.getReference(currentScalarSource->name)--;
+    }
+    
+    currentScalarSource = nullptr;
+    
+    for (auto param : targetParameters)
+    {
+        param->resetHookScalar(index);
+    }
+    
+    if (onMappingChange != nullptr) onMappingChange(true, sendChangeEvent);
 }
 
 //==============================================================================

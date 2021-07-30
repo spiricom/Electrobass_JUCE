@@ -23,7 +23,23 @@ typedef AudioProcessorValueTreeState::ComboBoxAttachment ComboBoxAttachment;
 
 //==============================================================================
 
-class ESModule : public Component,
+class ESComponent : public Component
+{
+public:
+    ESComponent();
+    ~ESComponent();
+    
+    void paint(Graphics &g) override;
+    
+    void setOutlineColour(Colour c) { outlineColour = c; }
+    
+protected:
+    Colour outlineColour;
+};
+
+//==============================================================================
+
+class ESModule : public ESComponent,
 public Slider::Listener,
 public Button::Listener,
 public Label::Listener,
@@ -37,7 +53,6 @@ public:
     ~ESModule() override;
     
     void resized() override;
-    void paint(Graphics &g) override;
     
     void sliderValueChanged(Slider* slider) override;
     void buttonClicked(Button* button) override {};
@@ -60,9 +75,7 @@ protected:
     
     float relLeftMargin, relDialWidth, relDialSpacing;
     float relTopMargin, relDialHeight;
-    
-    Colour outlineColour;
-    
+        
     OwnedArray<SliderAttachment> sliderAttachments;
     OwnedArray<ButtonAttachment> buttonAttachments;
     OwnedArray<ComboBoxAttachment> comboBoxAttachments;
