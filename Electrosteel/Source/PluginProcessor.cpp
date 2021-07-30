@@ -813,7 +813,7 @@ void ESAudioProcessor::handleMidiMessage(const MidiMessage& m)
     }
     else
     {
-        int channel = mpeMode ? m.getChannel() : 1;
+        int channel = m.getChannel();
         if (m.isPitchWheel())
         {
             pitchBend(channel, m.getPitchWheelValue());
@@ -890,7 +890,8 @@ void ESAudioProcessor::ctrlInput(int channel, int ctrl, int value)
 {
     float v;
     
-    if (channel == stringChannels[0])
+    // Take all channel CCs outside of MPE mode; only take ch1 in MPE Mode
+    if (!mpeMode || channel == stringChannels[0])
     {
         stringActivity[0] = stringActivityTimeout;
         
