@@ -28,23 +28,39 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
     auto normRange = NormalisableRange<float>(0., 2.);
     normRange.setSkewForCentre(1.);
     invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
-    layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, 1.));
+    layout.add(std::make_unique<AudioParameterFloat>(n, n, normRange, 1.));
     paramIds.add(n);
     
     for (int i = 0; i < NUM_MACROS; ++i)
     {
-        n = i < NUM_GENERIC_MACROS ? "M" + String(i+1) : cUniqueMacroNames[i-NUM_GENERIC_MACROS];
+        n = i < NUM_GENERIC_MACROS ? "M" + String(i + 1) : cUniqueMacroNames[i - NUM_GENERIC_MACROS];
         normRange = NormalisableRange<float>(0., 1.);
         layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange,
                                                            i == NUM_MACROS-1 ? 1.f : 0.f));
         paramIds.add(n);
     }
     
-    auto stringFromValueFunction = [] (float v, int length)
-    {
-        String asText (v, 3);
-        return length > 0 ? asText.substring (0, length) : asText;
-    };
+	auto string2FromValueFunction = [](float v, int length)
+	{
+		String asText(v, 2);
+		return length > 0 ? asText.substring(0, length) : asText;
+	};
+
+	auto string3FromValueFunction = [](float v, int length)
+	{
+		String asText(v, 3);
+		return length > 0 ? asText.substring(0, length) : asText;
+	};
+
+    n = "Transpose";
+    normRange = NormalisableRange<float>(-48., 48.);
+	normRange.setSkewForCentre(.0);
+	invParameterSkews.addIfNotAlreadyThere(1.f / normRange.skew);
+    layout.add(std::make_unique<AudioParameterFloat>
+        (n, n, normRange, 0., String(), AudioProcessorParameter::genericParameter,
+            string2FromValueFunction));
+	paramIds.add(n);
+
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
         n = "PitchBend" + String(i);
@@ -53,7 +69,7 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
         invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
         layout.add (std::make_unique<AudioParameterFloat>
                     (n, n, normRange, 0., String(), AudioProcessorParameter::genericParameter,
-                     stringFromValueFunction));
+                     string3FromValueFunction));
         paramIds.add(n);
     }
     
@@ -267,7 +283,7 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
         filt.add(new Filter("Filter" + String(i+1), *this, vts));
     }
     
-    seriesParallel = std::make_unique<SmoothedParameter>(*this, vts, "Filter Series-Parallel Mix");
+    seriesParallelParam = std::make_unique<SmoothedParameter>(*this, vts, "Filter Series-Parallel Mix");
     
     macroCCNumbers[PEDAL_MACRO_ID+1] = NUM_MACROS+1;
     for (int i = 0; i < NUM_MACROS; ++i)
@@ -302,20 +318,22 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
         ccNumberToMacroMap.set(macroCCNumbers[i], i);
     }
     
-    midiKeySource = std::make_unique<MappingSourceModel>(*this, "MIDI Pitch",
+    midiKeySource = std::make_unique<MappingSourceModel>(*this, "MIDI Key In",
                                                          true, false, Colours::white);
+	velocitySource = std::make_unique<MappingSourceModel>(*this, "Velocity In",
+														  true, false, Colours::white);
+	randomSource = std::make_unique<MappingSourceModel>(*this, "Random on Attack",
+                                                        true, false, Colours::white);
     for (int i = 0; i < numInvParameterSkews; ++i)
     {
-        midiKeyValues[i] = (float*) leaf_alloc(&leaf, sizeof(float) * NUM_STRINGS);
+        midiKeyValues[i] = (float*)leaf_alloc(&leaf, sizeof(float) * NUM_STRINGS);
         midiKeySource->sources[i] = &midiKeyValues[i];
-    }
-    
-    randomSource = std::make_unique<MappingSourceModel>(*this, "Random on Attack",
-                                                         true, false, Colours::white);
-    for (int i = 0; i < numInvParameterSkews; ++i)
-    {
-        randomValues[i] = (float*) leaf_alloc(&leaf, sizeof(float) * NUM_STRINGS);
-        randomSource->sources[i] = &randomValues[i];
+
+		velocityValues[i] = (float*)leaf_alloc(&leaf, sizeof(float) * NUM_STRINGS);
+		velocitySource->sources[i] = &velocityValues[i];
+
+		randomValues[i] = (float*)leaf_alloc(&leaf, sizeof(float) * NUM_STRINGS);
+		randomSource->sources[i] = &randomValues[i];
     }
     
     for (int i = 0; i < NUM_ENVS; ++i)
@@ -334,6 +352,7 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
     
     output = std::make_unique<Output>("Output", *this, vts);
     
+    transposeParam = std::make_unique<SmoothedParameter>(*this, vts, "Transpose");
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
         pitchBendParams.add(new SmoothedParameter(*this, vts, "PitchBend" + String(i)));
@@ -698,7 +717,7 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
     }
     output->frame();
 
-    float parallel = seriesParallel->tickNoHooksNoSmoothing();
+    float parallel = seriesParallelParam->tickNoHooksNoSmoothing();
     
     int mpe = mpeMode ? 1 : 0;
     int impe = 1-mpe;

@@ -49,8 +49,6 @@ public:
     bool keyPressed (const KeyPress &key, Component *originatingComponent) override;
     void timerCallback() override;
     
-    void chooseFile(const FileChooser& chooser);
-    
     void update();
     
     ESAudioProcessor& processor;
@@ -63,6 +61,7 @@ private:
     void updateStringChannel(int string, int ch);
     void updateMacroControl(int macro, int ctrl);
     void updateMidiKeyRangeSlider(int min, int max);
+    void updateVelocityLabel(float velocity);
     void updateRandomValueLabel(float value);
     
     TabbedComponent tabs;
@@ -74,6 +73,9 @@ private:
     Slider midiKeyRangeSlider;
     Label midiKeyMinLabel;
     Label midiKeyMaxLabel;
+    ESComponent velocityComponent;
+    std::unique_ptr<MappingSource> velocitySource;
+    ESComponent randomComponent;
     std::unique_ptr<MappingSource> randomSource;
     Label randomValueLabel;
     ESComponent uniqueMacroComponent;
@@ -91,6 +93,13 @@ private:
     Slider seriesParallelSlider;
     Label seriesLabel;
     Label parallelLabel;
+    ESComponent otherSettingsComponent;
+    Label transposeLabel;
+    Slider transposeSlider;
+    Label numVoicesLabel;
+    Label numVoicesEntry;
+    Label maxVoicesLabel;
+
     
     Component tab2;
     CopedentTable copedentTable;

@@ -122,15 +122,20 @@ public:
     OwnedArray<LowFreqOscillator> lfos;
     std::unique_ptr<Output> output;
     
+    std::unique_ptr<SmoothedParameter> transposeParam;
     OwnedArray<SmoothedParameter> pitchBendParams;
     OwnedArray<SmoothedParameter> ccParams;
     OwnedArray<MappingSourceModel> ccSources;
-    std::unique_ptr<SmoothedParameter> seriesParallel;
+    std::unique_ptr<SmoothedParameter> seriesParallelParam;
     
     float* midiKeyValues[MAX_NUM_UNIQUE_SKEWS];
     std::unique_ptr<MappingSourceModel> midiKeySource;
     int midiKeyMin = 21; // Default to A0
     int midiKeyMax = 108; // Default to C8
+
+	float* velocityValues[MAX_NUM_UNIQUE_SKEWS];
+	float lastVelocityValue = 0.f;
+	std::unique_ptr<MappingSourceModel> velocitySource;
     
     float* randomValues[MAX_NUM_UNIQUE_SKEWS];
     float lastRandomValue = 0.f;

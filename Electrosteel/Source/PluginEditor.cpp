@@ -68,8 +68,8 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     midiKeyComponent.setOutlineColour(Colours::darkgrey);
     tab1.addAndMakeVisible(midiKeyComponent);
     
-    midiKeySource =
-    std::make_unique<MappingSource>(*this, *processor.midiKeySource, "MIDI Pitch");
+    midiKeySource = std::make_unique<MappingSource>(*this, *processor.midiKeySource, 
+                                                    "MIDI Key In");
     midiKeyComponent.addAndMakeVisible(midiKeySource.get());
     
     midiKeyRangeSlider.setSliderStyle(Slider::SliderStyle::TwoValueHorizontal);
@@ -91,17 +91,27 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     midiKeyMaxLabel.setColour(Label::backgroundColourId, Colours::darkgrey.withBrightness(0.2f));
     midiKeyMaxLabel.addListener(this);
     midiKeyComponent.addAndMakeVisible(midiKeyMaxLabel);
+
+    velocityComponent.setOutlineColour(Colours::darkgrey);
+    tab1.addAndMakeVisible(velocityComponent);
+
+    velocitySource = std::make_unique<MappingSource>(*this, *processor.velocitySource, 
+                                                     "Velocity In");
+    velocityComponent.addAndMakeVisible(velocitySource.get());
+
+    randomComponent.setOutlineColour(Colours::darkgrey);
+    tab1.addAndMakeVisible(randomComponent);
     
-    randomSource =
-    std::make_unique<MappingSource>(*this, *processor.randomSource, "Random on Attack");
-    tab1.addAndMakeVisible(randomSource.get());
+    randomSource = std::make_unique<MappingSource>(*this, *processor.randomSource, 
+                                                   "Random on Attack");
+    randomComponent.addAndMakeVisible(randomSource.get());
     
     randomValueLabel.setLookAndFeel(&laf);
     randomValueLabel.setEditable(false);
     randomValueLabel.setJustificationType(Justification::centred);
     randomValueLabel.setColour(Label::backgroundColourId, Colours::darkgrey.withBrightness(0.2f));
     randomValueLabel.addListener(this);
-    tab1.addAndMakeVisible(randomValueLabel);
+    randomComponent.addAndMakeVisible(randomValueLabel);
     
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
@@ -416,14 +426,18 @@ void ESAudioProcessorEditor::resized()
     int x = 900*s - 10*align;
     int y = 582*s;
     
-    midiKeyComponent.setBounds(-1, y-2, 760, 33);
-    midiKeySource->setBounds(4, 7, x-40, 22*s - 4);
+    midiKeyComponent.setBounds(-1, y-2, 657, 33);
+    midiKeySource->setBounds(5, 7, x-40, 22*s - 4);
     midiKeyMinLabel.setBounds(midiKeySource->getRight()+4, 7, 40, 22*s - 4);
-    midiKeyRangeSlider.setBounds(midiKeyMinLabel.getRight(), 7, 570, 22*s - 4);
+    midiKeyRangeSlider.setBounds(midiKeyMinLabel.getRight(), 7, 468, 22*s - 4);
     midiKeyMaxLabel.setBounds(midiKeyRangeSlider.getRight(), 7, 40, 22*s - 4);
-    
-    randomSource->setBounds(midiKeyComponent.getRight()+4, y+5, x+2, 22*s - 4);
-    randomValueLabel.setBounds(randomSource->getRight()+4, y+5, 40, 22*s - 4);
+
+    velocityComponent.setBounds(midiKeyComponent.getRight() - 1, y - 2, 102, 33);
+    velocitySource->setBounds(5, 7, 91, 22 * s - 4);
+
+    randomComponent.setBounds(velocityComponent.getRight() - 1, y - 2, x + 60, 33);
+    randomSource->setBounds(5, 7, x+2, 22*s - 4);
+    randomValueLabel.setBounds(randomSource->getRight()+4, 7, 40, 22*s - 4);
         
     int r = (10*align) % 12;
     int w = (10*align) / 12;
