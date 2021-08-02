@@ -427,6 +427,7 @@ ESAudioProcessor::~ESAudioProcessor()
     for (int i = 0; i < numInvParameterSkews; ++i)
     {
         leaf_free(&leaf, (char*)midiKeyValues[i]);
+        leaf_free(&leaf, (char*)velocityValues[i]);
         leaf_free(&leaf, (char*)randomValues[i]);
     }
     
@@ -859,6 +860,7 @@ void ESAudioProcessor::noteOn(int channel, int key, float velocity)
             key -= midiKeyMin;
             float norm = key / float(midiKeyMax - midiKeyMin);
             midiKeyValues[0][i] = jlimit(0.f, 1.f, norm);
+            velocityValues[0][i] = velocity;
             float r = leaf.random();
             randomValues[0][i] = r;
             lastRandomValue = r;
@@ -866,6 +868,7 @@ void ESAudioProcessor::noteOn(int channel, int key, float velocity)
             {
                 float invSkew = quickInvParameterSkews[s];
                 midiKeyValues[s][i] = powf(norm, invSkew);
+                velocityValues[s][i] = powf(velocity, invSkew);
                 randomValues[s][i] = powf(r, invSkew);
             }
             for (auto e : envs) e->noteOn(i, velocity);

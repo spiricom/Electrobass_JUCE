@@ -391,6 +391,8 @@ void ESDial::paint(Graphics& g)
         auto currentAngle = startAngle + (sliderNorm * (endAngle - startAngle));
         auto angle = currentAngle + (targetNorm * (endAngle - startAngle));
         angle = fmax(startAngle, fmin(angle, endAngle));
+
+        if (currentAngle == angle) continue;
         
         Path arc;
         arc.addArc(rx - b*4, ry - b*4, rw + b*8, rw + b*8, currentAngle, angle, true);
@@ -411,7 +413,14 @@ void ESDial::paint(Graphics& g)
         auto rw2 = radius * 2.0f;
         auto b2 = rw2 * 0.04f;
         
-        arc.addArc(rx2 - b2*4, ry2 - b2*4, rw2 + b2*8, rw2 + b2*8, angle, currentAngle, false);
+        // Easiest way to find the point we want to draw to is to make a separate path and get it's start
+        Path arc2;
+        arc2.addArc(rx2 - b2 * 4, ry2 - b2 * 4, rw2 + b2 * 8, rw2 + b2 * 8, angle, currentAngle, true);
+        arc.lineTo(arc2.getPointAlongPath(0));
+
+        arc.addArc(rx2 - b2 * 4, ry2 - b2 * 4, rw2 + b2 * 8, rw2 + b2 * 8, angle, currentAngle, false);
+        arc.lineTo(arc.getPointAlongPath(0));
+
         g.setColour(t[i]->getColour());
         g.fillPath(arc);
         
