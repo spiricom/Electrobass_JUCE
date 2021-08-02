@@ -386,6 +386,12 @@ ESAudioProcessorEditor::~ESAudioProcessorEditor()
         pitchBendSliders[i]->setLookAndFeel(nullptr);
     }
     
+    for (int i = 0; i < NUM_GENERIC_MACROS; ++i)
+    {
+        macroControlNameLabels[i]->setLookAndFeel(nullptr);
+        macroControlNames[i]->setLookAndFeel(nullptr);
+    }
+    
     for (int i = 0; i < NUM_MACROS+1; ++i)
     {
         if (i < NUM_MACROS) macroControlLabels[i]->setLookAndFeel(nullptr);
