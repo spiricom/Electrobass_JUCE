@@ -138,6 +138,7 @@ public:
     MappingSource* getSource();
     
     Slider& getSlider() { return slider; }
+    Label& getLabel() { return label; }
     
 private:
     

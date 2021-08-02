@@ -65,6 +65,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
         else uniqueMacroComponent.addAndMakeVisible(macroDials[i]);
     }
     
+    // MIDI Key source
     midiKeyComponent.setOutlineColour(Colours::darkgrey);
     tab1.addAndMakeVisible(midiKeyComponent);
     
@@ -92,6 +93,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     midiKeyMaxLabel.addListener(this);
     midiKeyComponent.addAndMakeVisible(midiKeyMaxLabel);
 
+    // Velocity source
     velocityComponent.setOutlineColour(Colours::darkgrey);
     tab1.addAndMakeVisible(velocityComponent);
 
@@ -99,6 +101,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
                                                      "Velocity In");
     velocityComponent.addAndMakeVisible(velocitySource.get());
 
+    // Random source
     randomComponent.setOutlineColour(Colours::darkgrey);
     tab1.addAndMakeVisible(randomComponent);
     
@@ -112,6 +115,42 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     randomValueLabel.setColour(Label::backgroundColourId, Colours::darkgrey.withBrightness(0.2f));
     randomValueLabel.addListener(this);
     randomComponent.addAndMakeVisible(randomValueLabel);
+    
+    // Transpose, Poly
+    otherSettingsComponent.setOutlineColour(Colours::darkgrey);
+    tab1.addAndMakeVisible(otherSettingsComponent);
+    
+    numVoicesLabel.setText("Voices", dontSendNotification);
+    numVoicesLabel.setJustificationType(Justification::centred);
+    numVoicesLabel.setLookAndFeel(&laf);
+    otherSettingsComponent.addAndMakeVisible(numVoicesLabel);
+    
+    numVoicesSlider.setRange(1., 12., 1.);
+    numVoicesSlider.setSliderStyle(Slider::SliderStyle::LinearBarVertical);
+    numVoicesSlider.setSliderSnapsToMousePosition(false);
+    numVoicesSlider.setMouseDragSensitivity(200);
+    numVoicesSlider.setTextValueSuffix("/12");
+    numVoicesSlider.setLookAndFeel(&laf);
+    numVoicesSlider.setColour(Slider::backgroundColourId, Colours::darkgrey.withBrightness(0.2f));
+    numVoicesSlider.setColour(Slider::textBoxOutlineColourId, Colours::transparentBlack);
+    numVoicesSlider.setColour(Slider::textBoxTextColourId, Colours::gold.withBrightness(0.95f));
+    numVoicesSlider.addListener(this);
+    otherSettingsComponent.addAndMakeVisible(numVoicesSlider);
+    
+    transposeLabel.setText("Transpose", dontSendNotification);
+    transposeLabel.setJustificationType(Justification::centred);
+    transposeLabel.setLookAndFeel(&laf);
+    otherSettingsComponent.addAndMakeVisible(transposeLabel);
+    
+    transposeSlider.setSliderStyle(Slider::SliderStyle::LinearBarVertical);
+    transposeSlider.setSliderSnapsToMousePosition(false);
+    transposeSlider.setMouseDragSensitivity(400);
+    transposeSlider.setLookAndFeel(&laf);
+    transposeSlider.setColour(Slider::backgroundColourId, Colours::darkgrey.withBrightness(0.2f));
+    transposeSlider.setColour(Slider::textBoxOutlineColourId, Colours::transparentBlack);
+    transposeSlider.setColour(Slider::textBoxTextColourId, Colours::gold.withBrightness(0.95f));
+    sliderAttachments.add(new SliderAttachment(vts, "Transpose", transposeSlider));
+    otherSettingsComponent.addAndMakeVisible(transposeSlider);
     
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
@@ -161,26 +200,32 @@ chooser("Select a .wav file to load...", {}, "*.wav")
         tab1.addAndMakeVisible(oscModules[i]);
     }
     
+    noiseModule = std::make_unique<NoiseModule>(*this, vts, *processor.noise);
+    tab1.addAndMakeVisible(noiseModule.get());
+    
     for (int i = 0; i < NUM_FILT; ++i)
     {
         filterModules.add(new FilterModule(*this, vts, *processor.filt[i]));
         tab1.addAndMakeVisible(filterModules[i]);
     }
     
+    seriesParallelComponent.setOutlineColour(Colours::darkgrey);
+    tab1.addAndMakeVisible(seriesParallelComponent);
+    
     seriesParallelSlider.setSliderStyle(Slider::SliderStyle::LinearHorizontal);
     seriesParallelSlider.setTextBoxStyle(Slider::TextEntryBoxPosition::NoTextBox, true, 10, 10);
-    tab1.addAndMakeVisible(seriesParallelSlider);
+    seriesParallelComponent.addAndMakeVisible(seriesParallelSlider);
     sliderAttachments.add(new SliderAttachment(vts, "Filter Series-Parallel Mix",
                                                seriesParallelSlider));
     
     seriesLabel.setText("Ser.", dontSendNotification);
     seriesLabel.setLookAndFeel(&laf);
-    tab1.addAndMakeVisible(seriesLabel);
+    seriesParallelComponent.addAndMakeVisible(seriesLabel);
     
     parallelLabel.setText("Par.", dontSendNotification);
     parallelLabel.setJustificationType(Justification::centredRight);
     parallelLabel.setLookAndFeel(&laf);
-    tab1.addAndMakeVisible(parallelLabel);
+    seriesParallelComponent.addAndMakeVisible(parallelLabel);
     
     outputModule = std::make_unique<OutputModule>(*this, vts, *processor.output);
     tab1.addAndMakeVisible(outputModule.get());
@@ -228,12 +273,6 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     // TAB2 ========================================================================
     addAndMakeVisible(tab2);
     
-    tab2.addAndMakeVisible(copedentTable);
-    
-    //==============================================================================
-    // TAB3 ========================================================================
-    addAndMakeVisible(tab3);
-    
     for (int i = 0; i < NUM_MACROS+1; ++i)
     {
         if (i < NUM_MACROS)
@@ -242,9 +281,8 @@ chooser("Select a .wav file to load...", {}, "*.wav")
             if (i >= NUM_GENERIC_MACROS) n = cUniqueMacroNames[i-NUM_GENERIC_MACROS];
             macroControlLabels.add(new Label());
             macroControlLabels.getLast()->setText(n + " CC#", dontSendNotification);
-            macroControlLabels.getLast()->setJustificationType(Justification::centredRight);
             macroControlLabels.getLast()->setLookAndFeel(&laf);
-            tab3.addAndMakeVisible(macroControlLabels.getLast());
+            tab2.addAndMakeVisible(macroControlLabels.getLast());
         }
         
         macroControlEntries.add(new Label());
@@ -254,7 +292,24 @@ chooser("Select a .wav file to load...", {}, "*.wav")
         macroControlEntries.getLast()->setColour(Label::backgroundColourId,
                                                 Colours::darkgrey.withBrightness(0.2f));
         macroControlEntries.getLast()->addListener(this);
-        tab3.addAndMakeVisible(macroControlEntries.getLast());
+        tab2.addAndMakeVisible(macroControlEntries.getLast());
+        
+        if (i < NUM_GENERIC_MACROS)
+        {
+            macroControlNameLabels.add(new Label());
+            macroControlNameLabels.getLast()->setText("Name", dontSendNotification);
+            macroControlNameLabels.getLast()->setLookAndFeel(&laf);
+            tab2.addAndMakeVisible(macroControlNameLabels.getLast());
+            
+            macroControlNames.add(new Label());
+            macroControlNames.getLast()->setLookAndFeel(&laf);
+            macroControlNames.getLast()->setEditable(true);
+            macroControlNames.getLast()->setJustificationType(Justification::centred);
+            macroControlNames.getLast()->setColour(Label::backgroundColourId,
+                                                   Colours::darkgrey.withBrightness(0.2f));
+            macroControlNames.getLast()->addListener(this);
+            tab2.addAndMakeVisible(macroControlNames.getLast());
+        }
     }
     
     for (int i = 0; i < NUM_STRINGS+1; ++i)
@@ -263,9 +318,9 @@ chooser("Select a .wav file to load...", {}, "*.wav")
         if (i == 0) n = "Global Pitch Bend & CCs";
         stringChannelLabels.add(new Label());
         stringChannelLabels.getLast()->setText(n + " Ch#", dontSendNotification);
-        stringChannelLabels.getLast()->setJustificationType(Justification::centredRight);
+//        stringChannelLabels.getLast()->setJustificationType(Justification::centredRight);
         stringChannelLabels.getLast()->setLookAndFeel(&laf);
-        tab3.addAndMakeVisible(stringChannelLabels.getLast());
+        tab2.addAndMakeVisible(stringChannelLabels.getLast());
         
         stringChannelEntries.add(new Label());
         stringChannelEntries.getLast()->setLookAndFeel(&laf);
@@ -274,14 +329,20 @@ chooser("Select a .wav file to load...", {}, "*.wav")
         stringChannelEntries.getLast()->setColour(Label::backgroundColourId,
                                                  Colours::darkgrey.withBrightness(0.2f));
         stringChannelEntries.getLast()->addListener(this);
-        tab3.addAndMakeVisible(stringChannelEntries.getLast());
+        tab2.addAndMakeVisible(stringChannelEntries.getLast());
     }
+    
+    //==============================================================================
+    // TAB3 ========================================================================
+    addAndMakeVisible(tab3);
+    
+    tab3.addAndMakeVisible(copedentTable);
     
     //==============================================================================
     
     tabs.addTab("Synth", Colours::black, &tab1, false);
-    tabs.addTab("Copedent", Colours::black, &tab2, false);
-    tabs.addTab("Control", Colours::black, &tab3, false);
+    tabs.addTab("Control", Colours::black, &tab2, false);
+    tabs.addTab("Copedent", Colours::black, &tab3, false);
     tabs.getTabbedButtonBar().getTabButton(0)->addListener(this);
     tabs.getTabbedButtonBar().getTabButton(1)->addListener(this);
     tabs.getTabbedButtonBar().getTabButton(2)->addListener(this);
@@ -349,6 +410,11 @@ ESAudioProcessorEditor::~ESAudioProcessorEditor()
     
     randomValueLabel.setLookAndFeel(nullptr);
     
+    numVoicesLabel.setLookAndFeel(nullptr);
+    numVoicesSlider.setLookAndFeel(nullptr);
+    transposeLabel.setLookAndFeel(nullptr);
+    transposeSlider.setLookAndFeel(nullptr);
+    
     sliderAttachments.clear();
     buttonAttachments.clear();
 }
@@ -390,21 +456,31 @@ void ESAudioProcessorEditor::resized()
         oscModules[i]->setBounds(-1, (120*s*i)-i-1, 540*s+1, 120*s);
     }
     
-    seriesLabel.setBounds(540*s-1, 0*s, 60*s, 25*s);
-    parallelLabel.setBounds(840*s, 0*s, 60*s, 25*s);
-    seriesParallelSlider.setBounds(540*s-1, 20*s, 360*s, 30*s);
-    
-    for (int i = 0; i < NUM_FILT; ++i)
-    {
-        filterModules[i]->setBounds(540*s-1, 50*s+(155*s*i)-i-1, 360*s+2, 155*s);
-    }
-
     envsAndLFOs.setBounds(-1, oscModules.getLast()->getBottom()-1, 540*s+1, 160*s);
     envsAndLFOs.setIndent(10*s);
     envsAndLFOs.setTabBarDepth(25*s);
     
-    outputModule->setBounds(540*s-1, oscModules.getLast()->getBottom(), 360*s+2, 160*s-2);
-    pedalToggle.setBounds(805, 500, 130, 30);
+    noiseModule->setBounds(oscModules[0]->getRight()-1, -1, 250*s, 100*s-2);
+    
+    otherSettingsComponent.setBounds(noiseModule->getRight()-1, -1, 114*s, 100*s-1);
+    numVoicesLabel.setBounds(0, 0, 114*s, 22*s);
+    numVoicesSlider.setBounds(5*s, numVoicesLabel.getBottom(), 105*s, 22*s);
+    transposeLabel.setBounds(0, 50*s, 114*s, 22*s);
+    transposeSlider.setBounds(5*s, transposeLabel.getBottom(), 105*s, 22*s);
+    
+    seriesParallelComponent.setBounds(540*s-1, otherSettingsComponent.getBottom()-1, 364*s, 40*s);
+    seriesLabel.setBounds(0, 0, 60*s, 22*s);
+    parallelLabel.setBounds(302*s, 0, 60*s, 22*s);
+    seriesParallelSlider.setBounds(0, 18*s, 363*s, 22*s);
+    
+    filterModules[0]->setBounds(540*s-1, seriesParallelComponent.getBottom()-1, 360*s+2, 124*s);
+    for (int i = 1; i < NUM_FILT; ++i)
+    {
+        filterModules[i]->setBounds(540*s-1, filterModules[i-1]->getBottom()-1, 360*s+2, 124*s);
+    }
+    
+    outputModule->setBounds(540*s-1, filterModules.getLast()->getBottom()-1, 360*s+2, 135*s);
+    pedalToggle.setBounds(790, 500, 145, 30);
     
     const float knobSize = 40.0f*s;
     for (int i = 0; i < NUM_GENERIC_MACROS; ++i)
@@ -449,7 +525,7 @@ void ESAudioProcessorEditor::resized()
     {
         pitchBendSliders[i]->setBounds(pitchBendSliders[i-1]->getRight(),
                                        midiKeyComponent.getBottom()-1,
-                                       w + (r > 0 ? 1 : 0), 26*s);
+                                       w + (r > 0 ? 1 : 0), 27*s);
         stringActivityButtons[i]->setBounds(stringActivityButtons[i-1]->getRight(), y,
                                            w + (r-- > 0 ? 1 : 0), 35*s);
     }
@@ -460,37 +536,58 @@ void ESAudioProcessorEditor::resized()
     //==============================================================================
     // TAB2 ========================================================================
     
-    copedentTable.setBoundsRelative(0.05f, 0.08f, 0.9f, 0.84f);
-    
-    //==============================================================================
-    // TAB3 ========================================================================
-    
+    x = 40;
+    y = 40;
     int h = 30;
     int pad = 4;
-    for (int i = 0; i < NUM_STRINGS+1; ++i)
-    {
-        stringChannelLabels[i]->setBounds(10, 30+(h+pad)*i, 300, h);
-        stringChannelEntries[i]->setBounds(stringChannelLabels[i]->getRight(),
-                                           stringChannelLabels[i]->getY(), 100, h);
-    }
+    
     for (int i = 0; i < NUM_GENERIC_MACROS; ++i)
     {
-        macroControlLabels[i]->setBounds(430, 30+(h+pad)*i, 120, h);
+        int padx = (i/4) < 3 ? 0 : 2;
+        macroControlLabels[i]->setBounds(x + 216*(i/4) + padx, y+(h+pad)*(i%4)*2, 100, h);
         macroControlEntries[i]->setBounds(macroControlLabels[i]->getRight(),
                                           macroControlLabels[i]->getY(), 100, h);
+        macroControlNameLabels[i]->setBounds(x + 216*(i/4) + padx,
+                                             y+(h+pad)+(h+pad)*(i%4)*2, 70, h);
+        macroControlNames[i]->setBounds(macroControlNameLabels[i]->getRight(),
+                                        macroControlNameLabels[i]->getY(), 130, h);
     }
+    DBG(macroControlEntries[NUM_GENERIC_MACROS-1]->getRight());
+    
+    y = 300;
     for (int i = NUM_GENERIC_MACROS; i < NUM_MACROS; ++i)
     {
-        macroControlLabels[i]->setBounds(640, 30+(h+pad)*(i-NUM_GENERIC_MACROS), 120, h);
+        int j = i - NUM_GENERIC_MACROS;
+        macroControlLabels[i]->setBounds(x + 216*(j/2), y+(h+pad)+(h+pad)*(j%2), 100, h);
         macroControlEntries[i]->setBounds(macroControlLabels[i]->getRight(),
                                           macroControlLabels[i]->getY(), 100, h);
         if (i == NUM_MACROS - 1)
         {
-            macroControlLabels[i]->setBounds(640, 30+(h+pad)*(i-NUM_GENERIC_MACROS+0.5f), 120, h);
+            macroControlLabels[i]->setBounds(x + 216*(j/2),
+                                             y+(h+pad)+(h+pad)*((j%2)+0.5f),
+                                             100, h);
             macroControlEntries[NUM_MACROS]->setBounds(macroControlLabels[i]->getRight(),
-                                                       30+(h+pad)*NUM_UNIQUE_MACROS, 100, h);
+                                                       y+(h+pad)+(h+pad)*((j%2)+1), 100, h);
         }
     }
+    
+    y = 430;
+    stringChannelLabels[0]->setBounds(x, y, 300, h);
+    stringChannelEntries[0]->setBounds(stringChannelLabels[0]->getRight(),
+                                       stringChannelLabels[0]->getY(), 100, h);
+    for (int i = 1; i < NUM_STRINGS+1; ++i)
+    {
+        stringChannelLabels[i]->setBounds(x + 300*((i-1)/4),
+                                          y+(h+pad)+(h+pad)*((i-1)%4), 150, h);
+        stringChannelEntries[i]->setBounds(stringChannelLabels[i]->getRight(),
+                                           stringChannelLabels[i]->getY(), 100, h);
+    }
+    DBG(stringChannelEntries.getLast()->getRight());
+    
+    //==============================================================================
+    // TAB3 ========================================================================
+    
+    copedentTable.setBoundsRelative(0.05f, 0.08f, 0.9f, 0.84f);
     
     //==============================================================================
     
@@ -526,6 +623,10 @@ void ESAudioProcessorEditor::sliderValueChanged(Slider* slider)
         updateMidiKeyRangeSlider(midiKeyRangeSlider.getMinValue(),
                                  midiKeyRangeSlider.getMaxValue());
     }
+    else if (slider == &numVoicesSlider)
+    {
+        updateNumVoicesSlider(numVoicesSlider.getValue());
+    }
 }
 
 void ESAudioProcessorEditor::buttonClicked(Button* button)
@@ -552,13 +653,12 @@ void ESAudioProcessorEditor::buttonClicked(Button* button)
     }
     else if (button == tabs.getTabbedButtonBar().getTabButton(1))
     {
-        
+        tab2.addAndMakeVisible(mpeToggle);
+        for (auto slider : pitchBendSliders) tab2.addAndMakeVisible(slider);
+        for (auto button : stringActivityButtons) tab2.addAndMakeVisible(button);
     }
     else if (button == tabs.getTabbedButtonBar().getTabButton(2))
     {
-        tab3.addAndMakeVisible(mpeToggle);
-        for (auto slider : pitchBendSliders) tab3.addAndMakeVisible(slider);
-        for (auto button : stringActivityButtons) tab3.addAndMakeVisible(button);
     }
 }
 
@@ -575,6 +675,11 @@ void ESAudioProcessorEditor::labelTextChanged(Label* label)
     {
         int ctrl = label->getText().getIntValue();
         updateMacroControl(macroControlEntries.indexOf(label), ctrl);
+    }
+    else if (macroControlNames.contains(label))
+    {
+        String name = label->getText().substring(0, 8);
+        updateMacroNames(macroControlNames.indexOf(label), name);
     }
     else if (stringChannelEntries.contains(label))
     {
@@ -626,7 +731,12 @@ void ESAudioProcessorEditor::update()
     {
         updateMacroControl(i, processor.macroCCNumbers[i]);
     }
+    for (int i = 0; i < NUM_GENERIC_MACROS; ++i)
+    {
+        updateMacroNames(i, processor.macroNames[i]);
+    }
     updateMidiKeyRangeSlider(processor.midiKeyMin, processor.midiKeyMax);
+    updateNumVoicesSlider(processor.numVoicesActive);
     updateRandomValueLabel(processor.lastRandomValue);
 }
 
@@ -699,6 +809,12 @@ void ESAudioProcessorEditor::updateMacroControl(int macro, int ctrl)
     macroControlEntries[macro]->setText(text, dontSendNotification);
 }
 
+void ESAudioProcessorEditor::updateMacroNames(int macro, String name)
+{
+    processor.macroNames.set(macro, name);
+    macroControlNames[macro]->setText(processor.macroNames[macro], dontSendNotification);
+}
+
 void ESAudioProcessorEditor::updateMidiKeyRangeSlider(int min, int max)
 {
     processor.midiKeyMin = min;
@@ -707,6 +823,16 @@ void ESAudioProcessorEditor::updateMidiKeyRangeSlider(int min, int max)
                                           dontSendNotification);
     midiKeyMinLabel.setText(String(processor.midiKeyMin), dontSendNotification);
     midiKeyMaxLabel.setText(String(processor.midiKeyMax), dontSendNotification);
+}
+
+void ESAudioProcessorEditor::updateNumVoicesSlider(int numVoices)
+{
+    processor.numVoicesActive = numVoices;
+    numVoicesSlider.setValue(numVoices, dontSendNotification);
+    for (int i = 0; i < NUM_STRINGS; ++i)
+    {
+        stringActivityButtons[i+1]->setAlpha(i+1 > processor.numVoicesActive ? 0.5f : 1.f);
+    }
 }
 
 void ESAudioProcessorEditor::updateRandomValueLabel(float value)

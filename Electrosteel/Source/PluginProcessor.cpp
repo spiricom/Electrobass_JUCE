@@ -43,12 +43,14 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
 	auto string2FromValueFunction = [](float v, int length)
 	{
 		String asText(v, 2);
+        asText = (v >= 0 ? "+" : "") + asText;
 		return length > 0 ? asText.substring(0, length) : asText;
 	};
 
 	auto string3FromValueFunction = [](float v, int length)
 	{
 		String asText(v, 3);
+        asText = (v >= 0 ? "+" : "") + asText;
 		return length > 0 ? asText.substring(0, length) : asText;
 	};
 
@@ -74,9 +76,37 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
     }
     
     //==============================================================================
+    n = "Noise";
+    layout.add (std::make_unique<AudioParameterChoice> (n, n, StringArray("Off", "On"), 1));
+    paramIds.add(n);
+    
+    for (int j = 0; j < cNoiseParams.size(); ++j)
+    {
+        float min = vNoiseInit[j][0];
+        float max = vNoiseInit[j][1];
+        float def = vNoiseInit[j][2];
+        float center = vNoiseInit[j][3];
+        
+        n = "Noise " + cNoiseParams[j];
+        
+        normRange = NormalisableRange<float>(min, max);
+        normRange.setSkewForCentre(center);
+        invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
+        layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, def));
+        paramIds.add(n);
+    }
+    
+    n = "Noise FilterSend";
+    normRange = NormalisableRange<float>(0., 1.);
+    normRange.setSkewForCentre(.5);
+    invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
+    layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, 0.5f));
+    paramIds.add(n);
+    
+    //==============================================================================
     for (int i = 0; i < NUM_OSCS; ++i)
     {
-        String n = "Osc" + String(i+1);
+        n = "Osc" + String(i+1);
         layout.add (std::make_unique<AudioParameterChoice> (n, n, StringArray("Off", "On"), 1));
         paramIds.add(n);
         
@@ -275,8 +305,13 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
     
     for (int i = 0; i < NUM_OSCS; ++i)
     {
-        oscs.add(new Oscillator("Osc" + String(i+1), *this, vts));
+        String n = "Osc" + String(i+1);
+        oscs.add(new Oscillator(n, *this, vts));
+        sourceIds.add(n);
     }
+    
+    noise = std::make_unique<NoiseGenerator>("Noise", *this, vts);
+    sourceIds.add("Noise");
     
     for (int i = 0; i < NUM_FILT; ++i)
     {
@@ -295,6 +330,7 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
         if (i < NUM_GENERIC_MACROS)
         {
             n = "M" + String(i+1);
+            macroNames.add(n);
             c = Colours::red.withSaturation(0.9f);
         }
         else
@@ -712,6 +748,7 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
     {
         oscs[i]->frame();
     }
+    noise->frame();
     for (int i = 0; i < filt.size(); ++i)
     {
         filt[i]->frame();
@@ -775,6 +812,7 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
         {
             oscs[i]->tick(samples);
         }
+        noise->tick(samples);
 
         filt[0]->tick(samples[0]);
         
@@ -987,6 +1025,12 @@ void ESAudioProcessor::setMPEMode(bool enabled)
     tSimplePoly_setNumVoices(&strings[0], mpeMode ? 1 : numVoicesActive);
 }
 
+void ESAudioProcessor::setNumVoicesActive(int numVoices)
+{
+    numVoicesActive = numVoices;
+    setMPEMode(mpeMode);
+}
+
 //==============================================================================
 void ESAudioProcessor::sendCopedentMidiMessage()
 {
@@ -1164,9 +1208,15 @@ void ESAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     // Top level settings
     root.setProperty("editorScale", editorScale, nullptr);
     root.setProperty("mpeMode", mpeMode, nullptr);
+    root.setProperty("numVoices", numVoicesActive, nullptr);
     root.setProperty("pedalControlsMaster", pedalControlsMaster, nullptr);
     root.setProperty("midiKeyMin", midiKeyMin, nullptr);
     root.setProperty("midiKeyMax", midiKeyMax, nullptr);
+    
+    for (int i = 0; i < NUM_GENERIC_MACROS; ++i)
+    {
+        root.setProperty("M" + String(i+1) + "Name", macroNames[i], nullptr);
+    }
     
     for (int i = 0; i < NUM_MACROS+1; ++i)
     {
@@ -1241,9 +1291,16 @@ void ESAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
         // Top level settings
         editorScale = xml->getDoubleAttribute("editorScale", 1.05);
         setMPEMode(xml->getBoolAttribute("mpeMode", true));
+        setNumVoicesActive(xml->getIntAttribute("numVoices", 12));
         pedalControlsMaster = xml->getBoolAttribute("pedalControlsVolume", true);
         midiKeyMin = xml->getIntAttribute("midiKeyMin", 21);
         midiKeyMax = xml->getIntAttribute("midiKeyMax", 108);
+        
+        for (int i = 0; i < NUM_GENERIC_MACROS; ++i)
+        {
+            macroNames.set(i, xml->getStringAttribute("M" + String(i+1) + "Name",
+                                                      "M" + String(i+1)));
+        }
         
         for (int i = 1; i <= 127; ++i) ccNumberToMacroMap.set(i, -1);
         for (int i = 0; i < NUM_MACROS+1; ++i)

@@ -56,11 +56,14 @@ public:
     
 private:
     
+    // Updating things that don't have attachments to the vts
     void updatePedalToggle(bool state);
     void updateMPEToggle(bool state);
     void updateStringChannel(int string, int ch);
     void updateMacroControl(int macro, int ctrl);
+    void updateMacroNames(int macro, String name);
     void updateMidiKeyRangeSlider(int min, int max);
+    void updateNumVoicesSlider(int numVoices);
     void updateVelocityLabel(float velocity);
     void updateRandomValueLabel(float value);
     
@@ -84,30 +87,32 @@ private:
     MidiKeyboardComponent keyboard;
     OwnedArray<TextButton> stringActivityButtons;
     OwnedArray<OscModule> oscModules;
+    std::unique_ptr<NoiseModule> noiseModule;
     OwnedArray<FilterModule> filterModules;
     std::unique_ptr<OutputModule> outputModule;
     ToggleButton pedalToggle;
     ESTabbedComponent envsAndLFOs;
     MappingSource* currentMappingSource;
     ToggleButton mpeToggle;
+    ESComponent seriesParallelComponent;
     Slider seriesParallelSlider;
     Label seriesLabel;
     Label parallelLabel;
     ESComponent otherSettingsComponent;
+    Label numVoicesLabel;
+    Slider numVoicesSlider;
     Label transposeLabel;
     Slider transposeSlider;
-    Label numVoicesLabel;
-    Label numVoicesEntry;
-    Label maxVoicesLabel;
-
-    
-    Component tab2;
-    CopedentTable copedentTable;
     
     Component tab3;
+    CopedentTable copedentTable;
+    
+    Component tab2;
     /* ToggleButton mpeToggle */// Declared above but will be include in this tab too
     OwnedArray<Label> macroControlEntries;
+    OwnedArray<Label> macroControlNames;
     OwnedArray<Label> macroControlLabels;
+    OwnedArray<Label> macroControlNameLabels;
     OwnedArray<Label> stringChannelEntries;
     OwnedArray<Label> stringChannelLabels;
     

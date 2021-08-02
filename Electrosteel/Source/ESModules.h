@@ -129,6 +129,29 @@ private:
 
 //==============================================================================
 
+class NoiseModule : public ESModule
+{
+public:
+    
+    NoiseModule(ESAudioProcessorEditor& editor, AudioProcessorValueTreeState&, AudioComponent&);
+    ~NoiseModule() override;
+    
+    void resized() override;
+    void buttonClicked(Button* button) override;
+    
+private:
+    
+    Slider sendSlider;
+    Label f1Label;
+    Label f2Label;
+    
+    std::unique_ptr<MappingSource> s;
+    
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (NoiseModule)
+};
+
+//==============================================================================
+
 class FilterModule : public ESModule
 {
 public:

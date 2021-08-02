@@ -385,6 +385,28 @@ void ESDial::paint(Graphics& g)
         
         if (!t[i]->isActive()) continue;
         
+        String text = t[i]->getScalarString();
+        if (text.isNotEmpty())
+        {
+            int w = t[i]->getWidth()*0.55f;
+            int h = t[i]->getHeight()*0.55f;
+            int x = t[i]->getX();
+            if (i == 1) x += (t[i]->getWidth()-w)/2;
+            else if (i == 2) x += t[i]->getWidth()-w-1;
+            int y = t[i]->getY()-h;
+            
+            // Draw a little box on top of
+            g.setColour(Colours::grey);
+            g.drawVerticalLine(x, y, t[i]->getY());
+            g.drawVerticalLine(x+w, y, t[i]->getY());
+            g.drawHorizontalLine(y, x, x+w);
+            
+            g.setFont(laf.getPopupMenuFont().withHeight(h));
+            g.setColour(t[i]->getScalarColour());
+            g.drawFittedText(text, x+1, y+1, w-1, h-1,
+                             Justification::centred, 1);
+        }
+        
         auto sliderNorm = slider.valueToProportionOfLength(slider.getValue());
         auto targetNorm = t[i]->valueToProportionOfLength(t[i]->getValue()) - sliderNorm;
         
@@ -423,28 +445,6 @@ void ESDial::paint(Graphics& g)
 
         g.setColour(t[i]->getColour());
         g.fillPath(arc);
-        
-        String text = t[i]->getScalarString();
-        if (text.isNotEmpty())
-        {
-            int w = t[i]->getWidth()*0.55f;
-            int h = t[i]->getHeight()*0.55f;
-            int x = t[i]->getX();
-            if (i == 1) x += (t[i]->getWidth()-w)/2;
-            else if (i == 2) x += t[i]->getWidth()-w-1;
-            int y = t[i]->getY()-h;
-            
-            // Draw a little box on top of
-            g.setColour(Colours::grey);
-            g.drawVerticalLine(x, y, t[i]->getY());
-            g.drawVerticalLine(x+w, y, t[i]->getY());
-            g.drawHorizontalLine(y, x, x+w);
-            
-            g.setFont(laf.getPopupMenuFont().withHeight(h));
-            g.setColour(t[i]->getScalarColour());
-            g.drawFittedText(text, x+1, y+1, w-1, h-1,
-                             Justification::centred, 1);
-        }
         
         if (t[i]->isBipolar())
         {

@@ -83,6 +83,8 @@ public:
     bool getMPEMode();
     void setMPEMode(bool enabled);
     
+    void setNumVoicesActive(int numVoices);
+    
     //==============================================================================
     void sendCopedentMidiMessage();
     void sendPresetMidiMessage();
@@ -117,6 +119,7 @@ public:
     float voicePrevBend[NUM_STRINGS];
     int highByteVolume;
     OwnedArray<Oscillator> oscs;
+    std::unique_ptr<NoiseGenerator> noise;
     OwnedArray<Filter> filt;
     OwnedArray<Envelope> envs;
     OwnedArray<LowFreqOscillator> lfos;
@@ -185,6 +188,8 @@ public:
     // +1 because 0 no string/global pitch bend
     int stringChannels[NUM_STRINGS+1];
     HashMap<int, int> channelToStringMap;
+    
+    StringArray macroNames;
     
 private:
     

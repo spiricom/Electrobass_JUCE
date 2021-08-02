@@ -127,3 +127,28 @@ private:
     std::atomic<float>* afpShapeSet;
     LFOShapeSet currentShapeSet = LFOShapeSetNil;
 };
+
+//==============================================================================
+
+class NoiseGenerator : public AudioComponent,
+public MappingSourceModel
+{
+public:
+    //==============================================================================
+    NoiseGenerator(const String&, ESAudioProcessor&, AudioProcessorValueTreeState&);
+    ~NoiseGenerator();
+    
+    //==============================================================================
+    void prepareToPlay (double sampleRate, int samplesPerBlock);
+    void frame();
+    void tick(float output[][NUM_STRINGS]);
+    
+private:
+    
+    tNoise noise[NUM_STRINGS];
+    tSVF bandpass[NUM_STRINGS];
+    
+    std::unique_ptr<SmoothedParameter> filterSend;
+    
+    float* sourceValues[MAX_NUM_UNIQUE_SKEWS];
+};

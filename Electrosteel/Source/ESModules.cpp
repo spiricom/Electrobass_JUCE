@@ -226,6 +226,8 @@ void OscModule::buttonClicked(Button* button)
 {
     if (button == &enabledToggle)
     {
+        f1Label.setAlpha(enabledToggle.getToggleState() ? 1. : 0.5);
+        f2Label.setAlpha(enabledToggle.getToggleState() ? 1. : 0.5);
         sendSlider.setEnabled(enabledToggle.getToggleState());
         sendSlider.setAlpha(enabledToggle.getToggleState() ? 1. : 0.5);
     }
@@ -462,9 +464,72 @@ void OscModule::displayPitchMapping(MappingTarget* mt)
 //==============================================================================
 //==============================================================================
 
+NoiseModule::NoiseModule(ESAudioProcessorEditor& editor, AudioProcessorValueTreeState& vts,
+                     AudioComponent& ac) :
+ESModule(editor, vts, ac, 0.15f, 0.3f, 0.05f, 0.0f, 0.98f)
+{
+    outlineColour = Colours::darkgrey;
+    
+    sendSlider.setSliderStyle(Slider::SliderStyle::LinearVertical);
+    sendSlider.setTextBoxStyle(Slider::TextEntryBoxPosition::NoTextBox, false, 10, 10);
+    addAndMakeVisible(sendSlider);
+    sliderAttachments.add(new SliderAttachment(vts, ac.getName() + " FilterSend", sendSlider));
+    
+    f1Label.setText("F1", dontSendNotification);
+    f1Label.setJustificationType(Justification::bottomRight);
+    f1Label.setLookAndFeel(&laf);
+    addAndMakeVisible(f1Label);
+    
+    f2Label.setText("F2", dontSendNotification);
+    f2Label.setJustificationType(Justification::topRight);
+    f2Label.setLookAndFeel(&laf);
+    addAndMakeVisible(f2Label);
+    
+    s = std::make_unique<MappingSource>
+    (editor, *editor.processor.getMappingSource(ac.getName()), ac.getName());
+    addAndMakeVisible(s.get());
+}
+
+NoiseModule::~NoiseModule()
+{
+    sliderAttachments.clear();
+    buttonAttachments.clear();
+    comboBoxAttachments.clear();
+}
+
+void NoiseModule::resized()
+{
+    ESModule::resized();
+    
+    s->setBounds(4, 4, getWidth()*0.2f, enabledToggle.getHeight()-8);
+    s->toFront(false);
+    
+    sendSlider.setBoundsRelative(0.92f, 0.f, 0.08f, 1.0f);
+    
+    enabledToggle.setBoundsRelative(0.84f, 0.4f, 0.1f, 0.18f);
+    
+    f1Label.setBoundsRelative(0.81f, 0.05f, 0.12f, 0.17f);
+    f2Label.setBoundsRelative(0.81f, 0.78f, 0.12f, 0.17f);
+    
+}
+
+void NoiseModule::buttonClicked(Button* button)
+{
+    if (button == &enabledToggle)
+    {
+        f1Label.setAlpha(enabledToggle.getToggleState() ? 1. : 0.5);
+        f2Label.setAlpha(enabledToggle.getToggleState() ? 1. : 0.5);
+        sendSlider.setEnabled(enabledToggle.getToggleState());
+        sendSlider.setAlpha(enabledToggle.getToggleState() ? 1. : 0.5);
+    }
+}
+
+//==============================================================================
+//==============================================================================
+
 FilterModule::FilterModule(ESAudioProcessorEditor& editor, AudioProcessorValueTreeState& vts,
                            AudioComponent& ac) :
-ESModule(editor, vts, ac, 0.04f, 0.22f, 0.04f, 0.2f, 0.7f)
+ESModule(editor, vts, ac, 0.04f, 0.215f, 0.05f, 0.18f, 0.8f) //0.05f, 0.132f, 0.05f, 0.18f, 0.8f),
 {
     outlineColour = Colours::darkgrey;
     
@@ -758,7 +823,7 @@ void LFOModule::displayRateMapping(MappingTarget* mt)
 
 OutputModule::OutputModule(ESAudioProcessorEditor& editor, AudioProcessorValueTreeState& vts,
                            AudioComponent& ac) :
-ESModule(editor, vts, ac, 0.088f, 0.22f, 0.088f, 0.125f, 0.75f)
+ESModule(editor, vts, ac, 0.07f, 0.22f, 0.07f, 0.11f, 0.78f)
 {
     outlineColour = Colours::darkgrey;
     
@@ -778,6 +843,6 @@ void OutputModule::resized()
 {
     ESModule::resized();
     
-    masterDial->setBoundsRelative(0.7f, relTopMargin, 0.2f, relDialHeight);
+    masterDial->setBoundsRelative(0.7f, relTopMargin, 0.17f, relDialHeight);
 }
 

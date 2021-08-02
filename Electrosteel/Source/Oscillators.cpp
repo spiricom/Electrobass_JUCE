@@ -141,11 +141,11 @@ void Oscillator::tick(float output[][NUM_STRINGS])
     {
         if (!processor.voiceIsSounding[v]) continue;
         
-        float pitch = quickParams[OscPitch][v]->tick();
-        float fine = quickParams[OscFine][v]->tick();
+        float pitch = quickParams[OscPitch][v]->tickNoSmoothing();
+        float fine = quickParams[OscFine][v]->tickNoSmoothing();
         float freq = quickParams[OscFreq][v]->tickNoSmoothing();
-        float shape = quickParams[OscShape][v]->tick();
-        float amp = quickParams[OscAmp][v]->tick();
+        float shape = quickParams[OscShape][v]->tickNoSmoothing();
+        float amp = quickParams[OscAmp][v]->tickNoSmoothing();
         
         amp = amp < 0.f ? 0.f : amp;
         
@@ -446,4 +446,121 @@ void LowFreqOscillator::noteOn(int voice, float velocity)
         tCycle_setPhase(&sinePaired[voice], phaseReset);
         tMBTriangle_setPhase(&triPaired[voice], phaseReset);
     }
+}
+
+
+//==============================================================================
+
+NoiseGenerator::NoiseGenerator(const String& n, ESAudioProcessor& p, AudioProcessorValueTreeState& vts) :
+AudioComponent(n, p, vts, cNoiseParams, true),
+MappingSourceModel(p, n, true, true, Colours::darkorange)
+{
+    for (int i = 0; i < p.numInvParameterSkews; ++i)
+    {
+        sourceValues[i] = (float*) leaf_alloc(&p.leaf, sizeof(float) * NUM_STRINGS);
+        sources[i] = &sourceValues[i];
+    }
+    
+    for (int i = 0; i < NUM_STRINGS; i++)
+    {
+        tNoise_init(&noise[i], WhiteNoise, &processor.leaf);
+        tSVF_init(&bandpass[i], SVFTypeBandpass, 2000.f, 0.7f, &processor.leaf);
+    }
+    
+    filterSend = std::make_unique<SmoothedParameter>(p, vts, n + " FilterSend");
+
+//    afpShapeSet = vts.getRawParameterValue(n + " ShapeSet");
+}
+
+NoiseGenerator::~NoiseGenerator()
+{
+    for (int i = 0; i < processor.numInvParameterSkews; ++i)
+    {
+        leaf_free(&processor.leaf, (char*)sourceValues[i]);
+    }
+    
+    for (int i = 0; i < NUM_STRINGS; i++)
+    {
+        tNoise_free(&noise[i]);
+        tSVF_free(&bandpass[i]);
+    }
+}
+
+void NoiseGenerator::prepareToPlay (double sampleRate, int samplesPerBlock)
+{
+    AudioComponent::prepareToPlay(sampleRate, samplesPerBlock);
+    for (int i = 0; i < NUM_STRINGS; i++)
+    {
+        tSVF_setSampleRate(&bandpass[i], sampleRate);
+    }
+}
+
+void NoiseGenerator::frame()
+{
+    sampleInBlock = 0;
+    enabled = afpEnabled == nullptr || *afpEnabled > 0 ||
+    processor.sourceMappingCounts[getName()] > 0;
+    
+//    currentShapeSet = LFOShapeSet(int(*afpShapeSet));
+//    switch (currentShapeSet) {
+//        case SineTriLFOShapeSet:
+//            shapeTick = &LowFreqOscillator::sineTriTick;
+//            break;
+//
+//        case SawPulseLFOShapeSet:
+//            shapeTick = &LowFreqOscillator::sawSquareTick;
+//            break;
+//
+//        case SineLFOShapeSet:
+//            shapeTick = &LowFreqOscillator::sineTick;
+//            break;
+//
+//        case TriLFOShapeSet:
+//            shapeTick = &LowFreqOscillator::triTick;
+//            break;
+//
+//        case SawLFOShapeSet:
+//            shapeTick = &LowFreqOscillator::sawTick;
+//            break;
+//
+//        case PulseLFOShapeSet:
+//            shapeTick = &LowFreqOscillator::pulseTick;
+//            break;
+//
+//        default:
+//            shapeTick = &LowFreqOscillator::sineTriTick;
+//            break;
+//    }
+}
+
+void NoiseGenerator::tick(float output[][NUM_STRINGS])
+{
+    if (!enabled) return;
+    //    float a = sampleInBlock * invBlockSize;
+    
+    for (int v = 0; v < processor.numVoicesActive; v++)
+    {
+        float color = quickParams[NoiseColor][v]->tickNoSmoothing();
+        float amp = quickParams[NoiseAmp][v]->tickNoSmoothing();
+        color = color < 0.f ? 0.f : color;
+        color = mtof(color*100.f + 24.f);
+        amp = amp < 0.f ? 0.f : amp;
+    
+        tSVF_setFreq(&bandpass[v], color);
+        float sample = tSVF_tick(&bandpass[v], tNoise_tick(&noise[v])) * amp;
+        
+        float normSample = (sample + 1.f) * 0.5f;
+        sourceValues[0][v] = normSample;
+        for (int i = 1; i < processor.numInvParameterSkews; ++i)
+        {
+            float invSkew = processor.quickInvParameterSkews[i];
+            sourceValues[i][v] = powf(normSample, invSkew);
+        }
+        
+        float f = filterSend->tickNoHooks();
+        
+        output[0][v] += sample*f * *afpEnabled;
+        output[1][v] += sample*(1.f-f) * *afpEnabled ;
+    }
+    sampleInBlock++;
 }
