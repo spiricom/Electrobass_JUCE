@@ -789,8 +789,12 @@ void ESAudioProcessorEditor::updateStringChannel(int string, int ch)
     processor.stringChannels[string] = ch;
     processor.channelToStringMap.set(ch, string);
     // Update the text
-    String text = ch > 0 ? String(processor.stringChannels[string]) : "";
+    bool state = processor.getMPEMode();
+	String text = "All";
+	if (state) text = String(processor.stringChannels[string]);
+    stringChannelEntries[string]->setAlpha(state ? 1.f : 0.7f);
     stringChannelEntries[string]->setText(text, dontSendNotification);
+    stringChannelEntries[string]->setEnabled(state);
 }
 
 void ESAudioProcessorEditor::updateMacroControl(int macro, int ctrl)

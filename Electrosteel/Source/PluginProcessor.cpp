@@ -754,14 +754,15 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
         filt[i]->frame();
     }
     output->frame();
-
-    float parallel = seriesParallelParam->tickNoHooksNoSmoothing();
     
     int mpe = mpeMode ? 1 : 0;
     int impe = 1-mpe;
     
     for (int s = 0; s < buffer.getNumSamples(); s++)
     {
+		float parallel = seriesParallelParam->tickNoHooksNoSmoothing();
+		float transp = transposeParam->tickNoHooksNoSmoothing();
+
         for (int i = 0; i < ccParams.size(); ++i)
         {
             ccParams[i]->tickSkewsNoHooks();
@@ -785,7 +786,7 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
         
         for (int v = 0; v < numVoicesActive; ++v)
         {
-            float pitchBend = globalPitchBend + pitchBendParams[v+1]->tickNoHooksNoSmoothing();
+            float pitchBend = transp + globalPitchBend + pitchBendParams[v+1]->tickNoHooksNoSmoothing();
             float tempNote = (float)tSimplePoly_getPitch(&strings[v*mpe], v*impe);
             //tempNote += resolvedCopedent[v];
             

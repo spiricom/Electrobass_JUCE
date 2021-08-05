@@ -406,6 +406,22 @@ void ESDial::paint(Graphics& g)
             g.drawFittedText(text, x+1, y+1, w-1, h-1,
                              Justification::centred, 1);
         }
+
+		Rectangle<int> inner = slider.getBounds().expanded(ringWidth * (i - 1) + 1,
+														   ringWidth * (i - 1) + 1);
+
+		x = inner.getX();
+		y = inner.getY();
+		width = inner.getWidth();
+		height = inner.getHeight();
+
+		radius = jmin(width / 2, height / 2) - width * 0.15f;
+		centreX = x + width * 0.5f;
+		centreY = y + height * 0.5f;
+		auto rx2 = centreX - radius;
+		auto ry2 = centreY - radius;
+		auto rw2 = radius * 2.0f;
+		auto b2 = rw2 * 0.04f;
         
         auto sliderNorm = slider.valueToProportionOfLength(slider.getValue());
         auto targetNorm = t[i]->valueToProportionOfLength(t[i]->getValue()) - sliderNorm;
@@ -414,48 +430,44 @@ void ESDial::paint(Graphics& g)
         auto angle = currentAngle + (targetNorm * (endAngle - startAngle));
         angle = fmax(startAngle, fmin(angle, endAngle));
 
-        if (currentAngle == angle) continue;
-        
-        Path arc;
-        arc.addArc(rx - b*4, ry - b*4, rw + b*8, rw + b*8, currentAngle, angle, true);
-        
-        Rectangle<int> inner = slider.getBounds().expanded(ringWidth*(i-1) + 1,
-                                                           ringWidth*(i-1) + 1);
-        
-        x = inner.getX();
-        y = inner.getY();
-        width = inner.getWidth();
-        height = inner.getHeight();
-        
-        radius = jmin(width / 2, height / 2) - width*0.15f;
-        centreX = x + width * 0.5f;
-        centreY = y + height * 0.5f;
-        auto rx2 = centreX - radius;
-        auto ry2 = centreY - radius;
-        auto rw2 = radius * 2.0f;
-        auto b2 = rw2 * 0.04f;
-        
-        // Easiest way to find the point we want to draw to is to make a separate path and get it's start
-        Path arc2;
-        arc2.addArc(rx2 - b2 * 4, ry2 - b2 * 4, rw2 + b2 * 8, rw2 + b2 * 8, angle, currentAngle, true);
-        arc.lineTo(arc2.getPointAlongPath(0));
+        if (currentAngle != angle)
+        {
+            Path arc;
+            arc.addArc(rx - b * 4, ry - b * 4, rw + b * 8, rw + b * 8, currentAngle, angle, true);
 
-        arc.addArc(rx2 - b2 * 4, ry2 - b2 * 4, rw2 + b2 * 8, rw2 + b2 * 8, angle, currentAngle, false);
-        arc.lineTo(arc.getPointAlongPath(0));
+            // Easiest way to find the point we want to draw to is to make a separate path and get it's start
+            Path arc2;
+            arc2.addArc(rx2 - b2 * 4, ry2 - b2 * 4, rw2 + b2 * 8, rw2 + b2 * 8, angle, currentAngle, true);
+            arc.lineTo(arc2.getPointAlongPath(0));
 
-        g.setColour(t[i]->getColour());
-        g.fillPath(arc);
+            arc.addArc(rx2 - b2 * 4, ry2 - b2 * 4, rw2 + b2 * 8, rw2 + b2 * 8, angle, currentAngle, false);
+            arc.lineTo(arc.getPointAlongPath(0));
+
+            g.setColour(t[i]->getColour());
+            g.fillPath(arc);
+        }
         
         if (t[i]->isBipolar())
         {
             angle = currentAngle - (targetNorm * (endAngle - startAngle));
             currentAngle = fmax(startAngle, fmin(currentAngle, endAngle));
             angle = fmax(startAngle, fmin(angle, endAngle));
-            Path oppArc;
-            oppArc.addArc(rx - b*4, ry - b*4, rw + b*8, rw + b*8, currentAngle, angle, true);
-            oppArc.addArc(rx2 - b2*4, ry2 - b2*4, rw2 + b2*8, rw2 + b2*8, angle, currentAngle, false);
-            g.setColour(t[i]->getColour().withSaturation(0.1));
-            g.fillPath(oppArc);
+
+            if (currentAngle != angle)
+            {
+                Path oppArc;
+                oppArc.addArc(rx - b * 4, ry - b * 4, rw + b * 8, rw + b * 8, currentAngle, angle, true);
+
+                Path oppArc2;
+                oppArc2.addArc(rx2 - b2 * 4, ry2 - b2 * 4, rw2 + b2 * 8, rw2 + b2 * 8, angle, currentAngle, true);
+                oppArc.lineTo(oppArc2.getPointAlongPath(0));
+
+                oppArc.addArc(rx2 - b2 * 4, ry2 - b2 * 4, rw2 + b2 * 8, rw2 + b2 * 8, angle, currentAngle, false);
+                oppArc.lineTo(oppArc.getPointAlongPath(0));
+
+                g.setColour(t[i]->getColour().withSaturation(0.1));
+                g.fillPath(oppArc);
+            }
         }
     }
 }
