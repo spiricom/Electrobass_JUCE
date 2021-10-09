@@ -418,20 +418,20 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
     {
         pedalValues[i] = vts.getRawParameterValue(cCopedentColumnNames[i]);
     }
-    
-    // A couple of default mappings that will be used if nothing has been saved
-    Mapping defaultFilter1Cutoff;
-    defaultFilter1Cutoff.sourceName = "Envelope3";
-    defaultFilter1Cutoff.targetName = "Filter1 Cutoff T3";
-    defaultFilter1Cutoff.value = 24.f;
-    
-    Mapping defaultOutputAmp;
-    defaultOutputAmp.sourceName = "Envelope4";
-    defaultOutputAmp.targetName = "Output Amp T3";
-    defaultOutputAmp.value = 1.f;
-    
-    initialMappings.add(defaultFilter1Cutoff);
-    initialMappings.add(defaultOutputAmp);
+
+	// A couple of default mappings that will be used if nothing has been saved
+	Mapping defaultFilter1Cutoff;
+	defaultFilter1Cutoff.sourceName = "Envelope3";
+	defaultFilter1Cutoff.targetName = "Filter1 Cutoff T3";
+	defaultFilter1Cutoff.value = 24.f;
+
+	Mapping defaultOutputAmp;
+	defaultOutputAmp.sourceName = "Envelope4";
+	defaultOutputAmp.targetName = "Output Amp T3";
+	defaultOutputAmp.value = 1.f;
+
+	initialMappings.add(defaultFilter1Cutoff);
+	initialMappings.add(defaultOutputAmp);
     
     DBG("SOURCES//");
     for (int i = 0; i < sourceIds.size(); ++i)
@@ -1348,11 +1348,19 @@ void ESAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
                 }
             }
         }
+
+		for (auto target : targetMap)
+		{
+            if (target->currentSource != nullptr)
+            {
+                target->removeMapping(true);
+            }
+		}
         
         // Mappings
+        initialMappings.clear();
         if (XmlElement* mappings = xml->getChildByName("Mappings"))
         {
-            initialMappings.clear();
             for (auto child : mappings->getChildIterator())
             {
                 Mapping m;
@@ -1362,6 +1370,22 @@ void ESAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
                 m.value = child->getDoubleAttribute("v");
                 initialMappings.add(m);
             }
+        }
+        else
+        {
+			// A couple of default mappings that will be used if nothing has been saved
+			Mapping defaultFilter1Cutoff;
+			defaultFilter1Cutoff.sourceName = "Envelope3";
+			defaultFilter1Cutoff.targetName = "Filter1 Cutoff T3";
+			defaultFilter1Cutoff.value = 24.f;
+
+			Mapping defaultOutputAmp;
+			defaultOutputAmp.sourceName = "Envelope4";
+			defaultOutputAmp.targetName = "Output Amp T3";
+			defaultOutputAmp.value = 1.f;
+
+			initialMappings.add(defaultFilter1Cutoff);
+			initialMappings.add(defaultOutputAmp);
         }
     }
     

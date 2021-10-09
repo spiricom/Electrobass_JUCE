@@ -298,6 +298,8 @@ void MappingTargetModel::setMapping(MappingSourceModel* source, float e, bool se
         float pCenter = range.convertTo0to1(center);
         float pOffset = range.convertTo0to1(range.getRange().clipValue(center+end)) - pCenter;
         start = range.convertFrom0to1(jlimit(0.f, 1.f, pCenter-pOffset)) - center;
+        DBG("Start: " + String(start));
+        DBG("End: " + String(end));
     }
     
     float* sourceArray =

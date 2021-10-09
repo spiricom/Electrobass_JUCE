@@ -254,6 +254,7 @@ void OscModule::comboBoxChanged(ComboBox *comboBox)
 {
     if (comboBox == &shapeCB)
     {
+        // Select file... option
         if (shapeCB.getSelectedItemIndex() == shapeCB.getNumItems()-1)
         {
             chooser.launchAsync (FileBrowserComponent::openMode |
@@ -277,6 +278,7 @@ void OscModule::comboBoxChanged(ComboBox *comboBox)
                 updateShapeCB();
             });
         }
+        // Selected a loaded file
         else if (shapeCB.getSelectedItemIndex() >= UserOscShapeSet)
         {
             Oscillator& osc = static_cast<Oscillator&>(ac);
@@ -285,9 +287,10 @@ void OscModule::comboBoxChanged(ComboBox *comboBox)
             vts.getParameter(ac.getName() + " ShapeSet")->setValueNotifyingHost(1.);
             updateShapeCB();
         }
+        // Selected built ins
         else
         {
-            float normValue = shapeCB.getSelectedItemIndex() / float(OscShapeSetNil);
+            float normValue = shapeCB.getSelectedItemIndex() / float(UserOscShapeSet);
             vts.getParameter(ac.getName() + " ShapeSet")->setValueNotifyingHost(normValue);
             updateShapeCB();
         }
