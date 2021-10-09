@@ -1387,6 +1387,16 @@ void ESAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 			initialMappings.add(defaultFilter1Cutoff);
 			initialMappings.add(defaultOutputAmp);
         }
+
+		if (!initialMappings.isEmpty()) // First prepareToPlay
+		{
+			for (Mapping m : initialMappings)
+			{
+				targetMap[m.targetName]->setMapping(sourceMap[m.sourceName], m.value, false);
+				targetMap[m.targetName]->setMappingScalar(sourceMap[m.scalarName], false);
+			}
+			initialMappings.clear();
+		}
     }
     
     if (ESAudioProcessorEditor* editor = dynamic_cast<ESAudioProcessorEditor*>(getActiveEditor()))
