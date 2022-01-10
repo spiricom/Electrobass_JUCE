@@ -295,7 +295,7 @@ void OscModule::comboBoxChanged(ComboBox *comboBox)
             updateShapeCB();
         }
         
-        if (shapeCB.getSelectedItemIndex() == UserOscShapeSet)
+        if (shapeCB.getSelectedItemIndex() >= UserOscShapeSet)
         {
             // Maybe should check that the loaded table has more
             // than one waveform and set alpha accordingly
