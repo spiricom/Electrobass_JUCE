@@ -8,12 +8,12 @@
  ==============================================================================
  */
 
-#include "ESStandalone.h"
+#include "ElectroStandalone.h"
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
 //==============================================================================
-AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterLayout()
+AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParameterLayout()
 {
     AudioProcessorValueTreeState::ParameterLayout layout;
     
@@ -264,7 +264,7 @@ AudioProcessorValueTreeState::ParameterLayout ESAudioProcessor::createParameterL
 
 //==============================================================================
 //==============================================================================
-ESAudioProcessor::ESAudioProcessor()
+ElectroAudioProcessor::ElectroAudioProcessor()
 #ifndef JucePlugin_PreferredChannelConfigurations
 : AudioProcessor (BusesProperties()
 #if ! JucePlugin_IsMidiEffect
@@ -433,7 +433,7 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
 	initialMappings.add(defaultFilter1Cutoff);
 	initialMappings.add(defaultOutputAmp);
     
-    DBG("SOURCES//");
+    DBG("SOURCE//");
     for (int i = 0; i < sourceIds.size(); ++i)
     {
         DBG(sourceIds[i] + ": " + String(i));
@@ -443,7 +443,7 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
     DBG("Post init: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
 }
 
-ESAudioProcessor::~ESAudioProcessor()
+ElectroAudioProcessor::~ElectroAudioProcessor()
 {
     DBG("Pre exit: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
     
@@ -471,7 +471,7 @@ ESAudioProcessor::~ESAudioProcessor()
 }
 
 //==============================================================================
-void ESAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
+void ElectroAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     stringActivityTimeout = sampleRate/samplesPerBlock/2;
     LEAF_setSampleRate(&leaf, sampleRate);
@@ -522,14 +522,14 @@ void ESAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     DBG("Post prepare: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
 }
 
-void ESAudioProcessor::releaseResources()
+void ElectroAudioProcessor::releaseResources()
 {
     // When playback stops, you can use this as an opportunity to free up any
     // spare memory, etc.
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
-bool ESAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
+bool ElectroAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
 #if JucePlugin_IsMidiEffect
     juce::ignoreUnused (layouts);
@@ -560,7 +560,7 @@ union uintfUnion
     uint32_t i;
 };
 
-void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& midiMessages)
+void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& midiMessages)
 {
     juce::ScopedNoDenormals noDenormals;
     auto totalNumInputChannels  = getTotalNumInputChannels();
@@ -842,29 +842,29 @@ void ESAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer& mid
 }
 
 //==============================================================================
-bool ESAudioProcessor::hasEditor() const
+bool ElectroAudioProcessor::hasEditor() const
 {
     return true; // (change this to false if you choose to not supply an editor)
 }
 
-juce::AudioProcessorEditor* ESAudioProcessor::createEditor()
+juce::AudioProcessorEditor* ElectroAudioProcessor::createEditor()
 {
-    return new ESAudioProcessorEditor (*this, vts);
+    return new ElectroAudioProcessorEditor (*this, vts);
 }
 
 //==============================================================================
-void ESAudioProcessor::handleNoteOn(MidiKeyboardState*, int midiChannel, int midiNoteNumber, float velocity)
+void ElectroAudioProcessor::handleNoteOn(MidiKeyboardState*, int midiChannel, int midiNoteNumber, float velocity)
 {
     noteOn(midiChannel, midiNoteNumber, velocity);
 }
 
-void ESAudioProcessor::handleNoteOff(MidiKeyboardState*, int midiChannel, int midiNoteNumber, float velocity)
+void ElectroAudioProcessor::handleNoteOff(MidiKeyboardState*, int midiChannel, int midiNoteNumber, float velocity)
 {
     noteOff(midiChannel, midiNoteNumber, velocity);
 }
 
 //==============================================================================
-void ESAudioProcessor::handleMidiMessage(const MidiMessage& m)
+void ElectroAudioProcessor::handleMidiMessage(const MidiMessage& m)
 {
     if (m.isNoteOnOrOff())
     {
@@ -884,7 +884,7 @@ void ESAudioProcessor::handleMidiMessage(const MidiMessage& m)
     }
 }
 
-void ESAudioProcessor::noteOn(int channel, int key, float velocity)
+void ElectroAudioProcessor::noteOn(int channel, int key, float velocity)
 {
     int i = mpeMode ? channelToStringMap[channel]-1 : 0;
     if (i < 0) return;
@@ -916,7 +916,7 @@ void ESAudioProcessor::noteOn(int channel, int key, float velocity)
     }
 }
 
-void ESAudioProcessor::noteOff(int channel, int key, float velocity)
+void ElectroAudioProcessor::noteOff(int channel, int key, float velocity)
 {
     int i = mpeMode ? channelToStringMap[channel]-1 : 0;
     if (i < 0) return;
@@ -931,7 +931,7 @@ void ESAudioProcessor::noteOff(int channel, int key, float velocity)
     }
 }
 
-void ESAudioProcessor::pitchBend(int channel, int data)
+void ElectroAudioProcessor::pitchBend(int channel, int data)
 {
     float bend = data * INV_16383;
     if (mpeMode)
@@ -947,7 +947,7 @@ void ESAudioProcessor::pitchBend(int channel, int data)
     }
 }
 
-void ESAudioProcessor::ctrlInput(int channel, int ctrl, int value)
+void ElectroAudioProcessor::ctrlInput(int channel, int ctrl, int value)
 {
     float v;
     
@@ -982,28 +982,28 @@ void ESAudioProcessor::ctrlInput(int channel, int ctrl, int value)
     }
 }
 
-void ESAudioProcessor::sustainOff()
+void ElectroAudioProcessor::sustainOff()
 {
     
 }
 
-void ESAudioProcessor::sustainOn()
+void ElectroAudioProcessor::sustainOn()
 {
     
 }
 
-void ESAudioProcessor::toggleBypass()
+void ElectroAudioProcessor::toggleBypass()
 {
     
 }
 
-void ESAudioProcessor::toggleSustain()
+void ElectroAudioProcessor::toggleSustain()
 {
     
 }
 
 //==============================================================================
-bool ESAudioProcessor::stringIsActive(int string)
+bool ElectroAudioProcessor::stringIsActive(int string)
 {
     if (string == 0) return stringActivity[0] > 0;
     
@@ -1015,41 +1015,41 @@ bool ESAudioProcessor::stringIsActive(int string)
 }
 
 //==============================================================================
-bool ESAudioProcessor::getMPEMode()
+bool ElectroAudioProcessor::getMPEMode()
 {
     return mpeMode;
 }
 
-void ESAudioProcessor::setMPEMode(bool enabled)
+void ElectroAudioProcessor::setMPEMode(bool enabled)
 {
     mpeMode = enabled;
     tSimplePoly_setNumVoices(&strings[0], mpeMode ? 1 : numVoicesActive);
 }
 
-void ESAudioProcessor::setNumVoicesActive(int numVoices)
+void ElectroAudioProcessor::setNumVoicesActive(int numVoices)
 {
     numVoicesActive = numVoices;
     setMPEMode(mpeMode);
 }
 
 //==============================================================================
-void ESAudioProcessor::sendCopedentMidiMessage()
+void ElectroAudioProcessor::sendCopedentMidiMessage()
 {
     waitingToSendCopedent = true;
 }
 
-void ESAudioProcessor::sendPresetMidiMessage()
+void ElectroAudioProcessor::sendPresetMidiMessage()
 {
     waitingToSendPreset = true;
 }
 
 //==============================================================================
-const juce::String ESAudioProcessor::getName() const
+const juce::String ElectroAudioProcessor::getName() const
 {
     return JucePlugin_Name;
 }
 
-bool ESAudioProcessor::acceptsMidi() const
+bool ElectroAudioProcessor::acceptsMidi() const
 {
 #if JucePlugin_WantsMidiInput
     return true;
@@ -1058,7 +1058,7 @@ bool ESAudioProcessor::acceptsMidi() const
 #endif
 }
 
-bool ESAudioProcessor::producesMidi() const
+bool ElectroAudioProcessor::producesMidi() const
 {
 #if JucePlugin_ProducesMidiOutput
     return true;
@@ -1067,7 +1067,7 @@ bool ESAudioProcessor::producesMidi() const
 #endif
 }
 
-bool ESAudioProcessor::isMidiEffect() const
+bool ElectroAudioProcessor::isMidiEffect() const
 {
 #if JucePlugin_IsMidiEffect
     return true;
@@ -1076,58 +1076,58 @@ bool ESAudioProcessor::isMidiEffect() const
 #endif
 }
 
-double ESAudioProcessor::getTailLengthSeconds() const
+double ElectroAudioProcessor::getTailLengthSeconds() const
 {
     return 0.0;
 }
 
-int ESAudioProcessor::getNumPrograms()
+int ElectroAudioProcessor::getNumPrograms()
 {
     return 1;   // NB: some hosts don't cope very well if you tell them there are 0 programs,
     // so this should be at least 1, even if you're not really implementing programs.
 }
 
-int ESAudioProcessor::getCurrentProgram()
+int ElectroAudioProcessor::getCurrentProgram()
 {
     return 0;
 }
 
-void ESAudioProcessor::setCurrentProgram (int index)
+void ElectroAudioProcessor::setCurrentProgram (int index)
 {
 }
 
-const juce::String ESAudioProcessor::getProgramName (int index)
+const juce::String ElectroAudioProcessor::getProgramName (int index)
 {
     return {};
 }
 
-void ESAudioProcessor::changeProgramName (int index, const juce::String& newName)
+void ElectroAudioProcessor::changeProgramName (int index, const juce::String& newName)
 {
 }
 
 //==============================================================================
-void ESAudioProcessor::addMappingSource(MappingSourceModel* source)
+void ElectroAudioProcessor::addMappingSource(MappingSourceModel* source)
 {
     sourceMap.set(source->name, source);
 }
 
-void ESAudioProcessor::addMappingTarget(MappingTargetModel* target)
+void ElectroAudioProcessor::addMappingTarget(MappingTargetModel* target)
 {
     targetMap.set(target->name, target);
 }
 
-MappingSourceModel* ESAudioProcessor::getMappingSource(const String& name)
+MappingSourceModel* ElectroAudioProcessor::getMappingSource(const String& name)
 {
     return sourceMap.getReference(name);
 }
 
-MappingTargetModel* ESAudioProcessor::getMappingTarget(const String& name)
+MappingTargetModel* ElectroAudioProcessor::getMappingTarget(const String& name)
 {
     return targetMap.getReference(name);
 }
 
 //==============================================================================
-File ESAudioProcessor::loadWaveTables(const String& setName, File& file)
+File ElectroAudioProcessor::loadWaveTables(const String& setName, File& file)
 {
     // If we've already loaded this file, just return it
     if (waveTableFiles.contains(file)) return file;
@@ -1202,7 +1202,7 @@ File ESAudioProcessor::loadWaveTables(const String& setName, File& file)
 }
 
 //==============================================================================
-void ESAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
+void ElectroAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     ValueTree root ("Electrobass");
     
@@ -1281,7 +1281,7 @@ void ESAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     copyXmlToBinary (*xml, destData);
 }
 
-void ESAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
+void ElectroAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     DBG("Pre set state: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
     
@@ -1399,7 +1399,7 @@ void ESAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 		}
     }
     
-    if (ESAudioProcessorEditor* editor = dynamic_cast<ESAudioProcessorEditor*>(getActiveEditor()))
+    if (ElectroAudioProcessorEditor* editor = dynamic_cast<ElectroAudioProcessorEditor*>(getActiveEditor()))
     {
         editor->update();
     }
@@ -1411,7 +1411,7 @@ void ESAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 // This creates new instances of the plugin..
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 {
-    return new ESAudioProcessor();
+    return new ElectroAudioProcessor();
 }
 
 //PARAMS//
@@ -1524,7 +1524,7 @@ juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 //Output Amp: 106
 //Output Pan: 107
 
-//SOURCES//
+//SOURCE//
 //M1: 0
 //M2: 1
 //M3: 2

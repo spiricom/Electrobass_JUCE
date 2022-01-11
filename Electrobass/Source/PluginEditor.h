@@ -12,8 +12,8 @@
 
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
-#include "ESModules.h"
-#include "ESComponents.h"
+#include "Electro_backend/ElectroModules.h"
+#include "ElectroComponents.h"
 
 #define EDITOR_WIDTH 900.0f
 #define EDITOR_HEIGHT 700.0f
@@ -26,7 +26,7 @@ typedef AudioProcessorValueTreeState::SliderAttachment SliderAttachment;
 typedef AudioProcessorValueTreeState::ButtonAttachment ButtonAttachment;
 typedef AudioProcessorValueTreeState::ComboBoxAttachment ComboBoxAttachment;
 
-class ESAudioProcessorEditor : public AudioProcessorEditor,
+class ElectroAudioProcessorEditor : public AudioProcessorEditor,
                                public Slider::Listener,
                                public Button::Listener,
                                public Label::Listener,
@@ -35,8 +35,8 @@ class ESAudioProcessorEditor : public AudioProcessorEditor,
                                public DragAndDropContainer
 {
 public:
-    ESAudioProcessorEditor (ESAudioProcessor&, AudioProcessorValueTreeState& vts);
-	~ESAudioProcessorEditor();
+    ElectroAudioProcessorEditor (ElectroAudioProcessor&, AudioProcessorValueTreeState& vts);
+	~ElectroAudioProcessorEditor();
 	
     //==============================================================================
     void paint (Graphics&) override;
@@ -51,7 +51,7 @@ public:
     
     void update();
     
-    ESAudioProcessor& processor;
+    ElectroAudioProcessor& processor;
     AudioProcessorValueTreeState& vts;
     
 private:
@@ -71,18 +71,18 @@ private:
     
     Component tab1;
     
-    ESComponent midiKeyComponent;
+    ElectroComponent midiKeyComponent;
     std::unique_ptr<MappingSource> midiKeySource;
     Slider midiKeyRangeSlider;
     Label midiKeyMinLabel;
     Label midiKeyMaxLabel;
-    ESComponent velocityComponent;
+    ElectroComponent velocityComponent;
     std::unique_ptr<MappingSource> velocitySource;
-    ESComponent randomComponent;
+    ElectroComponent randomComponent;
     std::unique_ptr<MappingSource> randomSource;
     Label randomValueLabel;
-    ESComponent uniqueMacroComponent;
-    OwnedArray<ESDial> macroDials;
+    ElectroComponent uniqueMacroComponent;
+    OwnedArray<ElectroDial> macroDials;
     OwnedArray<Slider> pitchBendSliders;
     MidiKeyboardComponent keyboard;
     OwnedArray<TextButton> stringActivityButtons;
@@ -91,14 +91,14 @@ private:
     OwnedArray<FilterModule> filterModules;
     std::unique_ptr<OutputModule> outputModule;
     ToggleButton pedalToggle;
-    ESTabbedComponent envsAndLFOs;
+    ElectroTabbedComponent envsAndLFOs;
     MappingSource* currentMappingSource;
     ToggleButton mpeToggle;
-    ESComponent seriesParallelComponent;
+    ElectroComponent seriesParallelComponent;
     Slider seriesParallelSlider;
     Label seriesLabel;
     Label parallelLabel;
-    ESComponent otherSettingsComponent;
+    ElectroComponent otherSettingsComponent;
     Label numVoicesLabel;
     Slider numVoicesSlider;
     Label transposeLabel;
@@ -130,7 +130,7 @@ private:
     
     Font euphemia;
     FileChooser chooser;
-    ESLookAndFeel laf;
+    ElectroLookAndFeel laf;
     
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ESAudioProcessorEditor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ElectroAudioProcessorEditor)
 };

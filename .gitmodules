@@ -1,0 +1,4 @@
+[submodule "Electrobass/Source/Electro_backend"]
+	path = Electrobass/Source/Electro_backend
+	url = git@github.com:davispolito/Electro_backend.git
+	branch = main

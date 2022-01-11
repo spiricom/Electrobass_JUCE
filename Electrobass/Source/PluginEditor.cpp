@@ -13,7 +13,7 @@
 #include <iostream>
 //==============================================================================
 
-ESAudioProcessorEditor::ESAudioProcessorEditor (ESAudioProcessor& p, AudioProcessorValueTreeState& vts) :
+ElectroAudioProcessorEditor::ElectroAudioProcessorEditor (ElectroAudioProcessor& p, AudioProcessorValueTreeState& vts) :
 AudioProcessorEditor (&p),
 processor (p),
 vts(vts),
@@ -58,7 +58,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
         String n = i < NUM_GENERIC_MACROS ? "M" + String(i+1) :
         cUniqueMacroNames[i-NUM_GENERIC_MACROS];
         
-        macroDials.add(new ESDial(*this, n, n, true, false));
+        macroDials.add(new ElectroDial(*this, n, n, true, false));
         sliderAttachments.add(new SliderAttachment(vts, n, macroDials[i]->getSlider()));
         
         if (i < NUM_GENERIC_MACROS) tab1.addAndMakeVisible(macroDials[i]);
@@ -373,7 +373,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     startTimerHz(30);
 }
 
-ESAudioProcessorEditor::~ESAudioProcessorEditor()
+ElectroAudioProcessorEditor::~ElectroAudioProcessorEditor()
 {
     //    masterDial->setLookAndFeel(nullptr);
     //    ampDial->setLookAndFeel(nullptr);
@@ -427,7 +427,7 @@ ESAudioProcessorEditor::~ESAudioProcessorEditor()
 }
 
 //==============================================================================
-void ESAudioProcessorEditor::paint (Graphics& g)
+void ElectroAudioProcessorEditor::paint (Graphics& g)
 {
     // (Our component is opaque, so we must completely fill the background with a solid colour)
     //    g.setGradientFill(ColourGradient(Colour(25, 25, 25), juce::Point<float>(0,0), Colour(10, 10, 10), juce::Point<float>(0, getHeight()), false));
@@ -443,7 +443,7 @@ void ESAudioProcessorEditor::paint (Graphics& g)
     g.fillRect(getWidth() * 0.25f, getHeight() * 0.75f, getWidth() * 0.2f, getHeight() * 0.15f);
 }
 
-void ESAudioProcessorEditor::resized()
+void ElectroAudioProcessorEditor::resized()
 {
     int width = getWidth();
     int height = getHeight();
@@ -622,7 +622,7 @@ void ESAudioProcessorEditor::resized()
     //    container.setBounds(getLocalBounds());
 }
 
-void ESAudioProcessorEditor::sliderValueChanged(Slider* slider)
+void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
 {
     if (slider == nullptr) return;
     
@@ -637,7 +637,7 @@ void ESAudioProcessorEditor::sliderValueChanged(Slider* slider)
     }
 }
 
-void ESAudioProcessorEditor::buttonClicked(Button* button)
+void ElectroAudioProcessorEditor::buttonClicked(Button* button)
 {
     if (button == nullptr) return;
 
@@ -670,7 +670,7 @@ void ESAudioProcessorEditor::buttonClicked(Button* button)
     }
 }
 
-void ESAudioProcessorEditor::labelTextChanged(Label* label)
+void ElectroAudioProcessorEditor::labelTextChanged(Label* label)
 {
     if (label == nullptr) return;
     
@@ -696,7 +696,7 @@ void ESAudioProcessorEditor::labelTextChanged(Label* label)
     }
 }
 
-void ESAudioProcessorEditor::mouseDown (const MouseEvent &event)
+void ElectroAudioProcessorEditor::mouseDown (const MouseEvent &event)
 {
     if (MappingSource* ms = dynamic_cast<MappingSource*>(event.originalComponent->getParentComponent()))
     {
@@ -712,12 +712,12 @@ void ESAudioProcessorEditor::mouseDown (const MouseEvent &event)
     }
 }
 
-bool ESAudioProcessorEditor::keyPressed (const KeyPress &key, Component *originatingComponent)
+bool ElectroAudioProcessorEditor::keyPressed (const KeyPress &key, Component *originatingComponent)
 {
     return false;
 }
 
-void ESAudioProcessorEditor::timerCallback()
+void ElectroAudioProcessorEditor::timerCallback()
 {
     for (int i = 0; i < NUM_STRINGS+1; ++i)
     {
@@ -727,7 +727,7 @@ void ESAudioProcessorEditor::timerCallback()
     updateRandomValueLabel(processor.lastRandomValue);
 }
 
-void ESAudioProcessorEditor::update()
+void ElectroAudioProcessorEditor::update()
 {
     updatePedalToggle(processor.pedalControlsMaster);
     updateMPEToggle(processor.getMPEMode());
@@ -748,13 +748,13 @@ void ESAudioProcessorEditor::update()
     updateRandomValueLabel(processor.lastRandomValue);
 }
 
-void ESAudioProcessorEditor::updatePedalToggle(bool state)
+void ElectroAudioProcessorEditor::updatePedalToggle(bool state)
 {
     processor.pedalControlsMaster = state;
     pedalToggle.setToggleState(state, dontSendNotification);
 }
 
-void ESAudioProcessorEditor::updateMPEToggle(bool state)
+void ElectroAudioProcessorEditor::updateMPEToggle(bool state)
 {
     processor.setMPEMode(state);
     mpeToggle.setToggleState(state, dontSendNotification);
@@ -773,7 +773,7 @@ void ESAudioProcessorEditor::updateMPEToggle(bool state)
     }
 }
 
-void ESAudioProcessorEditor::updateStringChannel(int string, int ch)
+void ElectroAudioProcessorEditor::updateStringChannel(int string, int ch)
 {
     ch = jlimit(0, 16, ch);
     // Handle mapping that will be overwritten
@@ -799,7 +799,7 @@ void ESAudioProcessorEditor::updateStringChannel(int string, int ch)
     stringChannelEntries[string]->setEnabled(state);
 }
 
-void ESAudioProcessorEditor::updateMacroControl(int macro, int ctrl)
+void ElectroAudioProcessorEditor::updateMacroControl(int macro, int ctrl)
 {
     ctrl = jlimit(0, 127, ctrl);
     // Handle mapping that will be overwritten
@@ -821,13 +821,13 @@ void ESAudioProcessorEditor::updateMacroControl(int macro, int ctrl)
     macroControlEntries[macro]->setText(text, dontSendNotification);
 }
 
-void ESAudioProcessorEditor::updateMacroNames(int macro, String name)
+void ElectroAudioProcessorEditor::updateMacroNames(int macro, String name)
 {
     processor.macroNames.set(macro, name);
     macroControlNames[macro]->setText(processor.macroNames[macro], dontSendNotification);
 }
 
-void ESAudioProcessorEditor::updateMidiKeyRangeSlider(int min, int max)
+void ElectroAudioProcessorEditor::updateMidiKeyRangeSlider(int min, int max)
 {
     processor.midiKeyMin = min;
     processor.midiKeyMax = max;
@@ -837,7 +837,7 @@ void ESAudioProcessorEditor::updateMidiKeyRangeSlider(int min, int max)
     midiKeyMaxLabel.setText(String(processor.midiKeyMax), dontSendNotification);
 }
 
-void ESAudioProcessorEditor::updateNumVoicesSlider(int numVoices)
+void ElectroAudioProcessorEditor::updateNumVoicesSlider(int numVoices)
 {
     processor.numVoicesActive = numVoices;
     numVoicesSlider.setValue(numVoices, dontSendNotification);
@@ -847,7 +847,7 @@ void ESAudioProcessorEditor::updateNumVoicesSlider(int numVoices)
     }
 }
 
-void ESAudioProcessorEditor::updateRandomValueLabel(float value)
+void ElectroAudioProcessorEditor::updateRandomValueLabel(float value)
 {
     randomValueLabel.setText(String(value, 3), dontSendNotification);
 }
