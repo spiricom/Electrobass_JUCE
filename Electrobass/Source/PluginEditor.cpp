@@ -36,10 +36,10 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     synderphonicsLabel.setJustificationType(Justification::topLeft);
     synderphonicsLabel.setColour(Label::textColourId, Colours::gold.withBrightness(0.9f));
     addAndMakeVisible(synderphonicsLabel);
-    electrosteelLabel.setText("ELECTROSTEEL", dontSendNotification);
-    electrosteelLabel.setJustificationType(Justification::topLeft);
-    electrosteelLabel.setColour(Label::textColourId, Colours::gold.withBrightness(0.9f));
-    addAndMakeVisible(electrosteelLabel);
+    ElectrobassLabel.setText("Electrobass", dontSendNotification);
+    ElectrobassLabel.setJustificationType(Justification::topLeft);
+    ElectrobassLabel.setColour(Label::textColourId, Colours::gold.withBrightness(0.9f));
+    addAndMakeVisible(ElectrobassLabel);
     
     setWantsKeyboardFocus(true);
     
@@ -125,16 +125,16 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     numVoicesLabel.setLookAndFeel(&laf);
     otherSettingsComponent.addAndMakeVisible(numVoicesLabel);
     
-    numVoicesSlider.setRange(1., 12., 1.);
+    numVoicesSlider.setRange(1., 2., 1.); //EBSPECIFIC
     numVoicesSlider.setSliderStyle(Slider::SliderStyle::LinearBarVertical);
     numVoicesSlider.setSliderSnapsToMousePosition(false);
     numVoicesSlider.setMouseDragSensitivity(200);
-    numVoicesSlider.setTextValueSuffix("/12");
+    numVoicesSlider.setTextValueSuffix(""); //EBSPECIFIC
     numVoicesSlider.setLookAndFeel(&laf);
     numVoicesSlider.setColour(Slider::backgroundColourId, Colours::darkgrey.withBrightness(0.2f));
     numVoicesSlider.setColour(Slider::textBoxOutlineColourId, Colours::transparentBlack);
     numVoicesSlider.setColour(Slider::textBoxTextColourId, Colours::gold.withBrightness(0.95f));
-    numVoicesSlider.addListener(this);
+    //numVoicesSlider.addListener(this); //EBSPECIFIC removes ability to change
     otherSettingsComponent.addAndMakeVisible(numVoicesSlider);
     
     transposeLabel.setText("Transpose", dontSendNotification);
@@ -164,25 +164,26 @@ chooser("Select a .wav file to load...", {}, "*.wav")
         stringActivityButtons[i]->setClickingTogglesState(false);//(true);
         stringActivityButtons[i]->addListener(this);
         tab1.addAndMakeVisible(stringActivityButtons[i]);
-        
-        pitchBendSliders.add(new Slider());
-        pitchBendSliders[i]->setSliderStyle(Slider::SliderStyle::LinearBar);
-        pitchBendSliders[i]->setInterceptsMouseClicks(false, false);
-//        pitchBendSliders[i]->setLookAndFeel(&laf);
-//        pitchBendSliders[i]->setColour(Slider::trackColourId, Colours::lightgrey);
-        pitchBendSliders[i]->setColour(Slider::backgroundColourId, Colours::black);
-        pitchBendSliders[i]->setColour(Slider::textBoxOutlineColourId, Colours::grey);
-//        pitchBendSliders[i]->setTextValueSuffix("m2");
-        pitchBendSliders[i]->addListener(this);
-        tab1.addAndMakeVisible(pitchBendSliders[i]);
-        
-        sliderAttachments.add(new SliderAttachment(vts, "PitchBend" + String(i),
-                                                   *pitchBendSliders[i]));
+        if (i == 0) { //EBSPECIFIC
+            pitchBendSliders.add(new Slider());
+            pitchBendSliders[i]->setSliderStyle(Slider::SliderStyle::LinearBar);
+            pitchBendSliders[i]->setInterceptsMouseClicks(false, false);
+    //        pitchBendSliders[i]->setLookAndFeel(&laf);
+    //        pitchBendSliders[i]->setColour(Slider::trackColourId, Colours::lightgrey);
+            pitchBendSliders[i]->setColour(Slider::backgroundColourId, Colours::black);
+            pitchBendSliders[i]->setColour(Slider::textBoxOutlineColourId, Colours::grey);
+    //        pitchBendSliders[i]->setTextValueSuffix("m2");
+            pitchBendSliders[i]->addListener(this);
+            tab1.addAndMakeVisible(pitchBendSliders[i]);
+            
+            sliderAttachments.add(new SliderAttachment(vts, "PitchBend" + String(i),
+                                                       *pitchBendSliders[i]));
+        }
     }
     
-    mpeToggle.setButtonText("MPE");
-    mpeToggle.addListener(this);
-    tab1.addAndMakeVisible(mpeToggle);
+    //mpeToggle.setButtonText("MPE");
+    //mpeToggle.addListener(this);
+    //tab1.addAndMakeVisible(mpeToggle);
     
     pedalToggle.setButtonText("Pedal volume control");
     pedalToggle.addListener(this);
@@ -524,14 +525,15 @@ void ESAudioProcessorEditor::resized()
     int r = (10*align) % 12;
     int w = (10*align) / 12;
     y = height-35*s+2;
-    mpeToggle.setBounds(6*s, y, x-w-5*s, 35*s);
+    //mpeToggle.setBounds(6*s, y, x-w-5*s, 35*s); EBSPECIFIC
     pitchBendSliders[0]->setBounds(0, midiKeyComponent.getBottom()-1, x, 27*s);
-    stringActivityButtons[0]->setBounds(x-w, y, w, 35*s);
+    stringActivityButtons[0]->setBounds(0, y, w, 35*s);
+    pitchBendSliders[0]->setBounds(0,
+                                   midiKeyComponent.getBottom()-1,
+                                   w + (r > 0 ? 1 : 0), 27*s); //EBSPECIFIC
     for (int i = 1; i < NUM_CHANNELS; ++i)
     {
-        pitchBendSliders[i]->setBounds(pitchBendSliders[i-1]->getRight(),
-                                       midiKeyComponent.getBottom()-1,
-                                       w + (r > 0 ? 1 : 0), 27*s);
+    
         stringActivityButtons[i]->setBounds(stringActivityButtons[i-1]->getRight(), y,
                                            w + (r-- > 0 ? 1 : 0), 35*s);
     }
@@ -610,8 +612,8 @@ void ESAudioProcessorEditor::resized()
                              RectanglePlacement::fillDestination);
     synderphonicsLabel.setBounds(logoLeft+50*s, -5*s, 220*s, 34*s);
     synderphonicsLabel.setFont(euphemia.withHeight(34*s));
-    electrosteelLabel.setBounds(synderphonicsLabel.getRight(), -5*s, 300*s, 34*s);
-    electrosteelLabel.setFont(euphemia.withHeight(34*s).withStyle(3));
+    ElectrobassLabel.setBounds(synderphonicsLabel.getRight(), -5*s, 300*s, 34*s);
+    ElectrobassLabel.setFont(euphemia.withHeight(34*s).withStyle(3));
     
     float rt = EDITOR_WIDTH / EDITOR_HEIGHT;
     constrain->setSizeLimits(200, 200/rt, 800*rt, 800);
@@ -631,7 +633,7 @@ void ESAudioProcessorEditor::sliderValueChanged(Slider* slider)
     }
     else if (slider == &numVoicesSlider)
     {
-        updateNumVoicesSlider(numVoicesSlider.getValue());
+        //updateNumVoicesSlider(numVoicesSlider.getValue()); EBSPECIFIC
     }
 }
 

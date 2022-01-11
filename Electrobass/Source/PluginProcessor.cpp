@@ -1204,7 +1204,7 @@ File ESAudioProcessor::loadWaveTables(const String& setName, File& file)
 //==============================================================================
 void ESAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
-    ValueTree root ("Electrosteel");
+    ValueTree root ("Electrobass");
     
     // Top level settings
     root.setProperty("editorScale", editorScale, nullptr);
@@ -1291,8 +1291,8 @@ void ESAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
     {
         // Top level settings
         editorScale = xml->getDoubleAttribute("editorScale", 1.05);
-        setMPEMode(xml->getBoolAttribute("mpeMode", true));
-        setNumVoicesActive(xml->getIntAttribute("numVoices", 12));
+        setMPEMode(xml->getBoolAttribute("mpeMode", false));
+        setNumVoicesActive(xml->getIntAttribute("numVoices", 1));//EBSPECIFIC
         pedalControlsMaster = xml->getBoolAttribute("pedalControlsVolume", true);
         midiKeyMin = xml->getIntAttribute("midiKeyMin", 21);
         midiKeyMax = xml->getIntAttribute("midiKeyMax", 108);

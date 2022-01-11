@@ -168,7 +168,7 @@ public:
     
     bool voiceIsSounding[NUM_STRINGS];
     
-    int numVoicesActive = 12;
+    int numVoicesActive = NUM_STRINGS;
     
     // Must be at least as large of the number of unique skews
     Array<float> invParameterSkews;

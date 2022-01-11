@@ -120,7 +120,7 @@ private:
     Label versionLabel;
     std::unique_ptr<Drawable> logo;
     Label synderphonicsLabel;
-    Label electrosteelLabel;
+    Label ElectrobassLabel;
     
     OwnedArray<SliderAttachment> sliderAttachments;
     OwnedArray<ButtonAttachment> buttonAttachments;
