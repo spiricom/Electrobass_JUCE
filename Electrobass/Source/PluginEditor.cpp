@@ -381,10 +381,11 @@ ElectroAudioProcessorEditor::~ElectroAudioProcessorEditor()
     //    {
     //        ccDials[i]->setLookAndFeel(nullptr);
     //    }
+    pitchBendSliders[0]->setLookAndFeel(nullptr); //EBSPECIFIC
+
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
         stringActivityButtons[i]->setLookAndFeel(nullptr);
-        pitchBendSliders[i]->setLookAndFeel(nullptr);
     }
     
     for (int i = 0; i < NUM_GENERIC_MACROS; ++i)

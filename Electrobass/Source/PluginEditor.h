@@ -13,7 +13,7 @@
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
 #include "Electro_backend/ElectroModules.h"
-#include "ElectroComponents.h"
+#include "Electro_backend/ElectroComponents.h"
 
 #define EDITOR_WIDTH 900.0f
 #define EDITOR_HEIGHT 700.0f

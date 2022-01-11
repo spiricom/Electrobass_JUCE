@@ -8,7 +8,7 @@
  ==============================================================================
  */
 
-#include "ElectroStandalone.h"
+#include "Electro_backend/ElectroStandalone.h"
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
