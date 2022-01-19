@@ -296,7 +296,7 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
         voiceIsSounding[i] = false;
     }
     
-    for (int i = 0; i < NUM_STRINGS; ++i)
+    for (int i = 0; i < 12; ++i)
     {
         centsDeviation[i] = 0.f;
     }
@@ -800,11 +800,11 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
             {
                   tempNote += voicePrevBend[v];
             }
-            //float tempPitchClass = ((((int)tempNote) - keyCenter) % 12 );
-            //float tunedNote = tempNote + centsDeviation[(int)tempPitchClass];
-            //voiceNote[v] = tunedNote;
-            voiceNote[v] = tempNote;
-            
+            float tempPitchClass = ((((int)tempNote) - 0) % 12 );
+            float tunedNote = tempNote + centsDeviation[(int)tempPitchClass];
+            voiceNote[v] = tunedNote;
+            //voiceNote[v] = tempNote;
+            //DBG("Tuned note" + String(tunedNote));
             samples[0][v] = 0.f;
             samples[1][v] = 0.f;
         }

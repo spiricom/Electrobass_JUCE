@@ -17,6 +17,7 @@
 #include "Electro_backend/Filters.h"
 #include "Electro_backend/Envelopes.h"
 #include "Electro_backend/Output.h"
+#include "tuning-library/include/Tunings.h"
 
 class StandalonePluginHolder;
 
@@ -190,7 +191,40 @@ public:
     HashMap<int, int> channelToStringMap;
     
     StringArray macroNames;
-    
+    //Scala Reading
+    inline void loadScala(std::string fname)
+    {
+        Tunings::Scale s;
+        try {
+            s = Tunings::readSCLFile(fname);
+        } catch (Tunings::TuningError t) {
+            AlertWindow::showMessageBoxAsync(juce::MessageBoxIconType::WarningIcon, TRANS("Scala Loading Error"),TRANS(t.what()));
+            return;
+        }
+
+        auto offsets = Array<float>(12);
+
+        if (s.count != 12)
+        {
+            AlertWindow::showMessageBoxAsync(juce::MessageBoxIconType::WarningIcon, TRANS("Scala Loading Error"), TRANS("Only 12 note scales supported"));
+        }
+        if(s.count == 12)
+        {
+            //subtract from equal temperament to get fractional midi representation
+            Tunings::Scale et = Tunings::evenTemperament12NoteScale();
+            for (int i = 0; i < 12; i++)
+            {
+                float micro = s.tones[i].cents;
+                float equal = et.tones[i].cents;
+                float offset = micro - equal;
+                centsDeviation[(i+1)%12] = offset / 100.f; //.scl format puts first interval as the first line so we shift the representation over
+                DBG("Cents Deviation " + String(centsDeviation[(i+1)%12]));
+            }
+
+
+        }
+
+    }
 private:
     
     StringArray paramIds;

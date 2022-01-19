@@ -2,3 +2,6 @@
 	path = Electrobass/Source/Electro_backend
 	url = git@github.com:davispolito/Electro_backend.git
 	branch = main
+[submodule "Electrobass/Source/tuning-library"]
+	path = Electrobass/Source/tuning-library
+	url = git@github.com:surge-synthesizer/tuning-library.git

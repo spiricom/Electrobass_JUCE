@@ -20,7 +20,7 @@ vts(vts),
 tabs(TabbedButtonBar::Orientation::TabsAtTop),
 keyboard(p.keyboardState, MidiKeyboardComponent::Orientation::horizontalKeyboard),
 envsAndLFOs(TabbedButtonBar::TabsAtTop),
-copedentTable(processor, vts),
+tuningTab(processor, vts),
 constrain(new ComponentBoundsConstrainer()),
 resizer(new ResizableCornerComponent (this, constrain.get())),
 chooser("Select a .wav file to load...", {}, "*.wav")
@@ -69,7 +69,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     midiKeyComponent.setOutlineColour(Colours::darkgrey);
     tab1.addAndMakeVisible(midiKeyComponent);
     
-    midiKeySource = std::make_unique<MappingSource>(*this, *processor.midiKeySource, 
+    midiKeySource = std::make_unique<MappingSource>(*this, *processor.midiKeySource,
                                                     "MIDI Key In");
     midiKeyComponent.addAndMakeVisible(midiKeySource.get());
     
@@ -97,7 +97,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     velocityComponent.setOutlineColour(Colours::darkgrey);
     tab1.addAndMakeVisible(velocityComponent);
 
-    velocitySource = std::make_unique<MappingSource>(*this, *processor.velocitySource, 
+    velocitySource = std::make_unique<MappingSource>(*this, *processor.velocitySource,
                                                      "Velocity In");
     velocityComponent.addAndMakeVisible(velocitySource.get());
 
@@ -105,7 +105,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     randomComponent.setOutlineColour(Colours::darkgrey);
     tab1.addAndMakeVisible(randomComponent);
     
-    randomSource = std::make_unique<MappingSource>(*this, *processor.randomSource, 
+    randomSource = std::make_unique<MappingSource>(*this, *processor.randomSource,
                                                    "Random on Attack");
     randomComponent.addAndMakeVisible(randomSource.get());
     
@@ -337,13 +337,13 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     // TAB3 ========================================================================
     addAndMakeVisible(tab3);
     
-    tab3.addAndMakeVisible(copedentTable);
+    tab3.addAndMakeVisible(tuningTab);
     
     //==============================================================================
     
     tabs.addTab("Synth", Colours::black, &tab1, false);
     tabs.addTab("Control", Colours::black, &tab2, false);
-    tabs.addTab("Copedent", Colours::black, &tab3, false);
+    tabs.addTab("Tuning", Colours::black, &tab3, false);
     tabs.getTabbedButtonBar().getTabButton(0)->addListener(this);
     tabs.getTabbedButtonBar().getTabButton(1)->addListener(this);
     tabs.getTabbedButtonBar().getTabButton(2)->addListener(this);
@@ -596,7 +596,7 @@ void ElectroAudioProcessorEditor::resized()
     //==============================================================================
     // TAB3 ========================================================================
     
-    copedentTable.setBoundsRelative(0.05f, 0.08f, 0.9f, 0.84f);
+    tuningTab.setBoundsRelative(0.05f, 0.08f, 0.9f, 0.84f);
     
     //==============================================================================
     
@@ -793,8 +793,8 @@ void ElectroAudioProcessorEditor::updateStringChannel(int string, int ch)
     processor.channelToStringMap.set(ch, string);
     // Update the text
     bool state = processor.getMPEMode();
-	String text = "All";
-	if (state) text = String(processor.stringChannels[string]);
+    String text = "All";
+    if (state) text = String(processor.stringChannels[string]);
     stringChannelEntries[string]->setAlpha(state ? 1.f : 0.7f);
     stringChannelEntries[string]->setText(text, dontSendNotification);
     stringChannelEntries[string]->setEnabled(state);
