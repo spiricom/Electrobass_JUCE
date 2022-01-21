@@ -7,11 +7,20 @@
               defines="JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP=1&#10;" pluginVST3Category="Instrument">
   <MAINGROUP id="zr98AB" name="Electrobass">
     <GROUP id="{B8EA8B88-4125-0A91-2EA2-1CD3B3374012}" name="Source">
+      <GROUP id="{AB6CCFB0-DE48-AA1A-00F2-90220C1B202A}" name="Client">
+        <FILE id="lvdUkh" name="libMTSClient.cpp" compile="1" resource="0"
+              file="Source/MTS-ESP/Client/libMTSClient.cpp"/>
+        <FILE id="NLJCGh" name="libMTSClient.h" compile="0" resource="0" file="Source/MTS-ESP/Client/libMTSClient.h"/>
+      </GROUP>
       <GROUP id="{FA27659D-AA5F-58D7-45DA-BF8E9E95C60F}" name="include">
         <FILE id="pQ6Kym" name="Tunings.h" compile="0" resource="0" file="Source/tuning-library/include/Tunings.h"/>
         <FILE id="oHpuq0" name="TuningsImpl.h" compile="0" resource="0" file="Source/tuning-library/include/TuningsImpl.h"/>
       </GROUP>
       <GROUP id="{D0B7E845-9BE2-75A7-1934-4DD44C496485}" name="Electro_backend">
+        <FILE id="DQMYmB" name="TuningControl.hpp" compile="0" resource="0"
+              file="Source/Electro_backend/TuningControl.hpp"/>
+        <FILE id="ksLUbf" name="TuningControl.cpp" compile="1" resource="0"
+              file="Source/Electro_backend/TuningControl.cpp"/>
         <FILE id="PZzPfg" name="ElectroComponents.cpp" compile="1" resource="0"
               file="Source/Electro_backend/ElectroComponents.cpp"/>
         <FILE id="Fmzir1" name="ElectroComponents.h" compile="0" resource="0"
