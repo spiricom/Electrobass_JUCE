@@ -1214,6 +1214,11 @@ void ElectroAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     root.setProperty("midiKeyMin", midiKeyMin, nullptr);
     root.setProperty("midiKeyMax", midiKeyMax, nullptr);
     
+    for (int i = 0; i < 12; ++i)
+    {
+        root.setProperty("CentsDev" + String(i+1), centsDeviation[i], nullptr);
+    }
+    
     for (int i = 0; i < NUM_GENERIC_MACROS; ++i)
     {
         root.setProperty("M" + String(i+1) + "Name", macroNames[i], nullptr);
@@ -1296,7 +1301,10 @@ void ElectroAudioProcessor::setStateInformation (const void* data, int sizeInByt
         pedalControlsMaster = xml->getBoolAttribute("pedalControlsVolume", true);
         midiKeyMin = xml->getIntAttribute("midiKeyMin", 21);
         midiKeyMax = xml->getIntAttribute("midiKeyMax", 108);
-        
+        for (int i = 0; i < 12; ++i)
+        {
+            centsDeviation[i] = xml->getDoubleAttribute("CentsDev" + String(i+1));
+        }
         for (int i = 0; i < NUM_GENERIC_MACROS; ++i)
         {
             macroNames.set(i, xml->getStringAttribute("M" + String(i+1) + "Name",
