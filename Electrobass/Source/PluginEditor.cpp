@@ -570,14 +570,14 @@ void ElectroAudioProcessorEditor::resized()
         macroControlLabels[i]->setBounds(x + 216*(j/2), y+(h+pad)+(h+pad)*(j%2), 100, h);
         macroControlEntries[i]->setBounds(macroControlLabels[i]->getRight(),
                                           macroControlLabels[i]->getY(), 100, h);
-        if (i == NUM_MACROS - 1)
-        {
-            macroControlLabels[i]->setBounds(x + 216*(j/2),
-                                             y+(h+pad)+(h+pad)*((j%2)+0.5f),
-                                             100, h);
-            macroControlEntries[NUM_MACROS]->setBounds(macroControlLabels[i]->getRight(),
-                                                       y+(h+pad)+(h+pad)*((j%2)+1), 100, h);
-        }
+//        if (i == NUM_MACROS - 1)
+//        {
+//            macroControlLabels[i]->setBounds(x + 216*(j/2),
+//                                             y+(h+pad)+(h+pad)*((j%2)+0.5f),
+//                                             100, h);
+//            macroControlEntries[NUM_MACROS]->setBounds(macroControlLabels[i]->getRight(),
+//                                                       y+(h+pad)+(h+pad)*((j%2)+1), 100, h);
+//        }
     }
     
     y = 430;

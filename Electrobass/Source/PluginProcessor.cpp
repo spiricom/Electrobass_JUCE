@@ -896,6 +896,8 @@ void ElectroAudioProcessor::noteOn(int channel, int key, float velocity)
         
         if (v >= 0)
         {
+            velocity = ((0.007685533519034f*velocity*127.f) + 0.0239372430f);
+            velocity = velocity * velocity;
             key -= midiKeyMin;
             float norm = key / float(midiKeyMax - midiKeyMin);
             midiKeyValues[0][i] = jlimit(0.f, 1.f, norm);
@@ -969,14 +971,9 @@ void ElectroAudioProcessor::ctrlInput(int channel, int ctrl, int value)
             vts.getParameter(cUniqueMacroNames[m-NUM_GENERIC_MACROS])
             ->setValueNotifyingHost(v);
         }
-        // Pedal is a special case and will use 2 CCs
         else if (m == PEDAL_MACRO_ID)
         {
-            highByteVolume = value;
-        }
-        else if (m == PEDAL_MACRO_ID+1)
-        {
-            v = (value + (highByteVolume << 7)) * INV_4095;
+            v = value * INV_127;
             vts.getParameter("Ped")->setValueNotifyingHost(v);
         }
     }
