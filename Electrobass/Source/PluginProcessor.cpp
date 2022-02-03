@@ -468,6 +468,7 @@ ElectroAudioProcessor::~ElectroAudioProcessor()
     }
     
     params.clearQuick(false);
+    
 }
 
 //==============================================================================
