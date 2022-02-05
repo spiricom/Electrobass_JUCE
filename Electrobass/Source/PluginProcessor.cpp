@@ -296,7 +296,7 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
         voiceIsSounding[i] = false;
     }
     
-    for (int i = 0; i < NUM_STRINGS; ++i)
+    for (int i = 0; i < 12; ++i)
     {
         centsDeviation[i] = 0.f;
     }
@@ -468,6 +468,7 @@ ElectroAudioProcessor::~ElectroAudioProcessor()
     }
     
     params.clearQuick(false);
+    
 }
 
 //==============================================================================
@@ -800,11 +801,11 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
             {
                   tempNote += voicePrevBend[v];
             }
-            //float tempPitchClass = ((((int)tempNote) - keyCenter) % 12 );
-            //float tunedNote = tempNote + centsDeviation[(int)tempPitchClass];
-            //voiceNote[v] = tunedNote;
-            voiceNote[v] = tempNote;
-            
+            float tempPitchClass = ((((int)tempNote) - 0) % 12 );
+            float tunedNote = tempNote + centsDeviation[(int)tempPitchClass];
+            voiceNote[v] = tunedNote;
+            //voiceNote[v] = tempNote;
+            //DBG("Tuned note" + String(tunedNote));
             samples[0][v] = 0.f;
             samples[1][v] = 0.f;
         }
@@ -896,6 +897,8 @@ void ElectroAudioProcessor::noteOn(int channel, int key, float velocity)
         
         if (v >= 0)
         {
+            velocity = ((0.007685533519034f*velocity*127.f) + 0.0239372430f);
+            velocity = velocity * velocity;
             key -= midiKeyMin;
             float norm = key / float(midiKeyMax - midiKeyMin);
             midiKeyValues[0][i] = jlimit(0.f, 1.f, norm);
@@ -969,14 +972,9 @@ void ElectroAudioProcessor::ctrlInput(int channel, int ctrl, int value)
             vts.getParameter(cUniqueMacroNames[m-NUM_GENERIC_MACROS])
             ->setValueNotifyingHost(v);
         }
-        // Pedal is a special case and will use 2 CCs
         else if (m == PEDAL_MACRO_ID)
         {
-            highByteVolume = value;
-        }
-        else if (m == PEDAL_MACRO_ID+1)
-        {
-            v = (value + (highByteVolume << 7)) * INV_4095;
+            v = value * INV_127;
             vts.getParameter("Ped")->setValueNotifyingHost(v);
         }
     }
@@ -1214,6 +1212,11 @@ void ElectroAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     root.setProperty("midiKeyMin", midiKeyMin, nullptr);
     root.setProperty("midiKeyMax", midiKeyMax, nullptr);
     
+    for (int i = 0; i < 12; ++i)
+    {
+        root.setProperty("CentsDev" + String(i+1), centsDeviation[i], nullptr);
+    }
+    
     for (int i = 0; i < NUM_GENERIC_MACROS; ++i)
     {
         root.setProperty("M" + String(i+1) + "Name", macroNames[i], nullptr);
@@ -1296,7 +1299,10 @@ void ElectroAudioProcessor::setStateInformation (const void* data, int sizeInByt
         pedalControlsMaster = xml->getBoolAttribute("pedalControlsVolume", true);
         midiKeyMin = xml->getIntAttribute("midiKeyMin", 21);
         midiKeyMax = xml->getIntAttribute("midiKeyMax", 108);
-        
+        for (int i = 0; i < 12; ++i)
+        {
+            centsDeviation[i] = xml->getDoubleAttribute("CentsDev" + String(i+1));
+        }
         for (int i = 0; i < NUM_GENERIC_MACROS; ++i)
         {
             macroNames.set(i, xml->getStringAttribute("M" + String(i+1) + "Name",

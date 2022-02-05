@@ -192,12 +192,24 @@ typedef enum _FilterType
     LowpassFilter = 0,
     HighpassFilter,
     BandpassFilter,
+    DiodeLowpassFilter,
+    VZPeakFilter,
+    VZLowshelfFilter,
+    VZHighshelfFilter,
+    VZBandrejectFilter,
+    LadderLowpassFilter,
     FilterTypeNil
 } FilterType;
 static const StringArray filterTypeNames = {
     "Lowpass",
     "Highpass",
-    "Bandpass"
+    "Bandpass",
+    "DiodeLowpass",
+    "Peak",
+    "Lowshelf",
+    "Highshelf",
+    "Notch",
+    "LadderLowpass"
 };
 
 //==============================================================================

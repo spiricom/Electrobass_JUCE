@@ -17,7 +17,7 @@
 #include "Electro_backend/Filters.h"
 #include "Electro_backend/Envelopes.h"
 #include "Electro_backend/Output.h"
-
+#include "Electro_backend/TuningControl.hpp"
 class StandalonePluginHolder;
 
 //==============================================================================
@@ -189,10 +189,12 @@ public:
     int stringChannels[NUM_STRINGS+1];
     HashMap<int, int> channelToStringMap;
     
+    float centsDeviation[12];
+
     StringArray macroNames;
-    
+    TuningControl tuner;
 private:
-    
+    MTSClient *client;
     StringArray paramIds;
     StringArray sourceIds;
 
@@ -200,7 +202,6 @@ private:
     
     char dummy_memory[1];
     
-    float centsDeviation[NUM_STRINGS];
     int currentTuning;
     int keyCenter = 0;
     

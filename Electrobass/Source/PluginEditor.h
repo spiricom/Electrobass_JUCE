@@ -105,8 +105,7 @@ private:
     Slider transposeSlider;
     
     Component tab3;
-    CopedentTable copedentTable;
-    
+    TuningTab tuningTab;
     Component tab2;
     /* ToggleButton mpeToggle */// Declared above but will be include in this tab too
     OwnedArray<Label> macroControlEntries;
