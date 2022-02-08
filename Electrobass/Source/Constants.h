@@ -81,7 +81,7 @@ static const StringArray cOscParams = {
     "Fine",
     "Freq",
     "Shape",
-    "Amp"
+    "Amp",
 };
 static const std::vector<std::vector<float>> vOscInit = {
     { -24.0f, 24.0f, 0.0f, 0.0f }, //Pitch
