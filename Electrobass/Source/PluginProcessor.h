@@ -179,7 +179,8 @@ public:
     
     tSimplePoly strings[NUM_STRINGS];
     
-
+    bool pedalControlsMaster = true;
+    
     // +1 because we'll treat pedal as 2 macros for ccs
     int macroCCNumbers[NUM_MACROS+1];
     HashMap<int, int> ccNumberToMacroMap;
