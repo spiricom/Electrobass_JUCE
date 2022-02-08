@@ -185,10 +185,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     //mpeToggle.addListener(this);
     //tab1.addAndMakeVisible(mpeToggle);
     
-    pedalToggle.setButtonText("Pedal volume control");
-    pedalToggle.addListener(this);
-    tab1.addAndMakeVisible(pedalToggle);
-    
+
     keyboard.setAvailableRange(21, 108);
     keyboard.setOctaveForMiddleC(4);
     //    tab1.addAndMakeVisible(&keyboard);
@@ -488,8 +485,7 @@ void ElectroAudioProcessorEditor::resized()
     }
     
     outputModule->setBounds(540*s-1, filterModules.getLast()->getBottom()-1, 360*s+2, 135*s);
-    pedalToggle.setBounds(790, 500, 145, 30);
-    
+
     const float knobSize = 40.0f*s;
     for (int i = 0; i < NUM_GENERIC_MACROS; ++i)
     {
@@ -648,10 +644,6 @@ void ElectroAudioProcessorEditor::buttonClicked(Button* button)
         {
             updateMPEToggle(tb->getToggleState());
         }
-        else if (tb == &pedalToggle)
-        {
-            updatePedalToggle(tb->getToggleState());
-        }
     }
     
     if (button == tabs.getTabbedButtonBar().getTabButton(0))
@@ -730,7 +722,6 @@ void ElectroAudioProcessorEditor::timerCallback()
 
 void ElectroAudioProcessorEditor::update()
 {
-    updatePedalToggle(processor.pedalControlsMaster);
     updateMPEToggle(processor.getMPEMode());
     for (int i = 0; i < NUM_STRINGS+1; ++i)
     {
@@ -749,11 +740,6 @@ void ElectroAudioProcessorEditor::update()
     updateRandomValueLabel(processor.lastRandomValue);
 }
 
-void ElectroAudioProcessorEditor::updatePedalToggle(bool state)
-{
-    processor.pedalControlsMaster = state;
-    pedalToggle.setToggleState(state, dontSendNotification);
-}
 
 void ElectroAudioProcessorEditor::updateMPEToggle(bool state)
 {

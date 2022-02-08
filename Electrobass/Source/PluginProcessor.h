@@ -179,7 +179,7 @@ public:
     
     tSimplePoly strings[NUM_STRINGS];
     
-    bool pedalControlsMaster = true;
+    bool pedalControlsMaster = false;
     
     // +1 because we'll treat pedal as 2 macros for ccs
     int macroCCNumbers[NUM_MACROS+1];

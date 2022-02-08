@@ -1212,7 +1212,6 @@ void ElectroAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     root.setProperty("editorScale", editorScale, nullptr);
     root.setProperty("mpeMode", mpeMode, nullptr);
     root.setProperty("numVoices", numVoicesActive, nullptr);
-    root.setProperty("pedalControlsMaster", pedalControlsMaster, nullptr);
     root.setProperty("midiKeyMin", midiKeyMin, nullptr);
     root.setProperty("midiKeyMax", midiKeyMax, nullptr);
     
@@ -1300,7 +1299,6 @@ void ElectroAudioProcessor::setStateInformation (const void* data, int sizeInByt
         editorScale = xml->getDoubleAttribute("editorScale", 1.05);
         setMPEMode(xml->getBoolAttribute("mpeMode", false));
         setNumVoicesActive(xml->getIntAttribute("numVoices", 1));//EBSPECIFIC
-        pedalControlsMaster = xml->getBoolAttribute("pedalControlsVolume", true);
         midiKeyMin = xml->getIntAttribute("midiKeyMin", 21);
         midiKeyMax = xml->getIntAttribute("midiKeyMax", 108);
         for (int i = 0; i < 12; ++i)

@@ -57,7 +57,6 @@ public:
 private:
     
     // Updating things that don't have attachments to the vts
-    void updatePedalToggle(bool state);
     void updateMPEToggle(bool state);
     void updateStringChannel(int string, int ch);
     void updateMacroControl(int macro, int ctrl);
@@ -90,7 +89,6 @@ private:
     std::unique_ptr<NoiseModule> noiseModule;
     OwnedArray<FilterModule> filterModules;
     std::unique_ptr<OutputModule> outputModule;
-    ToggleButton pedalToggle;
     ElectroTabbedComponent envsAndLFOs;
     MappingSource* currentMappingSource;
     ToggleButton mpeToggle;
