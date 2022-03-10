@@ -15,6 +15,7 @@
 //==============================================================================
 AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParameterLayout()
 {
+    ///THIS IS THE DEFAULT PRESET
     AudioProcessorValueTreeState::ParameterLayout layout;
     
     String n;
@@ -100,7 +101,7 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
     normRange = NormalisableRange<float>(0., 1.);
     normRange.setSkewForCentre(.5);
     invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
-    layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, 0.5f));
+    layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, 1.f));
     paramIds.add(n);
     
     //==============================================================================
@@ -142,7 +143,7 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
         normRange = NormalisableRange<float>(0., 1.);
         normRange.setSkewForCentre(.5);
         invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
-        layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, 0.5f));
+        layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, 1.f));
         paramIds.add(n);
     }
     
@@ -151,7 +152,11 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
     for (int i = 0; i < NUM_FILT; ++i)
     {
         n = "Filter" + String(i+1);
-        layout.add (std::make_unique<AudioParameterChoice> (n, n, StringArray("Off", "On"), 1));
+        if (i == 0)
+            layout.add (std::make_unique<AudioParameterChoice> (n, n, StringArray("Off", "On"), 1));
+        else
+            layout.add (std::make_unique<AudioParameterChoice> (n, n, StringArray("Off", "On"), 0));
+
         paramIds.add(n);
         
         n = "Filter" + String(i+1) + " Type";
@@ -284,7 +289,9 @@ ElectroAudioProcessor::ElectroAudioProcessor()
                   )
 #endif
 ,
-vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
+vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout()),
+chooser(nullptr)
+
 {
     formatManager.registerBasicFormats();   
     keyboardState.addListener(this);
@@ -429,12 +436,12 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
 
 	// A couple of default mappings that will be used if nothing has been saved
 	Mapping defaultFilter1Cutoff;
-	defaultFilter1Cutoff.sourceName = "Envelope3";
+	defaultFilter1Cutoff.sourceName = "Envelope2";
 	defaultFilter1Cutoff.targetName = "Filter1 Cutoff T3";
 	defaultFilter1Cutoff.value = 24.f;
 
 	Mapping defaultOutputAmp;
-	defaultOutputAmp.sourceName = "Envelope4";
+	defaultOutputAmp.sourceName = "Envelope1";
 	defaultOutputAmp.targetName = "Output Amp T3";
 	defaultOutputAmp.value = 1.f;
 
@@ -476,7 +483,8 @@ ElectroAudioProcessor::~ElectroAudioProcessor()
     }
     
     params.clearQuick(false);
-    
+    if (chooser != nullptr)
+        delete chooser;
 }
 
 //==============================================================================
@@ -845,7 +853,8 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
             buffer.setSample(channel, s, outputSamples[channel]);
         }
     }
-    
+    for (int channel = 0; channel < totalNumOutputChannels; ++channel)
+          setPeakLevel (channel, buffer.getMagnitude (channel, 0, buffer.getNumSamples()));
     for (int i = 0; i < NUM_CHANNELS; ++i)
         if (stringActivity[i] > 0) stringActivity[i]--;
 }
@@ -1213,6 +1222,7 @@ void ElectroAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     ValueTree root ("Electrobass");
     
     // Top level settings
+    
     root.setProperty("editorScale", editorScale, nullptr);
     root.setProperty("mpeMode", mpeMode, nullptr);
     root.setProperty("numVoices", numVoicesActive, nullptr);
@@ -1300,8 +1310,9 @@ void ElectroAudioProcessor::setStateInformation (const void* data, int sizeInByt
     if (xml.get() != nullptr)
     {
         // Top level settings
+        String presetPath = xml->getStringAttribute("path");
         editorScale = xml->getDoubleAttribute("editorScale", 1.05);
-        setMPEMode(xml->getBoolAttribute("mpeMode", false));
+        setMPEMode(xml->getBoolAttribute("mpeMode", true)); //EB
         setNumVoicesActive(xml->getIntAttribute("numVoices", 1));//EBSPECIFIC
         midiKeyMin = xml->getIntAttribute("midiKeyMin", 21);
         midiKeyMax = xml->getIntAttribute("midiKeyMax", 108);
@@ -1331,12 +1342,75 @@ void ElectroAudioProcessor::setStateInformation (const void* data, int sizeInByt
         
         for (int i = 0; i < NUM_OSCS; ++i)
         {
-            File wav (xml->getStringAttribute("osc" + String(i+1) + "File"));
+            String filePath = xml->getStringAttribute("osc" + String(i+1) + "File");
+            if(filePath.isEmpty())
+            {
+                continue;
+            }
+            File wav (filePath);
+            
             if (wav.exists())
             {
                 DBG("Pre osc set state: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
                 oscs[i]->setWaveTables(wav);
                 DBG("Post osc set state: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
+            } else if (wavFolder.isEmpty())
+            {
+                
+                if (chooser != nullptr)
+                    delete chooser;
+                chooser = new FileChooser("Could not find wav table, please select one ",
+                                          getLastFile());
+                chooser->launchAsync(FileBrowserComponent::canSelectDirectories,
+                                     [this](const FileChooser& fc)
+                                     {
+                    setLastFile(fc);
+                    File f = fc.getResult();
+                    wavFolder = f.getFullPathName();
+                    
+//                    std::unique_lock<std::mutex> lock(m);
+//                    fc_done = true;
+//                    fc_wait.notify_one();
+                }
+                                     );
+//                std::unique_lock<std::mutex> lock(m);
+//                fc_wait.wait(lock, [&]{return fc_done == true;});
+//                fc_done = false;
+               
+                
+            } else if (!wavFolder.isEmpty())
+            {
+                File newWav(wavFolder + "/" + wav.getFileName());
+                if (newWav.exists())
+                {
+                    DBG("Pre osc set state: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
+                    oscs[i]->setWaveTables(File(wavFolder + "/" + wav.getFileName()));
+                    DBG("Post osc set state: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
+                } else
+                {
+                    chooser = new FileChooser("Could not find wav table, please select one ",
+                                          getLastFile());
+                    chooser->launchAsync(FileBrowserComponent::canSelectDirectories,
+                                         [this](const FileChooser& fc)
+                                         {
+                        setLastFile(fc);
+                        File f = fc.getResult();
+                        wavFolder = f.getFullPathName();
+//                        std::unique_lock<std::mutex> lock(m);
+//                        fc_done = true;
+//                        fc_wait.notify_one();
+                    });
+//                    std::unique_lock<std::mutex> lock(m);
+//                    fc_wait.wait(lock, [&]{return fc_done == true;});
+//                    fc_done = false;
+                    File f = File(wavFolder + "/" + wav.getFileName());
+                    if (!wavFolder.isEmpty() && f.exists())
+                    {
+                        DBG("Pre osc set state: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
+                        oscs[i]->setWaveTables(File(f));
+                        DBG("Post osc set state: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
+                    }
+                }
             }
         }
         
@@ -1419,6 +1493,20 @@ void ElectroAudioProcessor::setStateInformation (const void* data, int sizeInByt
     DBG("Post set state: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
 }
 
+
+void ElectroAudioProcessor::setPeakLevel (int channelIndex, float peakLevel)
+{
+   if (! juce::isPositiveAndBelow (channelIndex, m_peakLevels.size())) return;
+
+   m_peakLevels[channelIndex].store (std::max (peakLevel, m_peakLevels[channelIndex].load()));
+}
+
+float ElectroAudioProcessor::getPeakLevel (int channelIndex)
+{
+   if (! juce::isPositiveAndBelow (channelIndex, m_peakLevels.size())) return 0.0f;
+
+   return m_peakLevels[channelIndex].exchange (0.0f);
+}
 //==============================================================================
 // This creates new instances of the plugin..
 juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()

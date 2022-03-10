@@ -18,7 +18,7 @@
 #define NUM_MACROS (NUM_GENERIC_MACROS + NUM_UNIQUE_MACROS)
 #define PEDAL_MACRO_ID (NUM_MACROS-1)
 
-#define NUM_STRINGS 1
+#define NUM_STRINGS 4
 
 #define NUM_CHANNELS (NUM_STRINGS+1)
 
@@ -127,7 +127,7 @@ static const StringArray cLowFreqParams = {
     "Sync Phase"
 };
 static const std::vector<std::vector<float>> vLowFreqInit = {
-    { 0.0f, 30.f, 1.0f, 2.f },  //Rate
+    { 0.0f, 30.f, 0.5f, 2.f },  //Rate
     { 0.0f, 1.0f, 0.0f, 0.5f },  //Shape
     { 0.0f, 1.0f, 0.0f, 0.5f } // Phase Offset
 };
@@ -172,19 +172,23 @@ static const std::vector<std::vector<float>> vNoiseInit = {
 typedef enum _FilterParam
 {
     FilterCutoff = 0,
+   // FilterGain,
     FilterResonance,
     FilterKeyFollow,
     FilterParamNil
 } FilterParam;
 static const StringArray cFilterParams = {
     "Cutoff",
+    //"Gain",
     "Resonance",
     "KeyFollow"
 };
 static const std::vector<std::vector<float>> vFilterInit = {
     { 0.0f, 127.f, 72.f, 63.5f },   //Cutoff
+    //{ -15.f, 15.f, 0.0f, 0.0f }, //Gain
     { 0.1f, 10.0f, 0.5f, 0.7f },   //Resonance
-    { 0.0f, 1.f, 0.5f, 0.5f }   //KeyFollow
+    { 0.0f, 1.f, 0.5f, 0.5f }  //KeyFollow
+    
 };
 
 typedef enum _FilterType
@@ -193,10 +197,10 @@ typedef enum _FilterType
     HighpassFilter,
     BandpassFilter,
     DiodeLowpassFilter,
-    VZPeakFilter,
-    VZLowshelfFilter,
-    VZHighshelfFilter,
-    VZBandrejectFilter,
+ //   VZPeakFilter,
+  //  VZLowshelfFilter,
+  //  VZHighshelfFilter,
+  //  VZBandrejectFilter,
     LadderLowpassFilter,
     FilterTypeNil
 } FilterType;
@@ -205,10 +209,10 @@ static const StringArray filterTypeNames = {
     "Highpass",
     "Bandpass",
     "DiodeLowpass",
-    "Peak",
-    "Lowshelf",
-    "Highshelf",
-    "Notch",
+   // "Peak",
+  //  "Lowshelf",
+  //  "Highshelf",
+  //  "Notch",
     "LadderLowpass"
 };
 
@@ -233,7 +237,7 @@ static const StringArray cEnvelopeParams = {
 static const std::vector<std::vector<float>> vEnvelopeInit = {
     { 0.0f, 20000.0f, 7.f, 4000.f },   //Attack
     { 0.0f, 20000.0f, 1000.f, 4000.f },  //Decay
-    { 0.0f, 1.f, 0.8f, 0.5f },   //Sustain
+    { 0.0f, 1.f, 0.5f, 0.5f },   //Sustain
     { 0.0f, 20000.0f, 20.f, 4000.f },   //Release
     { 0.0f, 1.0f, 0.f, 0.5f },   //Leak
 };

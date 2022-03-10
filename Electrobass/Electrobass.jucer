@@ -4,7 +4,7 @@
               jucerFormatVersion="1" version="0.5.0" companyName="Snyderphonics"
               companyCopyright="Snyderphonics" companyWebsite="http://snyderphonics.com/"
               pluginCharacteristicsValue="pluginIsSynth,pluginProducesMidiOut,pluginWantsMidiIn"
-              defines="JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP=1&#10;BOOST_ALL_NO_LIB=1"
+              defines="JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP=1&#10;BOOST_ALL_NO_LIB=1&#10;"
               pluginVST3Category="Instrument">
   <MAINGROUP id="zr98AB" name="Electrobass">
     <GROUP id="{B8EA8B88-4125-0A91-2EA2-1CD3B3374012}" name="Source">
@@ -90,6 +90,7 @@
         <MODULEPATH id="juce_gui_basics" path="../../../../JUCE/modules"/>
         <MODULEPATH id="juce_gui_extra" path="../../../../JUCE/modules"/>
         <MODULEPATH id="leaf" path="../../LEAF"/>
+        <MODULEPATH id="sound_meter" path="Source"/>
       </MODULEPATHS>
     </VS2019>
     <XCODE_MAC targetFolder="Builds/MacOSX">
@@ -111,6 +112,7 @@
         <MODULEPATH id="juce_gui_basics" path="../../../../JUCE/modules"/>
         <MODULEPATH id="juce_gui_extra" path="../../../../JUCE/modules"/>
         <MODULEPATH id="leaf" path="../../LEAF"/>
+        <MODULEPATH id="sound_meter" path="Source"/>
       </MODULEPATHS>
     </XCODE_MAC>
   </EXPORTFORMATS>
@@ -129,6 +131,7 @@
     <MODULE id="juce_gui_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="juce_gui_extra" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
     <MODULE id="leaf" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
+    <MODULE id="sound_meter" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
   </MODULES>
   <LIVE_SETTINGS>
     <OSX/>

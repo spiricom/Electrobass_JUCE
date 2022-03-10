@@ -2,3 +2,6 @@
 	path = Electrobass/Source/Electro_backend
 	url = git@github.com:davispolito/Electro_backend.git
 	branch = main
+[submodule "Electrobass/Source/sound_meter"]
+	path = Electrobass/Source/sound_meter
+	url = git@github.com:SoundDevelopment/sound_meter.git
