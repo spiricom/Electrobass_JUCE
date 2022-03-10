@@ -54,6 +54,7 @@ public:
     ElectroAudioProcessor& processor;
     AudioProcessorValueTreeState& vts;
     
+    
 private:
     
     // Updating things that don't have attachments to the vts
@@ -124,6 +125,7 @@ private:
 
     std::unique_ptr<ComponentBoundsConstrainer> constrain;
     std::unique_ptr<ResizableCornerComponent> resizer;
+   
     
     Font euphemia;
     FileChooser chooser;

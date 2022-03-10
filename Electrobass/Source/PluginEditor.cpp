@@ -28,7 +28,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     Typeface::Ptr tp = Typeface::createSystemTypefaceFor(BinaryData::EuphemiaCAS_ttf,
                                                          BinaryData::EuphemiaCAS_ttfSize);
     euphemia = Font(tp);
-    
+   
     logo = Drawable::createFromImageData (BinaryData::logo_large_svg,
                                           BinaryData::logo_large_svgSize);
     addAndMakeVisible(logo.get());
@@ -125,7 +125,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     numVoicesLabel.setLookAndFeel(&laf);
     otherSettingsComponent.addAndMakeVisible(numVoicesLabel);
     
-    numVoicesSlider.setRange(1., 2., 1.); //EBSPECIFIC
+    numVoicesSlider.setRange(1., 4., 1.); //EBSPECIFIC
     numVoicesSlider.setSliderStyle(Slider::SliderStyle::LinearBarVertical);
     numVoicesSlider.setSliderSnapsToMousePosition(false);
     numVoicesSlider.setMouseDragSensitivity(200);
@@ -134,7 +134,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     numVoicesSlider.setColour(Slider::backgroundColourId, Colours::darkgrey.withBrightness(0.2f));
     numVoicesSlider.setColour(Slider::textBoxOutlineColourId, Colours::transparentBlack);
     numVoicesSlider.setColour(Slider::textBoxTextColourId, Colours::gold.withBrightness(0.95f));
-    //numVoicesSlider.addListener(this); //EBSPECIFIC removes ability to change
+    numVoicesSlider.addListener(this); //EBSPECIFIC removes ability to change
     otherSettingsComponent.addAndMakeVisible(numVoicesSlider);
     
     transposeLabel.setText("Transpose", dontSendNotification);
@@ -164,15 +164,15 @@ chooser("Select a .wav file to load...", {}, "*.wav")
         stringActivityButtons[i]->setClickingTogglesState(false);//(true);
         stringActivityButtons[i]->addListener(this);
         tab1.addAndMakeVisible(stringActivityButtons[i]);
-        if (i == 0) { //EBSPECIFIC
+       if (i == 0) { //EBSPECIFIC
             pitchBendSliders.add(new Slider());
             pitchBendSliders[i]->setSliderStyle(Slider::SliderStyle::LinearBar);
             pitchBendSliders[i]->setInterceptsMouseClicks(false, false);
-    //        pitchBendSliders[i]->setLookAndFeel(&laf);
-    //        pitchBendSliders[i]->setColour(Slider::trackColourId, Colours::lightgrey);
+            pitchBendSliders[i]->setLookAndFeel(&laf);
+            pitchBendSliders[i]->setColour(Slider::trackColourId, Colours::lightgrey);
             pitchBendSliders[i]->setColour(Slider::backgroundColourId, Colours::black);
             pitchBendSliders[i]->setColour(Slider::textBoxOutlineColourId, Colours::grey);
-    //        pitchBendSliders[i]->setTextValueSuffix("m2");
+            //pitchBendSliders[i]->setTextValueSuffix("m2");
             pitchBendSliders[i]->addListener(this);
             tab1.addAndMakeVisible(pitchBendSliders[i]);
             
@@ -181,9 +181,9 @@ chooser("Select a .wav file to load...", {}, "*.wav")
         }
     }
     
-    //mpeToggle.setButtonText("MPE");
-    //mpeToggle.addListener(this);
-    //tab1.addAndMakeVisible(mpeToggle);
+//    mpeToggle.setButtonText("MPE");
+//    mpeToggle.addListener(this);
+//    tab1.addAndMakeVisible(mpeToggle);
     
 
     keyboard.setAvailableRange(21, 108);
@@ -206,6 +206,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
         filterModules.add(new FilterModule(*this, vts, *processor.filt[i]));
         tab1.addAndMakeVisible(filterModules[i]);
     }
+    
     
     seriesParallelComponent.setOutlineColour(Colours::darkgrey);
     tab1.addAndMakeVisible(seriesParallelComponent);
@@ -365,7 +366,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     addAndMakeVisible(versionLabel);
     
     //    addAndMakeVisible(&container);
-    
+    //processor.setMPEMode(true); //HACKYEB
     update();
     startTimerHz(30);
 }
@@ -382,6 +383,7 @@ ElectroAudioProcessorEditor::~ElectroAudioProcessorEditor()
 
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
+       
         stringActivityButtons[i]->setLookAndFeel(nullptr);
     }
     
@@ -485,7 +487,7 @@ void ElectroAudioProcessorEditor::resized()
     }
     
     outputModule->setBounds(540*s-1, filterModules.getLast()->getBottom()-1, 360*s+2, 135*s);
-
+    
     const float knobSize = 40.0f*s;
     for (int i = 0; i < NUM_GENERIC_MACROS; ++i)
     {
@@ -521,8 +523,8 @@ void ElectroAudioProcessorEditor::resized()
         
     int r = (10*align) % 12;
     int w = (10*align) / 12;
-    y = height-35*s+2;
-    //mpeToggle.setBounds(6*s, y, x-w-5*s, 35*s); EBSPECIFIC
+    y = height-35*s+2;//
+    //mpeToggle.setBounds(6*s, y, x-w-5*s, 35*s); //EBSPECIFIC
     pitchBendSliders[0]->setBounds(0, midiKeyComponent.getBottom()-1, x, 27*s);
     stringActivityButtons[0]->setBounds(0, y, w, 35*s);
     pitchBendSliders[0]->setBounds(0,
@@ -630,7 +632,7 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
     }
     else if (slider == &numVoicesSlider)
     {
-        //updateNumVoicesSlider(numVoicesSlider.getValue()); EBSPECIFIC
+        updateNumVoicesSlider(numVoicesSlider.getValue()); //EBSPECIFIC
     }
 }
 

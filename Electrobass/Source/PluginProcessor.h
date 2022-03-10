@@ -105,7 +105,7 @@ public:
 
     //==============================================================================
     float editorScale = 1.05f;
-    
+    String wavTableFolder;
     MidiKeyboardState keyboardState;
     
     juce::AudioFormatManager formatManager;
@@ -193,7 +193,32 @@ public:
 
     StringArray macroNames;
     TuningControl tuner;
+    FileChooser* chooser;
+    String wavFolder = "";
+    PropertySet settings;
+
+    File getLastFile() const
+    {
+        File f;
+        f = File (settings.getValue ("lastStateFile"));
+        
+        if (f == File())
+            f = File::getSpecialLocation (File::userDocumentsDirectory);
+        
+        return f;
+    }
+    
+    void setLastFile (const FileChooser& fc)
+    {
+        settings.setValue ("lastStateFile", fc.getResult().getFullPathName());
+    }
+    
+    void setPeakLevel(int channelIndex, float peakLevel);
+    float getPeakLevel(int channelIndex);
+
 private:
+
+    std::mutex m;
     MTSClient *client;
     StringArray paramIds;
     StringArray sourceIds;
@@ -212,6 +237,8 @@ private:
     
     int stringActivity[NUM_STRINGS+1];
     int stringActivityTimeout;
+    
+    std::array<std::atomic<float>, 128> m_peakLevels;
     
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ElectroAudioProcessor)
