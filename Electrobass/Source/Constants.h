@@ -172,20 +172,20 @@ static const std::vector<std::vector<float>> vNoiseInit = {
 typedef enum _FilterParam
 {
     FilterCutoff = 0,
-    FilterGain,
+   // FilterGain,
     FilterResonance,
     FilterKeyFollow,
     FilterParamNil
 } FilterParam;
 static const StringArray cFilterParams = {
     "Cutoff",
-    "Gain",
+    //"Gain",
     "Resonance",
     "KeyFollow"
 };
 static const std::vector<std::vector<float>> vFilterInit = {
     { 0.0f, 127.f, 72.f, 63.5f },   //Cutoff
-    { -15.f, 15.f, 0.0f, 0.0f }, //Gain
+    //{ -15.f, 15.f, 0.0f, 0.0f }, //Gain
     { 0.1f, 10.0f, 0.5f, 0.7f },   //Resonance
     { 0.0f, 1.f, 0.5f, 0.5f }  //KeyFollow
     
