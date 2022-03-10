@@ -28,7 +28,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     Typeface::Ptr tp = Typeface::createSystemTypefaceFor(BinaryData::EuphemiaCAS_ttf,
                                                          BinaryData::EuphemiaCAS_ttfSize);
     euphemia = Font(tp);
-   
+    addAndMakeVisible(tooltipWindow);
     logo = Drawable::createFromImageData (BinaryData::logo_large_svg,
                                           BinaryData::logo_large_svgSize);
     addAndMakeVisible(logo.get());

@@ -125,7 +125,7 @@ private:
 
     std::unique_ptr<ComponentBoundsConstrainer> constrain;
     std::unique_ptr<ResizableCornerComponent> resizer;
-   
+    juce::TooltipWindow tooltipWindow;
     
     Font euphemia;
     FileChooser chooser;
