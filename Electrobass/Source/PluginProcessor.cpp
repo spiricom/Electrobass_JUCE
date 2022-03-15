@@ -128,11 +128,11 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
         }
        
         n = "Osc" + String(i+1) + " isHarmonic";
-        layout.add (std::make_unique<AudioParameterChoice> (n, n,  StringArray("Off", "On"), 0));
+        layout.add (std::make_unique<AudioParameterChoice> (n, n,  StringArray("Off", "On"), 1));
         paramIds.add(n);
         
         n = "Osc" + String(i+1) + " isStepped";
-        layout.add (std::make_unique<AudioParameterChoice> (n, n,  StringArray("Off", "On"), 0));
+        layout.add (std::make_unique<AudioParameterChoice> (n, n,  StringArray("Off", "On"), 1));
         paramIds.add(n);
         
         n = "Osc" + String(i+1) + " ShapeSet";

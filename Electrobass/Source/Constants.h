@@ -200,7 +200,7 @@ typedef enum _FilterType
  //   VZPeakFilter,
   //  VZLowshelfFilter,
   //  VZHighshelfFilter,
-  //  VZBandrejectFilter,
+    VZBandrejectFilter,
     LadderLowpassFilter,
     FilterTypeNil
 } FilterType;
@@ -212,7 +212,7 @@ static const StringArray filterTypeNames = {
    // "Peak",
   //  "Lowshelf",
   //  "Highshelf",
-  //  "Notch",
+    "Notch",
     "LadderLowpass"
 };
 
