@@ -19,8 +19,8 @@
 #define PEDAL_MACRO_ID (NUM_MACROS-1)
 
 #define NUM_STRINGS 4
-
-#define NUM_CHANNELS (NUM_STRINGS+1)
+#define MAX_NUM_VOICES 4
+#define NUM_CHANNELS (MAX_NUM_VOICES+1)
 
 #define NUM_OSCS 3
 #define INV_NUM_OSCS 0.333333f
@@ -172,21 +172,21 @@ static const std::vector<std::vector<float>> vNoiseInit = {
 typedef enum _FilterParam
 {
     FilterCutoff = 0,
-   // FilterGain,
+    FilterGain,
     FilterResonance,
     FilterKeyFollow,
     FilterParamNil
 } FilterParam;
 static const StringArray cFilterParams = {
     "Cutoff",
-    //"Gain",
+    "Gain",
     "Resonance",
     "KeyFollow"
 };
 static const std::vector<std::vector<float>> vFilterInit = {
     { 0.0f, 127.f, 72.f, 63.5f },   //Cutoff
-    //{ -15.f, 15.f, 0.0f, 0.0f }, //Gain
-    { 0.1f, 10.0f, 0.5f, 0.7f },   //Resonance
+    { 0.0f, 1.f, 0.5f, 0.5f }, //Gain
+    { 0.01f, 10.f, 0.5f, 0.5f },   //Resonance
     { 0.0f, 1.f, 0.5f, 0.5f }  //KeyFollow
     
 };
@@ -197,21 +197,22 @@ typedef enum _FilterType
     HighpassFilter,
     BandpassFilter,
     DiodeLowpassFilter,
- //   VZPeakFilter,
-  //  VZLowshelfFilter,
-  //  VZHighshelfFilter,
+    VZPeakFilter,
+    VZLowshelfFilter,
+    VZHighshelfFilter,
     VZBandrejectFilter,
     LadderLowpassFilter,
     FilterTypeNil
 } FilterType;
+
 static const StringArray filterTypeNames = {
     "Lowpass",
     "Highpass",
     "Bandpass",
     "DiodeLowpass",
-   // "Peak",
-  //  "Lowshelf",
-  //  "Highshelf",
+    "Peak",
+    "Lowshelf",
+    "Highshelf",
     "Notch",
     "LadderLowpass"
 };
@@ -252,11 +253,22 @@ typedef enum _OutputParam
 } OutputParam;
 static const StringArray cOutputParams = {
     "Amp",
-    "Pan"
+    "Pan",
 };
 static const std::vector<std::vector<float>> vOutputInit = {
     { 0.0f, 2.0f, 0.0f, 1.0f },   //Amp
     { -1.0f, 1.0f, 0.f, 0.f},  //Pan
+};
+
+typedef enum _DistortionType
+{
+    distortion1 = 0,
+    dist2,
+    DistortionTypeNil
+} DistortionType;
+static const StringArray distortionNames = {
+    "dist1",
+    "dist2"
 };
 
 //==============================================================================

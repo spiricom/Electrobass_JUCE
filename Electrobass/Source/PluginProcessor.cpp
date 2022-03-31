@@ -252,7 +252,9 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
         layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, def));
         paramIds.add(n);
     }
-    
+    n = "Output DistortionType";
+    layout.add (std::make_unique<AudioParameterChoice> (n, n, distortionNames, 0));
+    paramIds.add(n);
     //==============================================================================
     for (int i = 1; i < CopedentColumnNil; ++i)
     {
@@ -300,11 +302,11 @@ chooser(nullptr)
     
     leaf.clearOnAllocation = 1;
     
-    tSimplePoly_init(&strings[0], numVoicesActive, &leaf);
-    tSimplePoly_setNumVoices(&strings[0], 1);
+    tSimplePoly_init(&strings[0], MAX_NUM_VOICES, &leaf);
+    tSimplePoly_setNumVoices(&strings[0], numVoicesActive);
     
     voiceNote[0] = 0;
-    for (int i = 1; i < NUM_STRINGS; ++i)
+    for (int i = 1; i < MAX_NUM_VOICES; ++i)
     {
         tSimplePoly_init(&strings[i], 1, &leaf);
         voiceNote[i] = 0;
@@ -377,13 +379,13 @@ chooser(nullptr)
                                                         true, false, Colours::white);
     for (int i = 0; i < numInvParameterSkews; ++i)
     {
-        midiKeyValues[i] = (float*)leaf_alloc(&leaf, sizeof(float) * NUM_STRINGS);
+        midiKeyValues[i] = (float*)leaf_alloc(&leaf, sizeof(float) * MAX_NUM_VOICES);
         midiKeySource->sources[i] = &midiKeyValues[i];
 
-		velocityValues[i] = (float*)leaf_alloc(&leaf, sizeof(float) * NUM_STRINGS);
+		velocityValues[i] = (float*)leaf_alloc(&leaf, sizeof(float) * MAX_NUM_VOICES);
 		velocitySource->sources[i] = &velocityValues[i];
 
-		randomValues[i] = (float*)leaf_alloc(&leaf, sizeof(float) * NUM_STRINGS);
+		randomValues[i] = (float*)leaf_alloc(&leaf, sizeof(float) * MAX_NUM_VOICES);
 		randomSource->sources[i] = &randomValues[i];
     }
     
@@ -410,7 +412,7 @@ chooser(nullptr)
     }
     
     for (int i = 1; i <= 16; ++i) channelToStringMap.set(i, -1);
-    for (int i = 0; i < NUM_STRINGS+1; ++i)
+    for (int i = 0; i < MAX_NUM_VOICES+1; ++i)
     {
         stringChannels[i] = i+1;
         channelToStringMap.set(stringChannels[i], i);
@@ -422,7 +424,7 @@ chooser(nullptr)
     for (int i = 0; i < CopedentColumnNil; ++i)
     {
         copedentArray.add(Array<float>());
-        for (int v = 0; v < NUM_STRINGS; ++v)
+        for (int v = 0; v < MAX_NUM_VOICES; ++v)
         {
             copedentArray.getReference(i).add(cCopedentArrayInit[i][v]);
         }
@@ -470,7 +472,7 @@ ElectroAudioProcessor::~ElectroAudioProcessor()
         }
     }
     
-    for (int i = 0; i < NUM_STRINGS; ++i)
+    for (int i = 0; i < MAX_NUM_VOICES; ++i)
     {
         tSimplePoly_free(&strings[i]);
     }
@@ -737,7 +739,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
     }
     
     Array<float> resolvedCopedent;
-    for (int r = 0; r < NUM_STRINGS; ++r)
+    for (int r = 0; r < MAX_NUM_VOICES; ++r)
     {
         float minBelowZero = 0.0f;
         float maxAboveZero = 0.0f;
@@ -787,7 +789,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         
         float globalPitchBend = pitchBendParams[0]->tickNoHooksNoSmoothing();
         
-        float samples[2][NUM_STRINGS];
+        float samples[2][MAX_NUM_VOICES];
         float outputSamples[2];
         outputSamples[0] = 0.f;
         outputSamples[1] = 0.f;
@@ -1244,7 +1246,7 @@ void ElectroAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
         root.setProperty("M" + String(i+1) + "CC", macroCCNumbers[i], nullptr);
     }
     
-    for (int i = 0; i < NUM_STRINGS+1; ++i)
+    for (int i = 0; i < MAX_NUM_VOICES+1; ++i)
     {
         root.setProperty("String" + String(i) + "Ch", stringChannels[i], nullptr);
     }
@@ -1312,8 +1314,8 @@ void ElectroAudioProcessor::setStateInformation (const void* data, int sizeInByt
         // Top level settings
         String presetPath = xml->getStringAttribute("path");
         editorScale = xml->getDoubleAttribute("editorScale", 1.05);
-        setMPEMode(xml->getBoolAttribute("mpeMode", true)); //EB
-        setNumVoicesActive(xml->getIntAttribute("numVoices", 1));//EBSPECIFIC
+        setMPEMode(xml->getBoolAttribute("mpeMode", false)); //EB
+        //setNumVoicesActive(xml->getIntAttribute("numVoices", 1));//EBSPECIFIC
         midiKeyMin = xml->getIntAttribute("midiKeyMin", 21);
         midiKeyMax = xml->getIntAttribute("midiKeyMax", 108);
         for (int i = 0; i < 12; ++i)
@@ -1334,7 +1336,7 @@ void ElectroAudioProcessor::setStateInformation (const void* data, int sizeInByt
         }
         
         for (int i = 1; i <= 16; ++i) channelToStringMap.set(i, -1);
-        for (int i = 0; i < NUM_STRINGS+1; ++i)
+        for (int i = 0; i < MAX_NUM_VOICES+1; ++i)
         {
             stringChannels[i] = xml->getIntAttribute("String" + String(i) + "Ch", i+1);
             channelToStringMap.set(stringChannels[i], i);

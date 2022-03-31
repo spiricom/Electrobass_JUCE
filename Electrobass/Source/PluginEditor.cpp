@@ -125,7 +125,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     numVoicesLabel.setLookAndFeel(&laf);
     otherSettingsComponent.addAndMakeVisible(numVoicesLabel);
     
-    numVoicesSlider.setRange(1., 4., 1.); //EBSPECIFIC
+    numVoicesSlider.setRange(1., (float)MAX_NUM_VOICES, 1.); //EBSPECIFIC
     numVoicesSlider.setSliderStyle(Slider::SliderStyle::LinearBarVertical);
     numVoicesSlider.setSliderSnapsToMousePosition(false);
     numVoicesSlider.setMouseDragSensitivity(200);
@@ -311,7 +311,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
         }
     }
     
-    for (int i = 0; i < NUM_STRINGS+1; ++i)
+    for (int i = 0; i < MAX_NUM_VOICES+1; ++i)
     {
         String n = "String " + String(i);
         if (i == 0) n = "Global Pitch Bend & CCs";
@@ -399,7 +399,7 @@ ElectroAudioProcessorEditor::~ElectroAudioProcessorEditor()
         macroControlEntries[i]->setLookAndFeel(nullptr);
     }
     
-    for (int i = 0; i < NUM_STRINGS+1; ++i)
+    for (int i = 0; i < MAX_NUM_VOICES+1; ++i)
     {
         stringChannelLabels[i]->setLookAndFeel(nullptr);
         stringChannelEntries[i]->setLookAndFeel(nullptr);
@@ -582,7 +582,7 @@ void ElectroAudioProcessorEditor::resized()
     stringChannelLabels[0]->setBounds(x, y, 300, h);
     stringChannelEntries[0]->setBounds(stringChannelLabels[0]->getRight(),
                                        stringChannelLabels[0]->getY(), 100, h);
-    for (int i = 1; i < NUM_STRINGS+1; ++i)
+    for (int i = 1; i < MAX_NUM_VOICES+1; ++i)
     {
         stringChannelLabels[i]->setBounds(x + 300*((i-1)/4),
                                           y+(h+pad)+(h+pad)*((i-1)%4), 150, h);
@@ -714,7 +714,7 @@ bool ElectroAudioProcessorEditor::keyPressed (const KeyPress &key, Component *or
 
 void ElectroAudioProcessorEditor::timerCallback()
 {
-    for (int i = 0; i < NUM_STRINGS+1; ++i)
+    for (int i = 0; i < MAX_NUM_VOICES+1; ++i)
     {
         stringActivityButtons[i]->setToggleState(processor.stringIsActive(i),
                                                  dontSendNotification);
@@ -725,7 +725,7 @@ void ElectroAudioProcessorEditor::timerCallback()
 void ElectroAudioProcessorEditor::update()
 {
     updateMPEToggle(processor.getMPEMode());
-    for (int i = 0; i < NUM_STRINGS+1; ++i)
+    for (int i = 0; i < MAX_NUM_VOICES+1; ++i)
     {
         updateStringChannel(i, processor.stringChannels[i]);
     }
@@ -766,7 +766,7 @@ void ElectroAudioProcessorEditor::updateStringChannel(int string, int ch)
 {
     ch = jlimit(0, 16, ch);
     // Handle mapping that will be overwritten
-    for (int i = 0; i < NUM_STRINGS+1; ++i)
+    for (int i = 0; i < MAX_NUM_VOICES+1; ++i)
     {
         if (processor.stringChannels[i] == ch)
         {
@@ -828,12 +828,14 @@ void ElectroAudioProcessorEditor::updateMidiKeyRangeSlider(int min, int max)
 
 void ElectroAudioProcessorEditor::updateNumVoicesSlider(int numVoices)
 {
-    processor.numVoicesActive = numVoices;
+    //processor.numVoicesActive = numVoices;
+    processor.setNumVoicesActive(numVoices);
     numVoicesSlider.setValue(numVoices, dontSendNotification);
-    for (int i = 0; i < NUM_STRINGS; ++i)
+    for (int i = 0; i < MAX_NUM_VOICES; ++i)
     {
         stringActivityButtons[i+1]->setAlpha(i+1 > processor.numVoicesActive ? 0.5f : 1.f);
     }
+    
 }
 
 void ElectroAudioProcessorEditor::updateRandomValueLabel(float value)

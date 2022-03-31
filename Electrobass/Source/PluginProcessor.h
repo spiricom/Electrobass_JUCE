@@ -115,8 +115,8 @@ public:
     HashMap<String, Array<tWaveTableS>> waveTables;
 
     LEAF leaf;
-    float voiceNote[NUM_STRINGS];
-    float voicePrevBend[NUM_STRINGS];
+    float voiceNote[MAX_NUM_VOICES];
+    float voicePrevBend[MAX_NUM_VOICES];
     int highByteVolume;
     OwnedArray<Oscillator> oscs;
     std::unique_ptr<NoiseGenerator> noise;
@@ -166,9 +166,9 @@ public:
     String copedentName = "";
     int copedentNumber = 0;
     
-    bool voiceIsSounding[NUM_STRINGS];
+    bool voiceIsSounding[MAX_NUM_VOICES];
     
-    int numVoicesActive = NUM_STRINGS;
+    int numVoicesActive = 1;
     
     // Must be at least as large of the number of unique skews
     Array<float> invParameterSkews;
@@ -177,7 +177,7 @@ public:
     
     HashMap<String, int> sourceMappingCounts;
     
-    tSimplePoly strings[NUM_STRINGS];
+    tSimplePoly strings[MAX_NUM_VOICES];
     
     bool pedalControlsMaster = false;
     
@@ -186,7 +186,7 @@ public:
     HashMap<int, int> ccNumberToMacroMap;
     
     // +1 because 0 no string/global pitch bend
-    int stringChannels[NUM_STRINGS+1];
+    int stringChannels[MAX_NUM_VOICES+1];
     HashMap<int, int> channelToStringMap;
     
     float centsDeviation[12];
@@ -233,9 +233,9 @@ private:
     bool waitingToSendCopedent = false;
     bool waitingToSendPreset = false;
     
-    bool mpeMode = true;
+    bool mpeMode = false;
     
-    int stringActivity[NUM_STRINGS+1];
+    int stringActivity[MAX_NUM_VOICES+1];
     int stringActivityTimeout;
     
     std::array<std::atomic<float>, 128> m_peakLevels;
