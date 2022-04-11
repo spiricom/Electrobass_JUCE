@@ -103,6 +103,12 @@ private:
     Label transposeLabel;
     Slider transposeSlider;
     
+    Slider rangeUpSlider;
+    Slider rangeDownSlider;
+    
+    
+    Label rangeDownLabel;
+    Label rangeUpLabel;
     Component tab3;
     TuningTab tuningTab;
     Component tab2;

@@ -181,6 +181,40 @@ chooser("Select a .wav file to load...", {}, "*.wav")
         }
     }
     
+    rangeUpSlider.setSliderStyle(Slider::SliderStyle::LinearBar);
+    rangeUpSlider.setInterceptsMouseClicks(true, true);
+    rangeUpSlider.setLookAndFeel(&laf);
+    rangeUpSlider.setColour(Slider::trackColourId, Colours::lightgrey);
+    rangeUpSlider.setColour(Slider::backgroundColourId, Colours::black);
+    rangeUpSlider.setColour(Slider::textBoxOutlineColourId, Colours::grey);
+    //pitchBendSliders[i]->setTextValueSuffix("m2");
+    rangeUpSlider.addListener(this);
+    tab1.addAndMakeVisible(rangeUpSlider);
+    
+    rangeDownSlider.setSliderStyle(Slider::SliderStyle::LinearBar);
+    rangeDownSlider.setInterceptsMouseClicks(true, true);
+    rangeDownSlider.setLookAndFeel(&laf);
+    rangeDownSlider.setColour(Slider::trackColourId, Colours::lightgrey);
+    rangeDownSlider.setColour(Slider::backgroundColourId, Colours::black);
+    rangeDownSlider.setColour(Slider::textBoxOutlineColourId, Colours::grey);
+    //pitchBendSliders[i]->setTextValueSuffix("m2");
+    rangeDownSlider.addListener(this);
+    tab1.addAndMakeVisible(rangeDownSlider);
+    
+    sliderAttachments.add(new SliderAttachment(vts, "PitchBendRangeUp",
+                                               rangeUpSlider));
+    sliderAttachments.add(new SliderAttachment(vts, "PitchBendRangeDown",
+                                               rangeDownSlider));
+    rangeUpLabel.setText("RANGE UP", dontSendNotification);
+    rangeUpLabel.setLookAndFeel(&laf);
+    rangeUpLabel.setJustificationType(Justification::centredRight);
+    tab1.addAndMakeVisible(rangeUpLabel);
+    rangeDownLabel.setText("RANGE DOWN", dontSendNotification);
+    rangeDownLabel.setLookAndFeel(&laf);
+    rangeDownLabel.setJustificationType(Justification::centredRight);
+    tab1.addAndMakeVisible(rangeDownLabel);
+    
+    
 //    mpeToggle.setButtonText("MPE");
 //    mpeToggle.addListener(this);
 //    tab1.addAndMakeVisible(mpeToggle);
@@ -421,7 +455,8 @@ ElectroAudioProcessorEditor::~ElectroAudioProcessorEditor()
     numVoicesSlider.setLookAndFeel(nullptr);
     transposeLabel.setLookAndFeel(nullptr);
     transposeSlider.setLookAndFeel(nullptr);
-    
+    rangeUpSlider.setLookAndFeel(nullptr);
+    rangeDownSlider.setLookAndFeel(nullptr);
     sliderAttachments.clear();
     buttonAttachments.clear();
 }
@@ -525,11 +560,15 @@ void ElectroAudioProcessorEditor::resized()
     int w = (10*align) / 12;
     y = height-35*s+2;//
     //mpeToggle.setBounds(6*s, y, x-w-5*s, 35*s); //EBSPECIFIC
-    pitchBendSliders[0]->setBounds(0, midiKeyComponent.getBottom()-1, x, 27*s);
+    //pitchBendSliders[0]->setBounds(0, midiKeyComponent.getBottom()-1, x, 27*s);
     stringActivityButtons[0]->setBounds(0, y, w, 35*s);
     pitchBendSliders[0]->setBounds(0,
                                    midiKeyComponent.getBottom()-1,
                                    w + (r > 0 ? 1 : 0), 27*s); //EBSPECIFIC
+    rangeUpSlider.setBounds(pitchBendSliders[0]->getRight(), stringActivityButtons[0]->getY() -17*s ,w + (r > 0 ? 1 : 0), 17*s);
+    rangeDownSlider.setBounds(rangeUpSlider.getRight(), stringActivityButtons[0]->getY() - 17*s,w + (r > 0 ? 1 : 0), 17*s);
+    rangeUpLabel.setBounds(pitchBendSliders[0]->getRight(), midiKeyComponent.getBottom()-1,w + (r > 0 ? 1 : 0), 12*s);
+    rangeDownLabel.setBounds(rangeUpLabel.getRight(), midiKeyComponent.getBottom()-1,w + (r > 0 ? 1 : 0), 12*s);
     for (int i = 1; i < NUM_CHANNELS; ++i)
     {
     
@@ -633,6 +672,21 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
     else if (slider == &numVoicesSlider)
     {
         updateNumVoicesSlider(numVoicesSlider.getValue()); //EBSPECIFIC
+    }
+    
+    if (slider == &rangeUpSlider)
+    {
+        vts.getParameter("PitchBendRangeUp")->setValue(rangeUpSlider.getValue());
+        processor.pitchBendRange->end = rangeUpSlider.getValue();
+        processor.pitchBendRange->setSkewForCentre(0.0f);
+        //pitchBendSliders[0]->setRange(- (rangeDownSlider.getValue()), rangeUpSlider.getValue());
+    }
+    if (slider == &rangeDownSlider)
+    {
+        vts.getParameter("PitchBendRangeDown")->setValue(rangeDownSlider.getValue());
+        processor.pitchBendRange->start = - rangeDownSlider.getValue();
+        processor.pitchBendRange->setSkewForCentre(0.0f);
+        //pitchBendSliders[0]->setRange(- (rangeDownSlider.getValue()), rangeUpSlider.getValue());
     }
 }
 

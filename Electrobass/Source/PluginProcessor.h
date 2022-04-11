@@ -127,6 +127,8 @@ public:
     
     std::unique_ptr<SmoothedParameter> transposeParam;
     OwnedArray<SmoothedParameter> pitchBendParams;
+    std::unique_ptr<SmoothedParameter> pitchBendRangeUp;
+    std::unique_ptr<SmoothedParameter> pitchBendRangeDown;
     OwnedArray<SmoothedParameter> ccParams;
     OwnedArray<MappingSourceModel> ccSources;
     std::unique_ptr<SmoothedParameter> seriesParallelParam;
@@ -215,7 +217,30 @@ public:
     
     void setPeakLevel(int channelIndex, float peakLevel);
     float getPeakLevel(int channelIndex);
-
+    
+    std::unique_ptr<NormalisableRange<float>> pitchBendRange;
+    float convertFrom0to1Func(float value0To1)
+    {
+        if (pitchBendRangeDown  && pitchBendRangeDown )
+        {
+            
+            float range  = (pitchBendRangeUp->getRawValue() + pitchBendRangeDown->getRawValue());
+            float a = (range)*(value0To1);
+            float val = (( a / 1)) - pitchBendRangeDown->getRawValue();
+            return val;
+        }
+        else return 0;
+    }
+    float convertTo0To1Func(float worldValue)
+    {
+        if (pitchBendRangeDown && pitchBendRangeDown )
+        {
+            float a = worldValue + pitchBendRangeDown->getRawValue();
+            float val = a / (pitchBendRangeUp->getRawValue() + pitchBendRangeDown->getRawValue());
+            return val;
+        }
+        else return 0;
+    }
 private:
 
     std::mutex m;

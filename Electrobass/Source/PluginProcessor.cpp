@@ -50,7 +50,7 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
 
 	auto string3FromValueFunction = [](float v, int length)
 	{
-		String asText(v, 3);
+		String asText(v, 2);
         asText = (v >= 0 ? "+" : "") + asText;
 		return length > 0 ? asText.substring(0, length) : asText;
 	};
@@ -63,19 +63,46 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
         (n, n, normRange, 0., String(), AudioProcessorParameter::genericParameter,
             string2FromValueFunction));
 	paramIds.add(n);
+    pitchBendRange = std::make_unique<NormalisableRange<float>>(-2.f, 2.f);
+    //pitchBendRange->setSkewForCentre(.0);
+    invParameterSkews.addIfNotAlreadyThere(1.f/pitchBendRange->skew);
 
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
         n = "PitchBend" + String(i);
-        normRange = NormalisableRange<float>(-24., 24.);
-        normRange.setSkewForCentre(.0);
-        invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
+        NormalisableRange<float> myParamRange = NormalisableRange<float>
+    (
+        -24.f, 24.f, // ignored in functions below
+        [this]( float start, float end, float value0To1 ) // convertFrom0To1Func
+        {
+            return pitchBendRange->convertFrom0to1(value0To1); //this->convertFrom0to1Func(value0To1);
+        },
+        [this]( float start, float end, float worldValue ) // convertTo0To1Func
+        {
+            return pitchBendRange->convertTo0to1(worldValue);
+        },
+        [this]( float start, float end, float valueToSnap ) // snapToLegalValueFunc
+         {
+             return pitchBendRange->snapToLegalValue(valueToSnap);
+         }
+
+    );
+        myParamRange.setSkewForCentre(0.0);
         layout.add (std::make_unique<AudioParameterFloat>
-                    (n, n, normRange, 0., String(), AudioProcessorParameter::genericParameter,
+                    (n, n, myParamRange, 0., String(), AudioProcessorParameter::genericParameter,
                      string3FromValueFunction));
         paramIds.add(n);
     }
-    
+    n = "PitchBendRangeUp";
+    normRange = NormalisableRange<float>(0., 24., 1.);
+    layout.add (std::make_unique<AudioParameterFloat>
+                (n, n, normRange, 2., String(), AudioProcessorParameter::genericParameter));
+    paramIds.add(n);
+    n = "PitchBendRangeDown";
+    normRange = NormalisableRange<float>(0., 24., 1.);
+    layout.add (std::make_unique<AudioParameterFloat>
+                (n, n, normRange, 2., String(), AudioProcessorParameter::genericParameter));
+    paramIds.add(n);
     //==============================================================================
     n = "Noise";
     layout.add (std::make_unique<AudioParameterChoice> (n, n, StringArray("Off", "On"), 1));
@@ -277,6 +304,7 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
     return layout;
 }
 
+
 //==============================================================================
 //==============================================================================
 ElectroAudioProcessor::ElectroAudioProcessor()
@@ -410,6 +438,10 @@ chooser(nullptr)
     {
         pitchBendParams.add(new SmoothedParameter(*this, vts, "PitchBend" + String(i)));
     }
+    
+    pitchBendRangeUp = std::make_unique<SmoothedParameter>(*this, vts, "PitchBendRangeUp");
+    pitchBendRangeDown = std::make_unique<SmoothedParameter>(*this, vts, "PitchBendRangeDown");
+
     
     for (int i = 1; i <= 16; ++i) channelToStringMap.set(i, -1);
     for (int i = 0; i < MAX_NUM_VOICES+1; ++i)
