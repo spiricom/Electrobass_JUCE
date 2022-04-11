@@ -264,7 +264,7 @@ typedef enum _DistortionType
 {
     distortion1 = 0,
     dist2,
-    DistortionTypeNil
+    distnil
 } DistortionType;
 static const StringArray distortionNames = {
     "dist1",
