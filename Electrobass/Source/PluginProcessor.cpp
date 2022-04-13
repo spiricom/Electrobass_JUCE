@@ -851,8 +851,12 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
             {
                   tempNote += voicePrevBend[v];
             }
-            float tempPitchClass = ((((int)tempNote) - 0) % 12 );
-            float tunedNote = tempNote + centsDeviation[(int)tempPitchClass];
+            int tempNoteIntPart = (int)tempNote;
+            float tempNoteFloatPart = tempNote - (float)tempNoteIntPart;
+            int tempPitchClassIntPart =tempNoteIntPart % 12;
+            float dev1 = (centsDeviation[tempPitchClassIntPart] * (1.0 - tempNoteFloatPart));
+            float dev2 =  (centsDeviation[(tempPitchClassIntPart+1)%12] * tempNoteFloatPart);
+            float tunedNote = tempNote + ( dev1  + dev2);
             voiceNote[v] = tunedNote;
             //voiceNote[v] = tempNote;
             //DBG("Tuned note" + String(tunedNote));
