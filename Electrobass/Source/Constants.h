@@ -12,14 +12,15 @@
 
 #include <JuceHeader.h>
 #include <float.h>
-
+#define EDITOR_WIDTH 900.0f
+#define EDITOR_HEIGHT 700.0f
 #define NUM_GENERIC_MACROS 16
 #define NUM_UNIQUE_MACROS 5
 #define NUM_MACROS (NUM_GENERIC_MACROS + NUM_UNIQUE_MACROS)
 #define PEDAL_MACRO_ID (NUM_MACROS-1)
 
-#define NUM_STRINGS 4
-#define MAX_NUM_VOICES 4
+#define NUM_STRINGS 8
+#define MAX_NUM_VOICES 8
 #define NUM_CHANNELS (MAX_NUM_VOICES+1)
 
 #define NUM_OSCS 3
@@ -27,7 +28,8 @@
 #define NUM_FILT 2
 #define NUM_ENVS 4
 #define NUM_LFOS 4
-
+#define NUM_FX 4
+#define OVERSAMPLE 8
 #define EXP_BUFFER_SIZE 2048
 #define DECAY_EXP_BUFFER_SIZE 2048
 
@@ -319,3 +321,63 @@ static const std::vector<std::vector<float>> cCopedentArrayInit = {
     { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f },
     { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f },
 };
+
+
+
+typedef enum _FXParam
+{
+    Param1 = 0,
+    Param2,
+    Param3,
+    Param4,
+    Param5,
+    Mix,
+    ParamNil
+} FXParam;
+static const StringArray cFXParams = {
+    "Param1",
+    "Param2",
+    "Param3",
+    "Param4",
+    "Param5",
+    "Mix"
+};
+static const std::vector<std::vector<float>> vFXInit = {
+    { 0.0f, 1.0f, 0.0f, 0.5f },   //
+    { 0.0f, 1.0f, 0.0f, 0.5f },   //
+    { 0.0f, 1.0f, 0.0f, 0.5f },   //
+    { 0.0f, 1.0f, 0.0f, 0.5f },   //
+    { 0.0f, 1.0f, 0.0f, 0.5f },   //
+    { 0.0f, 1.0f, 1.0f, 0.5f },   //mix
+    
+};
+
+typedef enum _FXType
+{
+    None = 0,
+    Softclip,
+    ABSaturator,
+    Tanh,
+    Shaper,
+    Compressor,
+    Chorus,
+    Bitcrush,
+    TiltFilter,
+    Wavefolder,
+    FXTypeNil
+} FXType;
+
+static const StringArray FXTypeNames = {
+    "None",
+    "Softclip",
+    "ABSaturator",
+    "Tanh",
+    "Shaper",
+    "Compressor",
+    "Chorus",
+    "Bitcrush",
+    "TiltFilter",
+    "Wavefolder"
+};
+
+//==============================================================================

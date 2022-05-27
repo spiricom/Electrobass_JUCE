@@ -9,14 +9,13 @@
 */
 
 #pragma once
-
+#include "Electro_backend/FXTab.h"
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
 #include "Electro_backend/ElectroModules.h"
 #include "Electro_backend/ElectroComponents.h"
+#include "Constants.h"
 
-#define EDITOR_WIDTH 900.0f
-#define EDITOR_HEIGHT 700.0f
 
 //==============================================================================
 /**
@@ -112,6 +111,8 @@ private:
     Component tab3;
     TuningTab tuningTab;
     Component tab2;
+    Component tab4;
+    FXTab fxTab;
     /* ToggleButton mpeToggle */// Declared above but will be include in this tab too
     OwnedArray<Label> macroControlEntries;
     OwnedArray<Label> macroControlNames;

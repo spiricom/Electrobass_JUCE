@@ -9,8 +9,10 @@
   <MAINGROUP id="zr98AB" name="Electrobass">
     <GROUP id="{B8EA8B88-4125-0A91-2EA2-1CD3B3374012}" name="Source">
       <GROUP id="{D0B7E845-9BE2-75A7-1934-4DD44C496485}" name="Electro_backend">
-        <FILE id="oTrwms" name="Distortion.cpp" compile="1" resource="0" file="Source/Electro_backend/Distortion.cpp"/>
-        <FILE id="SGYdzN" name="Distortion.h" compile="0" resource="0" file="Source/Electro_backend/Distortion.h"/>
+        <FILE id="cQhSnf" name="Effect.cpp" compile="1" resource="0" file="Source/Electro_backend/Effect.cpp"/>
+        <FILE id="CVc1bO" name="Effect.h" compile="0" resource="0" file="Source/Electro_backend/Effect.h"/>
+        <FILE id="LCBvUN" name="FXTab.cpp" compile="1" resource="0" file="Source/Electro_backend/FXTab.cpp"/>
+        <FILE id="jQvQGy" name="FXTab.h" compile="0" resource="0" file="Source/Electro_backend/FXTab.h"/>
         <FILE id="zVZ6rM" name="libMTSClient.h" compile="0" resource="0" file="Source/Electro_backend/MTS-ESP/Client/libMTSClient.h"/>
         <FILE id="oaWeiY" name="libMTSClient.cpp" compile="1" resource="0"
               file="Source/Electro_backend/MTS-ESP/Client/libMTSClient.cpp"/>

@@ -21,6 +21,7 @@ tabs(TabbedButtonBar::Orientation::TabsAtTop),
 keyboard(p.keyboardState, MidiKeyboardComponent::Orientation::horizontalKeyboard),
 envsAndLFOs(TabbedButtonBar::TabsAtTop),
 tuningTab(processor, vts),
+fxTab(*this, processor,vts),
 constrain(new ComponentBoundsConstrainer()),
 resizer(new ResizableCornerComponent (this, constrain.get())),
 chooser("Select a .wav file to load...", {}, "*.wav")
@@ -373,12 +374,23 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     
     //==============================================================================
     
+    //==============================================================================
+    // TAB4 ========================================================================
+    addAndMakeVisible(tab4);
+    
+    tab4.addAndMakeVisible(fxTab);
+    
+    //==============================================================================
+    
     tabs.addTab("Synth", Colours::black, &tab1, false);
     tabs.addTab("Control", Colours::black, &tab2, false);
     tabs.addTab("Tuning", Colours::black, &tab3, false);
+    tabs.addTab("FX", Colours::black, &tab4, false);
+    
     tabs.getTabbedButtonBar().getTabButton(0)->addListener(this);
     tabs.getTabbedButtonBar().getTabButton(1)->addListener(this);
     tabs.getTabbedButtonBar().getTabButton(2)->addListener(this);
+    tabs.getTabbedButtonBar().getTabButton(3)->addListener(this);
     addAndMakeVisible(&tabs);
     
     setSize(EDITOR_WIDTH * processor.editorScale, EDITOR_HEIGHT * processor.editorScale);
@@ -658,6 +670,13 @@ void ElectroAudioProcessorEditor::resized()
     resizer->setBounds(getWidth()-12, getHeight()-12, 12, 12);
     
     //    container.setBounds(getLocalBounds());
+    
+    //==============================================================================
+    // TAB3 ========================================================================
+    
+    fxTab.setBoundsRelative(0.05f, 0.08f, 1.0f, 1.0f);
+    
+    //==============================================================================
 }
 
 void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
@@ -794,6 +813,10 @@ void ElectroAudioProcessorEditor::update()
     updateMidiKeyRangeSlider(processor.midiKeyMin, processor.midiKeyMax);
     updateNumVoicesSlider(processor.numVoicesActive);
     updateRandomValueLabel(processor.lastRandomValue);
+    for(auto osc : oscModules)
+    {
+        osc->updateShapeCB();
+    }
 }
 
 

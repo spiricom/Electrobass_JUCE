@@ -18,6 +18,7 @@
 #include "Electro_backend/Envelopes.h"
 #include "Electro_backend/Output.h"
 #include "Electro_backend/TuningControl.hpp"
+#include "Electro_backend/Effect.h"
 class StandalonePluginHolder;
 
 //==============================================================================
@@ -124,7 +125,7 @@ public:
     OwnedArray<Envelope> envs;
     OwnedArray<LowFreqOscillator> lfos;
     std::unique_ptr<Output> output;
-    
+    OwnedArray<Effect> fx;
     std::unique_ptr<SmoothedParameter> transposeParam;
     OwnedArray<SmoothedParameter> pitchBendParams;
     std::unique_ptr<SmoothedParameter> pitchBendRangeUp;
@@ -262,6 +263,10 @@ private:
     
     int stringActivity[MAX_NUM_VOICES+1];
     int stringActivityTimeout;
+    
+
+    tOversampler os;
+    float oversamplerArray[OVERSAMPLE];
     
     std::array<std::atomic<float>, 128> m_peakLevels;
     

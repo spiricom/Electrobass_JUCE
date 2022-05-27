@@ -175,6 +175,33 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
     }
     
     //==============================================================================
+    for (int i = 0; i < NUM_FX; ++i)
+    {
+        //n = "FX" + String(i+1);
+        //layout.add (std::make_unique<AudioParameterChoice> (n, n, StringArray("Off", "On"), 1));
+        //paramIds.add(n);
+        
+        n = "Effect" + String(i+1) + " FXType";
+        layout.add (std::make_unique<AudioParameterChoice> (n, n, FXTypeNames, 0));
+        paramIds.add(n);
+        
+        for (int j = 0; j < cFXParams.size(); ++j)
+        {
+            float min = vFXInit[j][0];
+            float max = vFXInit[j][1];
+            float def = vFXInit[j][2];
+            float center = vFXInit[j][3];
+            
+            n = "Effect" + String(i+1) + " " + cFXParams[j];
+            
+            normRange = NormalisableRange<float>(min, max);
+            normRange.setSkewForCentre(center);
+            invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
+            layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, def));
+            paramIds.add(n);
+        }
+    }
+    //==============================================================================
     
     for (int i = 0; i < NUM_FILT; ++i)
     {
@@ -319,8 +346,8 @@ ElectroAudioProcessor::ElectroAudioProcessor()
                   )
 #endif
 ,
-vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout()),
-chooser(nullptr)
+chooser(nullptr),
+vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
 
 {
     formatManager.registerBasicFormats();   
@@ -363,6 +390,13 @@ chooser(nullptr)
         filt.add(new Filter("Filter" + String(i+1), *this, vts));
     }
     
+    
+    tOversampler_init(&os, OVERSAMPLE, 1, &leaf);
+    
+    for (int i = 0; i < NUM_FX; i++)
+    {
+        fx.add(new Effect("Effect" + String(i+1), *this, vts));
+    }
     seriesParallelParam = std::make_unique<SmoothedParameter>(*this, vts, "Filter Series-Parallel Mix");
     
     macroCCNumbers[PEDAL_MACRO_ID+1] = NUM_MACROS+1;
@@ -477,7 +511,7 @@ chooser(nullptr)
 	Mapping defaultOutputAmp;
 	defaultOutputAmp.sourceName = "Envelope1";
 	defaultOutputAmp.targetName = "Output Amp T3";
-	defaultOutputAmp.value = 1.f;
+	defaultOutputAmp.value = 2.f;
 
 	initialMappings.add(defaultFilter1Cutoff);
 	initialMappings.add(defaultOutputAmp);
@@ -541,6 +575,7 @@ void ElectroAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBloc
     {
         env->prepareToPlay(sampleRate, samplesPerBlock);
     }
+    envs[0]->isAmpEnv=true;
     for (auto lfo : lfos)
     {
         lfo->prepareToPlay(sampleRate, samplesPerBlock);
@@ -552,6 +587,10 @@ void ElectroAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBloc
     for (auto f : filt)
     {
         f->prepareToPlay(sampleRate, samplesPerBlock);
+    }
+    for (auto effect : fx)
+    {
+        effect->prepareToPlay(sampleRate, samplesPerBlock);
     }
     output->prepareToPlay(sampleRate, samplesPerBlock);
     
@@ -786,7 +825,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         }
         resolvedCopedent.add(minBelowZero + maxAboveZero);
     }
-    
+    //Optimize this away
     for (int i = 0; i < envs.size(); ++i)
     {
         envs[i]->frame();
@@ -804,7 +843,13 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
     {
         filt[i]->frame();
     }
+    for (int i = 0; i < fx.size(); ++i)
+    {
+        fx[i]->frame();
+    }
     output->frame();
+    
+  
     
     int mpe = mpeMode ? 1 : 0;
     int impe = 1-mpe;
@@ -863,13 +908,14 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
             samples[0][v] = 0.f;
             samples[1][v] = 0.f;
         }
-        
+        //per voice inside the tick
         for (int i = 0; i < oscs.size(); ++i)
         {
             oscs[i]->tick(samples);
         }
+        //per voice inside
         noise->tick(samples);
-
+        //per voice inside
         filt[0]->tick(samples[0]);
         
         for (int v = 0; v < numVoicesActive; ++v)
@@ -884,11 +930,28 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
             samples[1][v] += samples[0][v]*parallel;
         }
         
-        output->tick(samples[1], outputSamples, totalNumOutputChannels);
-    
+        output->tick(samples[1]);
+        float sampleOutput  = 0.0f;
+        
+        for (int v = 0; v < numVoicesActive; ++v)
+        {
+            tOversampler_upsample(&os, samples[1][v], oversamplerArray);
+            for (int i = 0; i < fx.size(); i++) {
+                fx[i]->oversample_tick(oversamplerArray, v);
+            }
+            sampleOutput += tOversampler_downsample(&os, oversamplerArray);
+        }
+            
+       
+        
+        float m = output->master->tickNoHooksNoSmoothing();
+        
+        
+        outputSamples[0] = sampleOutput * m;
+        
         for (int channel = 0; channel < totalNumOutputChannels; ++channel)
         {
-            buffer.setSample(channel, s, outputSamples[channel]);
+            buffer.setSample(channel, s, LEAF_clip(-1.0f, outputSamples[0], 1.0f));
         }
     }
     for (int channel = 0; channel < totalNumOutputChannels; ++channel)
@@ -981,11 +1044,24 @@ void ElectroAudioProcessor::noteOff(int channel, int key, float velocity)
     
     int v = tSimplePoly_markPendingNoteOff(&strings[i], key);
     
-    if (!mpeMode) i = v;
+    if (!mpeMode) i = 0;
+    else i = v;
+    
+    
+    //If stack_IsNOTEmpty
+    if ((v != -1) && (tStack_getSize(&strings[i]->stack) >= numVoicesActive)) {
+        if (strings[0]->voices[v][0] == -2)
+        {
+            
+                tSimplePoly_deactivateVoice(&strings[0], v);
+                voiceIsSounding[v] = true;
+        }
+        return;
+    }
     
     if (v >= 0)
     {
-        for (auto e : envs) e->noteOff(i, velocity);
+        for (auto e : envs) e->noteOff(v, velocity);
     }
 }
 
@@ -1392,66 +1468,18 @@ void ElectroAudioProcessor::setStateInformation (const void* data, int sizeInByt
                 DBG("Pre osc set state: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
                 oscs[i]->setWaveTables(wav);
                 DBG("Post osc set state: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
-            } else if (wavFolder.isEmpty())
+            } else
             {
-                
-                if (chooser != nullptr)
-                    delete chooser;
-                chooser = new FileChooser("Could not find wav table, please select one ",
-                                          getLastFile());
-                chooser->launchAsync(FileBrowserComponent::canSelectDirectories,
-                                     [this](const FileChooser& fc)
-                                     {
-                    setLastFile(fc);
-                    File f = fc.getResult();
-                    wavFolder = f.getFullPathName();
-                    
-//                    std::unique_lock<std::mutex> lock(m);
-//                    fc_done = true;
-//                    fc_wait.notify_one();
-                }
-                                     );
-//                std::unique_lock<std::mutex> lock(m);
-//                fc_wait.wait(lock, [&]{return fc_done == true;});
-//                fc_done = false;
-               
-                
-            } else if (!wavFolder.isEmpty())
-            {
-                File newWav(wavFolder + "/" + wav.getFileName());
-                if (newWav.exists())
+                DBG(wav.getFileName());
+                File f = File::getSpecialLocation(File::globalApplicationsDirectory).getFullPathName() + "/Electrobass/" + wav.getFileName();
+                DBG(f.getFullPathName());
+                if (f.exists())
                 {
-                    DBG("Pre osc set state: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
-                    oscs[i]->setWaveTables(File(wavFolder + "/" + wav.getFileName()));
-                    DBG("Post osc set state: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
-                } else
-                {
-                    chooser = new FileChooser("Could not find wav table, please select one ",
-                                          getLastFile());
-                    chooser->launchAsync(FileBrowserComponent::canSelectDirectories,
-                                         [this](const FileChooser& fc)
-                                         {
-                        setLastFile(fc);
-                        File f = fc.getResult();
-                        wavFolder = f.getFullPathName();
-//                        std::unique_lock<std::mutex> lock(m);
-//                        fc_done = true;
-//                        fc_wait.notify_one();
-                    });
-//                    std::unique_lock<std::mutex> lock(m);
-//                    fc_wait.wait(lock, [&]{return fc_done == true;});
-//                    fc_done = false;
-                    File f = File(wavFolder + "/" + wav.getFileName());
-                    if (!wavFolder.isEmpty() && f.exists())
-                    {
-                        DBG("Pre osc set state: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
-                        oscs[i]->setWaveTables(File(f));
-                        DBG("Post osc set state: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
-                    }
+                    DBG("fileesxist");
+                    oscs[i]->setWaveTables(f);
                 }
             }
         }
-        
         // Audio processor value tree state
         if (XmlElement* state = xml->getChildByName(vts.state.getType()))
             vts.replaceState (juce::ValueTree::fromXml (*state));
