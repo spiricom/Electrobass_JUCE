@@ -471,6 +471,7 @@ ElectroAudioProcessorEditor::~ElectroAudioProcessorEditor()
     rangeDownSlider.setLookAndFeel(nullptr);
     sliderAttachments.clear();
     buttonAttachments.clear();
+    fxTab.setLookAndFeel(nullptr);
 }
 
 //==============================================================================

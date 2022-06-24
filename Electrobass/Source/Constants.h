@@ -37,7 +37,7 @@
 
 #define INV_127 0.007874015748031f
 #define INV_4095 0.0002442002442f
-#define INV_16383 0.000061038881768f;
+#define INV_16383 0.000061038881768f
 
 const float volumeAmps128[128] =
 {
@@ -348,8 +348,7 @@ static const std::vector<std::vector<float>> vFXInit = {
     { 0.0f, 1.0f, 0.0f, 0.5f },   //
     { 0.0f, 1.0f, 0.0f, 0.5f },   //
     { 0.0f, 1.0f, 0.0f, 0.5f },   //
-    { 0.0f, 1.0f, 1.0f, 0.5f },   //mix
-    
+    { 0.0f, 1.0f, 1.0f, 0.5f },   // mix
 };
 
 typedef enum _FXType
@@ -378,6 +377,32 @@ static const StringArray FXTypeNames = {
     "Bitcrush",
     "TiltFilter",
     "Wavefolder"
+};
+
+static const std::vector<StringArray> FXParamNames = {
+    {"None","None","None","None","None" },
+    {"Drive","Offset","","","" },
+    {"Drive","Offset","","",""},
+    {"Drive","Offset","","",""},
+    {"Gain","Offset","Drive","",""},
+    {"Threshold","Ratio","Makeup","Attack","Release"},
+    {"Delay","Depth","Speed1","Speed2",""},
+    {"Gain","Quality","Sampling Ratio","Round","Operation"},
+    {"Tilt","Freq","Q","Gain",""},
+    {"Drive","Offset","","",""}
+};
+
+static const std::vector<std::vector<float>> FXParamDefaults = {
+    {0.0, 0.0, 0.0, 0.0, 0.0},
+    {0.1, 0.1, 0.0, 0.0, 0.0},
+    {0.2, 0.0, 0.0, 0.0, 0.0},
+    {0.3, 0.0, 0.0, 0.0, 0.0},
+    {0.4, 0.0, 0.0, 0.0, 0.0},
+    {0.0, 0.0, 0.2, 0.0, 0.0},
+    {1.0, 0.1, 0.0, 0.1, 0.1},
+    {0.5, 0.3, 0.6, 0.5, 0.0},
+    {0.5, 1.0, 0.5, 1.0, 0.0},
+    {0.5, 0.5, 0.5, 0.5, 0.0}
 };
 
 //==============================================================================
