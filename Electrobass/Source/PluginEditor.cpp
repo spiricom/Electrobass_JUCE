@@ -118,13 +118,12 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     randomComponent.addAndMakeVisible(randomValueLabel);
     
     // Transpose, Poly
-    otherSettingsComponent.setOutlineColour(Colours::darkgrey);
-    tab1.addAndMakeVisible(otherSettingsComponent);
+   
     
     numVoicesLabel.setText("Voices", dontSendNotification);
     numVoicesLabel.setJustificationType(Justification::centred);
     numVoicesLabel.setLookAndFeel(&laf);
-    otherSettingsComponent.addAndMakeVisible(numVoicesLabel);
+    tab1.addAndMakeVisible(numVoicesLabel);
     
     numVoicesSlider.setRange(1., (float)MAX_NUM_VOICES, 1.); //EBSPECIFIC
     numVoicesSlider.setSliderStyle(Slider::SliderStyle::LinearBarVertical);
@@ -136,12 +135,12 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     numVoicesSlider.setColour(Slider::textBoxOutlineColourId, Colours::transparentBlack);
     numVoicesSlider.setColour(Slider::textBoxTextColourId, Colours::gold.withBrightness(0.95f));
     numVoicesSlider.addListener(this); //EBSPECIFIC removes ability to change
-    otherSettingsComponent.addAndMakeVisible(numVoicesSlider);
+    tab1.addAndMakeVisible(numVoicesSlider);
     
     transposeLabel.setText("Transpose", dontSendNotification);
     transposeLabel.setJustificationType(Justification::centred);
     transposeLabel.setLookAndFeel(&laf);
-    otherSettingsComponent.addAndMakeVisible(transposeLabel);
+    tab1.addAndMakeVisible(transposeLabel);
     
     transposeSlider.setSliderStyle(Slider::SliderStyle::LinearBarVertical);
     transposeSlider.setSliderSnapsToMousePosition(false);
@@ -151,7 +150,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     transposeSlider.setColour(Slider::textBoxOutlineColourId, Colours::transparentBlack);
     transposeSlider.setColour(Slider::textBoxTextColourId, Colours::gold.withBrightness(0.95f));
     sliderAttachments.add(new SliderAttachment(vts, "Transpose", transposeSlider));
-    otherSettingsComponent.addAndMakeVisible(transposeSlider);
+    tab1.addAndMakeVisible(transposeSlider);
     
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
@@ -182,38 +181,25 @@ chooser("Select a .wav file to load...", {}, "*.wav")
         }
     }
     
-    rangeUpSlider.setSliderStyle(Slider::SliderStyle::LinearBar);
-    rangeUpSlider.setInterceptsMouseClicks(true, true);
-    rangeUpSlider.setLookAndFeel(&laf);
-    rangeUpSlider.setColour(Slider::trackColourId, Colours::lightgrey);
-    rangeUpSlider.setColour(Slider::backgroundColourId, Colours::black);
-    rangeUpSlider.setColour(Slider::textBoxOutlineColourId, Colours::grey);
+    rangeSlider.setSliderStyle(Slider::SliderStyle::LinearBar);
+    rangeSlider.setInterceptsMouseClicks(true, true);
+    rangeSlider.setLookAndFeel(&laf);
+    rangeSlider.setColour(Slider::trackColourId, Colours::lightgrey);
+    rangeSlider.setColour(Slider::backgroundColourId, Colours::black);
+    rangeSlider.setColour(Slider::textBoxOutlineColourId, Colours::grey);
     //pitchBendSliders[i]->setTextValueSuffix("m2");
-    rangeUpSlider.addListener(this);
-    tab1.addAndMakeVisible(rangeUpSlider);
-    
-    rangeDownSlider.setSliderStyle(Slider::SliderStyle::LinearBar);
-    rangeDownSlider.setInterceptsMouseClicks(true, true);
-    rangeDownSlider.setLookAndFeel(&laf);
-    rangeDownSlider.setColour(Slider::trackColourId, Colours::lightgrey);
-    rangeDownSlider.setColour(Slider::backgroundColourId, Colours::black);
-    rangeDownSlider.setColour(Slider::textBoxOutlineColourId, Colours::grey);
-    //pitchBendSliders[i]->setTextValueSuffix("m2");
-    rangeDownSlider.addListener(this);
-    tab1.addAndMakeVisible(rangeDownSlider);
+    rangeSlider.addListener(this);
+    tab1.addAndMakeVisible(rangeSlider);
     
     sliderAttachments.add(new SliderAttachment(vts, "PitchBendRangeUp",
-                                               rangeUpSlider));
+                                               rangeSlider));
     sliderAttachments.add(new SliderAttachment(vts, "PitchBendRangeDown",
-                                               rangeDownSlider));
-    rangeUpLabel.setText("RANGE UP", dontSendNotification);
-    rangeUpLabel.setLookAndFeel(&laf);
-    rangeUpLabel.setJustificationType(Justification::centredRight);
-    tab1.addAndMakeVisible(rangeUpLabel);
-    rangeDownLabel.setText("RANGE DOWN", dontSendNotification);
-    rangeDownLabel.setLookAndFeel(&laf);
-    rangeDownLabel.setJustificationType(Justification::centredRight);
-    tab1.addAndMakeVisible(rangeDownLabel);
+                                               rangeSlider));
+    rangeLabel.setText("RANGE", dontSendNotification);
+    rangeLabel.setLookAndFeel(&laf);
+    rangeLabel.setJustificationType(Justification::centredRight);
+    tab1.addAndMakeVisible(rangeLabel);
+   
     
     
 //    mpeToggle.setButtonText("MPE");
@@ -467,8 +453,7 @@ ElectroAudioProcessorEditor::~ElectroAudioProcessorEditor()
     numVoicesSlider.setLookAndFeel(nullptr);
     transposeLabel.setLookAndFeel(nullptr);
     transposeSlider.setLookAndFeel(nullptr);
-    rangeUpSlider.setLookAndFeel(nullptr);
-    rangeDownSlider.setLookAndFeel(nullptr);
+    rangeSlider.setLookAndFeel(nullptr);
     sliderAttachments.clear();
     buttonAttachments.clear();
     fxTab.setLookAndFeel(nullptr);
@@ -515,15 +500,11 @@ void ElectroAudioProcessorEditor::resized()
     envsAndLFOs.setIndent(10*s);
     envsAndLFOs.setTabBarDepth(25*s);
     
-    noiseModule->setBounds(oscModules[0]->getRight()-1, -1, 250*s, 100*s-2);
+    noiseModule->setBounds(oscModules[0]->getRight()-1, -1, 364*s, 121*s-2);
     
-    otherSettingsComponent.setBounds(noiseModule->getRight()-1, -1, 114*s, 100*s-1);
-    numVoicesLabel.setBounds(0, 0, 114*s, 22*s);
-    numVoicesSlider.setBounds(5*s, numVoicesLabel.getBottom(), 105*s, 22*s);
-    transposeLabel.setBounds(0, 50*s, 114*s, 22*s);
-    transposeSlider.setBounds(5*s, transposeLabel.getBottom(), 105*s, 22*s);
+    //ettingsComponent.setBounds(noiseModule->getRight()-1, -1, 114*s, 100*s-1);
     
-    seriesParallelComponent.setBounds(540*s-1, otherSettingsComponent.getBottom()-1, 364*s, 40*s);
+    seriesParallelComponent.setBounds(540*s-1, noiseModule->getBottom()-1, 364*s, 40*s);
     seriesLabel.setBounds(0, 0, 60*s, 22*s);
     parallelLabel.setBounds(302*s, 0, 60*s, 22*s);
     seriesParallelSlider.setBounds(0, 18*s, 363*s, 22*s);
@@ -578,10 +559,14 @@ void ElectroAudioProcessorEditor::resized()
     pitchBendSliders[0]->setBounds(0,
                                    midiKeyComponent.getBottom()-1,
                                    w + (r > 0 ? 1 : 0), 27*s); //EBSPECIFIC
-    rangeUpSlider.setBounds(pitchBendSliders[0]->getRight(), stringActivityButtons[0]->getY() -17*s ,w + (r > 0 ? 1 : 0), 17*s);
-    rangeDownSlider.setBounds(rangeUpSlider.getRight(), stringActivityButtons[0]->getY() - 17*s,w + (r > 0 ? 1 : 0), 17*s);
-    rangeUpLabel.setBounds(pitchBendSliders[0]->getRight(), midiKeyComponent.getBottom()-1,w + (r > 0 ? 1 : 0), 12*s);
-    rangeDownLabel.setBounds(rangeUpLabel.getRight(), midiKeyComponent.getBottom()-1,w + (r > 0 ? 1 : 0), 12*s);
+    rangeLabel.setBounds(pitchBendSliders[0]->getRight(), midiKeyComponent.getBottom()-1,w + (r > 0 ? 1 : 0), 12*s);
+    rangeSlider.setBounds(pitchBendSliders[0]->getRight(), stringActivityButtons[0]->getY() -17*s ,w + (r > 0 ? 1 : 0), 17*s);
+    
+    numVoicesLabel.setBounds(rangeSlider.getRight(), midiKeyComponent.getBottom()-1, w + (r > 0 ? 1 : 0), 12*s);
+    numVoicesSlider.setBounds(rangeSlider.getRight(), stringActivityButtons[0]->getY() -17*s, w + (r > 0 ? 1 : 0), 17*s);
+    transposeLabel.setBounds(numVoicesSlider.getRight(), midiKeyComponent.getBottom()-1, w + (r > 0 ? 1 : 0), 12*s);
+    transposeSlider.setBounds(numVoicesSlider.getRight(), stringActivityButtons[0]->getY() -17*s, w + (r > 0 ? 1 : 0), 17*s);
+    
     for (int i = 1; i < NUM_CHANNELS; ++i)
     {
     
@@ -694,17 +679,13 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
         updateNumVoicesSlider(numVoicesSlider.getValue()); //EBSPECIFIC
     }
     
-    if (slider == &rangeUpSlider)
+    if (slider == &rangeSlider)
     {
-        vts.getParameter("PitchBendRangeUp")->setValue(rangeUpSlider.getValue());
-        processor.pitchBendRange->end = rangeUpSlider.getValue();
+        vts.getParameter("PitchBendRangeUp")->setValue(rangeSlider.getValue());
+        processor.pitchBendRange->end = rangeSlider.getValue();
         processor.pitchBendRange->setSkewForCentre(0.0f);
-        //pitchBendSliders[0]->setRange(- (rangeDownSlider.getValue()), rangeUpSlider.getValue());
-    }
-    if (slider == &rangeDownSlider)
-    {
-        vts.getParameter("PitchBendRangeDown")->setValue(rangeDownSlider.getValue());
-        processor.pitchBendRange->start = - rangeDownSlider.getValue();
+        vts.getParameter("PitchBendRangeDown")->setValue(rangeSlider.getValue());
+        processor.pitchBendRange->start = - rangeSlider.getValue();
         processor.pitchBendRange->setSkewForCentre(0.0f);
         //pitchBendSliders[0]->setRange(- (rangeDownSlider.getValue()), rangeUpSlider.getValue());
     }

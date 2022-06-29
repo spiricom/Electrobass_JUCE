@@ -96,18 +96,18 @@ private:
     Slider seriesParallelSlider;
     Label seriesLabel;
     Label parallelLabel;
-    ElectroComponent otherSettingsComponent;
+    
     Label numVoicesLabel;
     Slider numVoicesSlider;
     Label transposeLabel;
     Slider transposeSlider;
     
-    Slider rangeUpSlider;
-    Slider rangeDownSlider;
+    Slider rangeSlider;
     
     
-    Label rangeDownLabel;
-    Label rangeUpLabel;
+    
+    
+    Label rangeLabel;
     Component tab3;
     TuningTab tuningTab;
     Component tab2;

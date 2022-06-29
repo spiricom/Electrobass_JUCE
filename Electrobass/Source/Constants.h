@@ -157,16 +157,22 @@ static const StringArray lfoShapeSetNames = {
 
 typedef enum _NoiseParam
 {
-    NoiseColor = 0,
-    NoiseAmp
+    NoiseTilt= 0,
+    NoiseAmp,
+    NoiseFreq,
+    NoiseGain
 } NoiseParam;
 static const StringArray cNoiseParams = {
-    "Color",
-    "Amp"
+    "Tilt",
+    "Amp",
+    "Freq",
+    "Gain"
 };
 static const std::vector<std::vector<float>> vNoiseInit = {
-    { 0.0f, 1.f, 0.5f, 0.5f },   //Color
-    { 0.0f, 2.0f, 0.f, 1.f }   //Amp
+    { 0.0f, 1.f, 0.5f, 0.5f },   //tilt
+    { 0.0f, 2.0f, 0.f, 1.f },   //Amp
+    { 0.0f, 1.f, 0.5f, 0.5f },   //Freq
+    { 0.0f, 1.f, 0.5f, 0.5f }   //Gain
 };
 
 //==============================================================================
