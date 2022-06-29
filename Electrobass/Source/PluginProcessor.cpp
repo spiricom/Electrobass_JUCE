@@ -458,6 +458,8 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
         sourceIds.add(n);
     }
     
+    envs[0]->setIsAmpEnv(true);
+    
     for (int i = 0; i < NUM_LFOS; ++i)
     {
         String n = "LFO" + String(i+1);
@@ -575,7 +577,7 @@ void ElectroAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBloc
     {
         env->prepareToPlay(sampleRate, samplesPerBlock);
     }
-    envs[0]->isAmpEnv=true;
+    envs[0]->setIsAmpEnv(true);
     for (auto lfo : lfos)
     {
         lfo->prepareToPlay(sampleRate, samplesPerBlock);
