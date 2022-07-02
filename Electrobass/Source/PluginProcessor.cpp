@@ -306,9 +306,7 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
         layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, def));
         paramIds.add(n);
     }
-    n = "Output DistortionType";
-    layout.add (std::make_unique<AudioParameterChoice> (n, n, distortionNames, 0));
-    paramIds.add(n);
+   
     //==============================================================================
     for (int i = 1; i < CopedentColumnNil; ++i)
     {

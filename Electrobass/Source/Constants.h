@@ -158,21 +158,21 @@ static const StringArray lfoShapeSetNames = {
 typedef enum _NoiseParam
 {
     NoiseTilt= 0,
-    NoiseAmp,
+    NoiseGain,
     NoiseFreq,
-    NoiseGain
+    NoiseAmp,
 } NoiseParam;
 static const StringArray cNoiseParams = {
     "Tilt",
-    "Amp",
-    "Freq",
-    "Gain"
+    "PeakGain",
+    "PeakFreq",
+    "Amp"
 };
 static const std::vector<std::vector<float>> vNoiseInit = {
     { 0.0f, 1.f, 0.5f, 0.5f },   //tilt
-    { 0.0f, 2.0f, 0.f, 1.f },   //Amp
+    { 0.0f, 1.f, 0.5f, 0.5f },  //Gain
     { 0.0f, 1.f, 0.5f, 0.5f },   //Freq
-    { 0.0f, 1.f, 0.5f, 0.5f }   //Gain
+    { 0.0f, 2.0f, 0.f, 1.f }   //Amp
 };
 
 //==============================================================================
@@ -256,28 +256,15 @@ static const std::vector<std::vector<float>> vEnvelopeInit = {
 typedef enum _OutputParam
 {
     OutputAmp,
-    OutputPan,
     OutputParamNil
 } OutputParam;
 static const StringArray cOutputParams = {
     "Amp",
-    "Pan",
 };
 static const std::vector<std::vector<float>> vOutputInit = {
     { 0.0f, 2.0f, 0.0f, 1.0f },   //Amp
-    { -1.0f, 1.0f, 0.f, 0.f},  //Pan
 };
 
-typedef enum _DistortionType
-{
-    distortion1 = 0,
-    dist2,
-    distnil
-} DistortionType;
-static const StringArray distortionNames = {
-    "dist1",
-    "dist2"
-};
 
 //==============================================================================
 

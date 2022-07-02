@@ -515,7 +515,7 @@ void ElectroAudioProcessorEditor::resized()
         filterModules[i]->setBounds(540*s-1, filterModules[i-1]->getBottom()-1, 360*s+2, 124*s);
     }
     
-    outputModule->setBounds(540*s-1, filterModules.getLast()->getBottom()-1, 360*s+2, 135*s);
+    outputModule->setBounds(540*s-1, filterModules.getLast()->getBottom()-1, 360*s+2, 114*s);
     
     const float knobSize = 40.0f*s;
     for (int i = 0; i < NUM_GENERIC_MACROS; ++i)
@@ -635,12 +635,12 @@ void ElectroAudioProcessorEditor::resized()
     
     //==============================================================================
     
-    versionLabel.setBounds(width*0.75f, 0, width * 0.05f, tabs.getTabBarDepth());
+    versionLabel.setBounds(width*0.79f, 0, width * 0.05f, tabs.getTabBarDepth());
     versionLabel.setFont(euphemia.withHeight(20*s));
     
     sendOutButton.setBounds(width*0.85f, -1, width*0.15f+2, tabs.getTabBarDepth());
     
-    int logoLeft = tabs.getTabbedButtonBar().getTabButton(1)->getRight() + 90*s;
+    int logoLeft = tabs.getTabbedButtonBar().getTabButton(2)->getRight() + 90*s;
     Rectangle<float> logoArea (logoLeft, 0, 98*s, tabs.getTabBarDepth());
     logo->setTransformToFit (logoArea,
                              RectanglePlacement::xLeft +
