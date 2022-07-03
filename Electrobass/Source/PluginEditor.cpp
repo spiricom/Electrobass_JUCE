@@ -22,9 +22,11 @@ keyboard(p.keyboardState, MidiKeyboardComponent::Orientation::horizontalKeyboard
 envsAndLFOs(TabbedButtonBar::TabsAtTop),
 tuningTab(processor, vts),
 fxTab(*this, processor,vts),
+OSCILLOSCOPE(processor.getAudioBufferQueue()),
 constrain(new ComponentBoundsConstrainer()),
 resizer(new ResizableCornerComponent (this, constrain.get())),
 chooser("Select a .wav file to load...", {}, "*.wav")
+
 {
     Typeface::Ptr tp = Typeface::createSystemTypefaceFor(BinaryData::EuphemiaCAS_ttf,
                                                          BinaryData::EuphemiaCAS_ttfSize);
@@ -41,7 +43,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     ElectrobassLabel.setJustificationType(Justification::topLeft);
     ElectrobassLabel.setColour(Label::textColourId, Colours::gold.withBrightness(0.9f));
     addAndMakeVisible(ElectrobassLabel);
-    
+    addAndMakeVisible(OSCILLOSCOPE);
     setWantsKeyboardFocus(true);
     
     getTopLevelComponent()->addKeyListener(this);
@@ -478,24 +480,34 @@ void ElectroAudioProcessorEditor::paint (Graphics& g)
 
 void ElectroAudioProcessorEditor::resized()
 {
+
     int width = getWidth();
     int height = getHeight();
     
     float s = width / EDITOR_WIDTH;
-    processor.editorScale = 1.05f;
     
-    tabs.setBounds(getLocalBounds().expanded(1));
+    processor.editorScale = 1.05f;
+    // Set OSCILLOSCOPE bounds
+
+    
+    //tabs.setBounds(getLocalBounds().expanded(1));
+    tabs.setBoundsRelative(0,0,1,0.88);
     tabs.setTabBarDepth(30*s);
     
     height -= tabs.getTabBarDepth();
-    
+    OSCILLOSCOPE.setBoundsRelative(0.65,0.88,0.35, 0.12 );
+
     //==============================================================================
     // TAB1 ========================================================================
     for (int i = 0; i < NUM_OSCS; ++i)
     {
         oscModules[i]->setBounds(-1, (120*s*i)-i-1, 540*s+1, 120*s);
     }
+
+
+
     
+
     envsAndLFOs.setBounds(-1, oscModules.getLast()->getBottom()-1, 540*s+1, 160*s);
     envsAndLFOs.setIndent(10*s);
     envsAndLFOs.setTabBarDepth(25*s);
@@ -663,6 +675,7 @@ void ElectroAudioProcessorEditor::resized()
     fxTab.setBoundsRelative(0.05f, 0.08f, 1.0f, 1.0f);
     
     //==============================================================================
+  
 }
 
 void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
@@ -775,6 +788,7 @@ void ElectroAudioProcessorEditor::timerCallback()
                                                  dontSendNotification);
     }
     updateRandomValueLabel(processor.lastRandomValue);
+
 }
 
 void ElectroAudioProcessorEditor::update()

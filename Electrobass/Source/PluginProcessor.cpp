@@ -11,6 +11,7 @@
 #include "Electro_backend/ElectroStandalone.h"
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "RingBuffer.h"
 
 //==============================================================================
 AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParameterLayout()
@@ -563,6 +564,9 @@ void ElectroAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBloc
     
     DBG("Pre prepare: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
     
+
+    
+    
     for (auto waveTableSet : waveTables)
     {
         for (auto waveTable : waveTableSet)
@@ -958,6 +962,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
           setPeakLevel (channel, buffer.getMagnitude (channel, 0, buffer.getNumSamples()));
     for (int i = 0; i < NUM_CHANNELS; ++i)
         if (stringActivity[i] > 0) stringActivity[i]--;
+    scopeDataCollector.process(buffer.getReadPointer(0), (size_t)buffer.getNumSamples());
 }
 
 //==============================================================================

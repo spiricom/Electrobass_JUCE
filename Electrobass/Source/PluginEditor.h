@@ -66,6 +66,9 @@ private:
     void updateVelocityLabel(float velocity);
     void updateRandomValueLabel(float value);
     
+    
+    WaveformComponent<float> OSCILLOSCOPE;
+    
     TabbedComponent tabs;
     
     Component tab1;

@@ -19,6 +19,9 @@
 #include "Electro_backend/Output.h"
 #include "Electro_backend/TuningControl.hpp"
 #include "Electro_backend/Effect.h"
+#include "RingBuffer.h"
+
+
 class StandalonePluginHolder;
 
 //==============================================================================
@@ -242,6 +245,7 @@ public:
         }
         else return 0;
     }
+    AudioBufferQueue<float>& getAudioBufferQueue() noexcept { return audioBufferQueue; }
 private:
 
     std::mutex m;
@@ -269,7 +273,8 @@ private:
     float oversamplerArray[OVERSAMPLE];
     
     std::array<std::atomic<float>, 128> m_peakLevels;
-    
+    AudioBufferQueue<float> audioBufferQueue;
+    ScopeDataCollector<float> scopeDataCollector{ audioBufferQueue };
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ElectroAudioProcessor)
 };
