@@ -30,14 +30,14 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
     auto normRange = NormalisableRange<float>(0., 2.);
     normRange.setSkewForCentre(1.);
     invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
-    layout.add(std::make_unique<AudioParameterFloat>(n, n, normRange, 1.));
+    layout.add(std::make_unique<AudioParameterFloat>(ParameterID { n,  1 }, n, normRange, 1.));
     paramIds.add(n);
     
     for (int i = 0; i < NUM_MACROS; ++i)
     {
         n = i < NUM_GENERIC_MACROS ? "M" + String(i + 1) : cUniqueMacroNames[i - NUM_GENERIC_MACROS];
         normRange = NormalisableRange<float>(0., 1.);
-        layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange,
+        layout.add (std::make_unique<AudioParameterFloat> (ParameterID { n,  1 }, n, normRange,
                                                            i == NUM_MACROS-1 ? 1.f : 0.f));
         paramIds.add(n);
     }
@@ -61,7 +61,7 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
 	normRange.setSkewForCentre(.0);
 	invParameterSkews.addIfNotAlreadyThere(1.f / normRange.skew);
     layout.add(std::make_unique<AudioParameterFloat>
-        (n, n, normRange, 0., String(), AudioProcessorParameter::genericParameter,
+               (ParameterID { n,  1 }, n, normRange, 0., String(), AudioProcessorParameter::genericParameter,
             string2FromValueFunction));
 	paramIds.add(n);
     pitchBendRange = std::make_unique<NormalisableRange<float>>(-2.f, 2.f);
@@ -90,23 +90,23 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
     );
         myParamRange.setSkewForCentre(0.0);
         layout.add (std::make_unique<AudioParameterFloat>
-                    (n, n, myParamRange, 0., String(), AudioProcessorParameter::genericParameter,
+                    (ParameterID { n,  1 }, n, myParamRange, 0., String(), AudioProcessorParameter::genericParameter,
                      string3FromValueFunction));
         paramIds.add(n);
     }
     n = "PitchBendRangeUp";
     normRange = NormalisableRange<float>(0., 24., 1.);
     layout.add (std::make_unique<AudioParameterFloat>
-                (n, n, normRange, 2., String(), AudioProcessorParameter::genericParameter));
+                (ParameterID { n,  1 }, n, normRange, 2., String(), AudioProcessorParameter::genericParameter));
     paramIds.add(n);
     n = "PitchBendRangeDown";
     normRange = NormalisableRange<float>(0., 24., 1.);
     layout.add (std::make_unique<AudioParameterFloat>
-                (n, n, normRange, 2., String(), AudioProcessorParameter::genericParameter));
+                (ParameterID { n,  1 }, n, normRange, 2., String(), AudioProcessorParameter::genericParameter));
     paramIds.add(n);
     //==============================================================================
     n = "Noise";
-    layout.add (std::make_unique<AudioParameterChoice> (n, n, StringArray("Off", "On"), 1));
+    layout.add (std::make_unique<AudioParameterChoice> (ParameterID { n,  1 }, n, StringArray("Off", "On"), 1));
     paramIds.add(n);
     
     for (int j = 0; j < cNoiseParams.size(); ++j)
@@ -121,7 +121,7 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
         normRange = NormalisableRange<float>(min, max);
         normRange.setSkewForCentre(center);
         invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
-        layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, def));
+        layout.add (std::make_unique<AudioParameterFloat> (ParameterID { n,  1 }, n, normRange, def));
         paramIds.add(n);
     }
     
@@ -129,14 +129,14 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
     normRange = NormalisableRange<float>(0., 1.);
     normRange.setSkewForCentre(.5);
     invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
-    layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, 1.f));
+    layout.add (std::make_unique<AudioParameterFloat> (ParameterID { n,  1 }, n, normRange, 1.f));
     paramIds.add(n);
     
     //==============================================================================
     for (int i = 0; i < NUM_OSCS; ++i)
     {
         n = "Osc" + String(i+1);
-        layout.add (std::make_unique<AudioParameterChoice> (n, n, StringArray("Off", "On"), 1));
+        layout.add (std::make_unique<AudioParameterChoice> (ParameterID { n,  1 }, n, StringArray("Off", "On"), 1));
         paramIds.add(n);
         
         for (int j = 0; j < cOscParams.size(); ++j)
@@ -151,27 +151,27 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
             normRange = NormalisableRange<float>(min, max);
             normRange.setSkewForCentre(center);
             invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
-            layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, def));
+            layout.add (std::make_unique<AudioParameterFloat> (ParameterID { n,  1 }, n, normRange, def));
             paramIds.add(n);
         }
        
         n = "Osc" + String(i+1) + " isHarmonic";
-        layout.add (std::make_unique<AudioParameterChoice> (n, n,  StringArray("Off", "On"), 1));
+        layout.add (std::make_unique<AudioParameterChoice> (ParameterID { n,  1 }, n,  StringArray("Off", "On"), 1));
         paramIds.add(n);
         
         n = "Osc" + String(i+1) + " isStepped";
-        layout.add (std::make_unique<AudioParameterChoice> (n, n,  StringArray("Off", "On"), 1));
+        layout.add (std::make_unique<AudioParameterChoice> (ParameterID { n,  1 }, n,  StringArray("Off", "On"), 1));
         paramIds.add(n);
         
         n = "Osc" + String(i+1) + " ShapeSet";
-        layout.add (std::make_unique<AudioParameterChoice> (n, n, oscShapeSetNames, 0));
+        layout.add (std::make_unique<AudioParameterChoice> (ParameterID { n,  1 }, n, oscShapeSetNames, 0));
         paramIds.add(n);
         
         n = "Osc" + String(i+1) + " FilterSend";
         normRange = NormalisableRange<float>(0., 1.);
         normRange.setSkewForCentre(.5);
         invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
-        layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, 1.f));
+        layout.add (std::make_unique<AudioParameterFloat> (ParameterID { n,  1 }, n, normRange, 1.f));
         paramIds.add(n);
     }
     
@@ -183,7 +183,7 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
         //paramIds.add(n);
         
         n = "Effect" + String(i+1) + " FXType";
-        layout.add (std::make_unique<AudioParameterChoice> (n, n, FXTypeNames, 0));
+        layout.add (std::make_unique<AudioParameterChoice> (ParameterID { n,  1 }, n, FXTypeNames, 0));
         paramIds.add(n);
         
         for (int j = 0; j < cFXParams.size(); ++j)
@@ -198,7 +198,7 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
             normRange = NormalisableRange<float>(min, max);
             normRange.setSkewForCentre(center);
             invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
-            layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, def));
+            layout.add (std::make_unique<AudioParameterFloat> (ParameterID { n,  1 }, n, normRange, def));
             paramIds.add(n);
         }
     }
@@ -208,14 +208,14 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
     {
         n = "Filter" + String(i+1);
         if (i == 0)
-            layout.add (std::make_unique<AudioParameterChoice> (n, n, StringArray("Off", "On"), 1));
+            layout.add (std::make_unique<AudioParameterChoice> (ParameterID { n,  1 }, n, StringArray("Off", "On"), 1));
         else
-            layout.add (std::make_unique<AudioParameterChoice> (n, n, StringArray("Off", "On"), 0));
+            layout.add (std::make_unique<AudioParameterChoice> (ParameterID { n,  1 }, n, StringArray("Off", "On"), 0));
 
         paramIds.add(n);
         
         n = "Filter" + String(i+1) + " Type";
-        layout.add (std::make_unique<AudioParameterChoice> (n, n, filterTypeNames, 0));
+        layout.add (std::make_unique<AudioParameterChoice> (ParameterID { n,  1 }, n, filterTypeNames, 0));
         paramIds.add(n);
         
         for (int j = 0; j < cFilterParams.size(); ++j)
@@ -229,7 +229,7 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
             normRange = NormalisableRange<float>(min, max);
             normRange.setSkewForCentre(center);
             invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
-            layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, def));
+            layout.add (std::make_unique<AudioParameterFloat> (ParameterID { n,  1 }, n, normRange, def));
             paramIds.add(n);
         }
     }
@@ -238,7 +238,7 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
     normRange = NormalisableRange<float>(0., 1.);
     normRange.setSkewForCentre(.5);
     invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
-    layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, 0.));
+    layout.add (std::make_unique<AudioParameterFloat> (ParameterID { n,  1 }, n, normRange, 0.));
     paramIds.add(n);
     
     //=============================================================================
@@ -255,12 +255,12 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
             normRange = NormalisableRange<float>(min, max);
             normRange.setSkewForCentre(center);
             invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
-            layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, def));
+            layout.add (std::make_unique<AudioParameterFloat> (ParameterID { n,  1 }, n, normRange, def));
             paramIds.add(n);
         }
         
         n = "Envelope" + String(i+1) + " Velocity";
-        layout.add (std::make_unique<AudioParameterChoice> (n, n, StringArray("Off", "On"), 1));
+        layout.add (std::make_unique<AudioParameterChoice> (ParameterID { n,  1 }, n, StringArray("Off", "On"), 1));
         paramIds.add(n);
     }
     
@@ -278,17 +278,17 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
             normRange = NormalisableRange<float>(min, max);
             normRange.setSkewForCentre(center);
             invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
-            layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, def));
+            layout.add (std::make_unique<AudioParameterFloat> (ParameterID { n,  1 }, n, normRange, def));
             paramIds.add(n);
         }
         
         n = "LFO" + String(i+1) + " ShapeSet";
-        layout.add (std::make_unique<AudioParameterChoice> (n, n, lfoShapeSetNames,
+        layout.add (std::make_unique<AudioParameterChoice> (ParameterID { n,  1 }, n, lfoShapeSetNames,
                                                             SineTriLFOShapeSet));
         paramIds.add(n);
         
         n = "LFO" + String(i+1) + " Sync";
-        layout.add (std::make_unique<AudioParameterChoice> (n, n, StringArray("Off", "On"), 0));
+        layout.add (std::make_unique<AudioParameterChoice> (ParameterID { n,  1 }, n, StringArray("Off", "On"), 0));
         paramIds.add(n);
     }
     
@@ -304,7 +304,7 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
         normRange = NormalisableRange<float>(min, max);
         normRange.setSkewForCentre(center);
         invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
-        layout.add (std::make_unique<AudioParameterFloat> (n, n, normRange, def));
+        layout.add (std::make_unique<AudioParameterFloat> (ParameterID { n,  1 }, n, normRange, def));
         paramIds.add(n);
     }
    
@@ -312,7 +312,7 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
     for (int i = 1; i < CopedentColumnNil; ++i)
     {
         n = cCopedentColumnNames[i];
-        layout.add (std::make_unique<AudioParameterChoice>(n, n, StringArray("Off", "On"), 0));
+        layout.add (std::make_unique<AudioParameterChoice>(ParameterID { n,  1 }, n, StringArray("Off", "On"), 0));
     }
     
     DBG("PARAMS//");
