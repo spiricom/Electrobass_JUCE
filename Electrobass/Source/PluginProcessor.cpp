@@ -903,11 +903,10 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
             int tempNoteIntPart = (int)tempNote;
             float tempNoteFloatPart = tempNote - (float)tempNoteIntPart;
             int tempPitchClassIntPart =tempNoteIntPart % 12;
-            float dev1 = (centsDeviation[tempPitchClassIntPart] * (1.0 - tempNoteFloatPart));
+            float dev1 = (centsDeviation[tempPitchClassIntPart] * (1.0f - tempNoteFloatPart));
             float dev2 =  (centsDeviation[(tempPitchClassIntPart+1)%12] * tempNoteFloatPart);
             float tunedNote = tempNote + ( dev1  + dev2);
             voiceNote[v] = tunedNote;
-            //voiceNote[v] = tempNote;
             //DBG("Tuned note" + String(tunedNote));
             samples[0][v] = 0.f;
             samples[1][v] = 0.f;
@@ -948,7 +947,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
             
        
         
-        float m = output->master->tickNoHooksNoSmoothing();
+        float m = output->master->tickNoHooks();
         
         
         outputSamples[0] = sampleOutput * m;

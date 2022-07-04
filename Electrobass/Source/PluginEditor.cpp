@@ -17,12 +17,12 @@ ElectroAudioProcessorEditor::ElectroAudioProcessorEditor (ElectroAudioProcessor&
 AudioProcessorEditor (&p),
 processor (p),
 vts(vts),
+OSCILLOSCOPE(processor.getAudioBufferQueue()),
 tabs(TabbedButtonBar::Orientation::TabsAtTop),
 keyboard(p.keyboardState, MidiKeyboardComponent::Orientation::horizontalKeyboard),
 envsAndLFOs(TabbedButtonBar::TabsAtTop),
 tuningTab(processor, vts),
 fxTab(*this, processor,vts),
-OSCILLOSCOPE(processor.getAudioBufferQueue()),
 constrain(new ComponentBoundsConstrainer()),
 resizer(new ResizableCornerComponent (this, constrain.get())),
 chooser("Select a .wav file to load...", {}, "*.wav")

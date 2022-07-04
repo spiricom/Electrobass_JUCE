@@ -8,6 +8,7 @@
               pluginVST3Category="Instrument">
   <MAINGROUP id="zr98AB" name="Electrobass">
     <GROUP id="{B8EA8B88-4125-0A91-2EA2-1CD3B3374012}" name="Source">
+      <FILE id="rkeubL" name="RingBuffer.h" compile="0" resource="0" file="Source/RingBuffer.h"/>
       <GROUP id="{D0B7E845-9BE2-75A7-1934-4DD44C496485}" name="Electro_backend">
         <FILE id="cQhSnf" name="Effect.cpp" compile="1" resource="0" file="Source/Electro_backend/Effect.cpp"/>
         <FILE id="CVc1bO" name="Effect.h" compile="0" resource="0" file="Source/Electro_backend/Effect.h"/>
@@ -97,9 +98,10 @@
         <MODULEPATH id="sound_meter" path="Source"/>
       </MODULEPATHS>
     </VS2019>
-    <XCODE_MAC targetFolder="Builds/MacOSX">
+    <XCODE_MAC targetFolder="Builds/MacOSX" smallIcon="o0yFfN" bigIcon="o0yFfN"
+               appSandboxOptions="com.apple.security.device.usb,com.apple.security.files.user-selected.read-only,com.apple.security.files.user-selected.read-write">
       <CONFIGURATIONS>
-        <CONFIGURATION isDebug="1" name="Debug" targetName="Electrobass"/>
+        <CONFIGURATION isDebug="1" name="Debug" targetName="Electrobass" recommendedWarnings="LLVM"/>
         <CONFIGURATION isDebug="0" name="Release" targetName="Electrobass" optimisation="6"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
