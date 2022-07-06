@@ -140,6 +140,6 @@ private:
     Font euphemia;
     FileChooser chooser;
     ElectroLookAndFeel laf;
-    
+    OwnedArray<MappingSource> allSources;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ElectroAudioProcessorEditor)
 };

@@ -28,6 +28,9 @@ resizer(new ResizableCornerComponent (this, constrain.get())),
 chooser("Select a .wav file to load...", {}, "*.wav")
 
 {
+    
+   
+    
     Typeface::Ptr tp = Typeface::createSystemTypefaceFor(BinaryData::EuphemiaCAS_ttf,
                                                          BinaryData::EuphemiaCAS_ttfSize);
     euphemia = Font(tp);
@@ -367,7 +370,12 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     addAndMakeVisible(tab4);
     
     tab4.addAndMakeVisible(fxTab);
-    
+    for (auto mapModel : p.sourceMap)
+    {
+        MappingSource *s = new MappingSource(*this, *mapModel);
+        allSources.add(s);
+        tab4.addAndMakeVisible(s);
+    }
     //==============================================================================
     
     tabs.addTab("Synth", Colours::black, &tab1, false);
@@ -504,9 +512,6 @@ void ElectroAudioProcessorEditor::resized()
         oscModules[i]->setBounds(-1, (120*s*i)-i-1, 540*s+1, 120*s);
     }
 
-
-
-    
 
     envsAndLFOs.setBounds(-1, oscModules.getLast()->getBottom()-1, 540*s+1, 160*s);
     envsAndLFOs.setIndent(10*s);
@@ -673,7 +678,10 @@ void ElectroAudioProcessorEditor::resized()
     // TAB3 ========================================================================
     
     fxTab.setBoundsRelative(0.05f, 0.08f, 1.0f, 1.0f);
-    
+    for (int i = 0; i < allSources.size(); ++i)
+    {
+        allSources[i]->setBounds(6*s + (75+2)*(i/3), 523*s + ((i%3)*(40*0.5f)), 75, 40*0.5f);
+    }
     //==============================================================================
   
 }
