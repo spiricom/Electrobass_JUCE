@@ -38,6 +38,7 @@
 #define INV_127 0.007874015748031f
 #define INV_4095 0.0002442002442f
 #define INV_16383 0.000061038881768f
+#define PI_DIV_2 1.570796326794897f
 
 const float volumeAmps128[128] =
 {
@@ -348,6 +349,7 @@ typedef enum _FXType
 {
     None = 0,
     Softclip,
+    Hardclip,
     ABSaturator,
     Tanh,
     Shaper,
@@ -362,6 +364,7 @@ typedef enum _FXType
 static const StringArray FXTypeNames = {
     "None",
     "Softclip",
+    "Hardclip",
     "ABSaturator",
     "Tanh",
     "Shaper",
@@ -374,28 +377,30 @@ static const StringArray FXTypeNames = {
 
 static const std::vector<StringArray> FXParamNames = {
     {"None","None","None","None","None" },
-    {"Drive","Offset","","","" },
-    {"Drive","Offset","","",""},
-    {"Drive","Offset","","",""},
-    {"Gain","Offset","Drive","",""},
+    {"Drive","Offset","Shape","PostGain","" },
+    {"Drive","Offset","Shape","PostGain","" },
+    {"Drive","Offset","Shape","PostGain",""},
+    {"Drive","Offset","Shape","PostGain",""},
+    {"Gain","Offset","Drive","PostGain",""},
     {"Threshold","Ratio","Makeup","Attack","Release"},
     {"Delay","Depth","Speed1","Speed2",""},
     {"Gain","Quality","Sampling Ratio","Round","Operation"},
-    {"Tilt","Freq","Q","Gain",""},
-    {"Drive","Offset","","",""}
+    {"Tilt","PeakFreq","PeakQ","PeakGain","PostGain"},
+    {"Drive","Offset","PostGain","",""}
 };
 
 static const std::vector<std::vector<float>> FXParamDefaults = {
-    {0.0, 0.0, 0.0, 0.0, 0.0},
-    {0.1, 0.1, 0.0, 0.0, 0.0},
-    {0.2, 0.0, 0.0, 0.0, 0.0},
-    {0.3, 0.0, 0.0, 0.0, 0.0},
-    {0.4, 0.0, 0.0, 0.0, 0.0},
-    {0.0, 0.0, 0.2, 0.0, 0.0},
-    {1.0, 0.1, 0.0, 0.1, 0.1},
-    {0.5, 0.3, 0.6, 0.5, 0.0},
-    {0.5, 1.0, 0.5, 1.0, 0.0},
-    {0.5, 0.5, 0.5, 0.5, 0.0}
+    {0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {0.1f, 0.5f, 1.0f, 1.0f, 0.0f},
+    {0.1f, 0.5f, 1.0f, 1.0f, 0.0f},
+    {0.2f, 0.5f, 1.0f, 1.0f, 0.0f},
+    {0.3f, 0.5f, 1.0f, 1.0f, 0.0f},
+    {0.2f, 0.5f, 1.0f, 1.0f, 0.0f},
+    {0.3f, 0.2f, 0.2f, 0.15f, 0.2f},
+    {1.0f, 0.1f, 0.0f, 0.1f, 0.1f},
+    {0.5f, 0.3f, 0.6f, 0.5f, 0.0f},
+    {0.5f, 0.5f, 0.5f, 0.5f, 0.9f},
+    {0.5f, 0.5f, 0.5f, 0.0f, 0.0f}
 };
 
 //==============================================================================

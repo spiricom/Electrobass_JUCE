@@ -942,15 +942,20 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
             for (int i = 0; i < fx.size(); i++) {
                 fx[i]->oversample_tick(oversamplerArray, v);
             }
+            //hard clip before downsampling to get a little more antialiasing from clipped signal.
+            for (int i = 0; i < (OVERSAMPLE); i++)
+            {
+                oversamplerArray[i] = LEAF_clip(-1.0f, oversamplerArray[i], 1.0f);
+            }
             sampleOutput += tOversampler_downsample(&os, oversamplerArray);
         }
             
        
         
-        float m = output->master->tickNoHooks();
+        float mastergain = output->master->tickNoHooks();
         
         
-        outputSamples[0] = sampleOutput * m;
+        outputSamples[0] = sampleOutput * mastergain;
         
         for (int channel = 0; channel < totalNumOutputChannels; ++channel)
         {
