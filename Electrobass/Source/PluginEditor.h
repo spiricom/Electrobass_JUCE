@@ -47,7 +47,7 @@ public:
     void mouseDown (const MouseEvent &event) override;
     bool keyPressed (const KeyPress &key, Component *originatingComponent) override;
     void timerCallback() override;
-    
+    //void currentTabChanged(int tabIndex, const String &newCurrentTabName) override;
     void update();
     
     ElectroAudioProcessor& processor;
