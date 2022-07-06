@@ -29,7 +29,7 @@
 #define NUM_ENVS 4
 #define NUM_LFOS 4
 #define NUM_FX 4
-#define OVERSAMPLE 8
+#define OVERSAMPLE 4
 #define EXP_BUFFER_SIZE 2048
 #define DECAY_EXP_BUFFER_SIZE 2048
 
@@ -376,7 +376,7 @@ static const StringArray FXTypeNames = {
 };
 
 static const std::vector<StringArray> FXParamNames = {
-    {"None","None","None","None","None" },
+    {"","","","","" },
     {"Drive","Offset","Shape","PostGain","" },
     {"Drive","Offset","Shape","PostGain","" },
     {"Drive","Offset","Shape","PostGain",""},

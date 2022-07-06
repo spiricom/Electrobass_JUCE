@@ -43,7 +43,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     ElectrobassLabel.setJustificationType(Justification::topLeft);
     ElectrobassLabel.setColour(Label::textColourId, Colours::gold.withBrightness(0.9f));
     addAndMakeVisible(ElectrobassLabel);
-    addAndMakeVisible(OSCILLOSCOPE);
+    
     setWantsKeyboardFocus(true);
     
     getTopLevelComponent()->addKeyListener(this);
@@ -290,7 +290,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
             bar.getTabButton(i)->setAlpha(i == 0 ? 1.0f : 0.5f);
         }
     }
-    
+    tab1.addAndMakeVisible(OSCILLOSCOPE);
     //==============================================================================
     // TAB2 ========================================================================
     addAndMakeVisible(tab2);
@@ -332,7 +332,9 @@ chooser("Select a .wav file to load...", {}, "*.wav")
             macroControlNames.getLast()->addListener(this);
             tab2.addAndMakeVisible(macroControlNames.getLast());
         }
+        
     }
+   
     
     for (int i = 0; i < MAX_NUM_VOICES+1; ++i)
     {
@@ -367,8 +369,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     addAndMakeVisible(tab4);
     
     tab4.addAndMakeVisible(fxTab);
-    
-    //==============================================================================
+        //==============================================================================
     
     tabs.addTab("Synth", Colours::black, &tab1, false);
     tabs.addTab("Control", Colours::black, &tab2, false);
@@ -404,6 +405,8 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     update();
     startTimerHz(30);
 }
+
+
 
 ElectroAudioProcessorEditor::~ElectroAudioProcessorEditor()
 {
@@ -491,12 +494,13 @@ void ElectroAudioProcessorEditor::resized()
 
     
     //tabs.setBounds(getLocalBounds().expanded(1));
-    tabs.setBoundsRelative(0,0,1,0.88);
+    tabs.setBoundsRelative(0,0,1,1.0);
     tabs.setTabBarDepth(30*s);
     
     height -= tabs.getTabBarDepth();
-    OSCILLOSCOPE.setBoundsRelative(0.65,0.88,0.35, 0.12 );
-
+    
+    
+   
     //==============================================================================
     // TAB1 ========================================================================
     for (int i = 0; i < NUM_OSCS; ++i)
@@ -549,18 +553,13 @@ void ElectroAudioProcessorEditor::resized()
     int x = 900*s - 10*align;
     int y = 582*s;
     
-    midiKeyComponent.setBounds(-1, y-2, 657, 33);
+    midiKeyComponent.setBounds(-1, y-2, 610, 33);//657
     midiKeySource->setBounds(5, 7, x-40, 22*s - 4);
     midiKeyMinLabel.setBounds(midiKeySource->getRight()+4, 7, 40, 22*s - 4);
-    midiKeyRangeSlider.setBounds(midiKeyMinLabel.getRight(), 7, 468, 22*s - 4);
+    midiKeyRangeSlider.setBounds(midiKeyMinLabel.getRight(), 7, 420, 22*s - 4);
     midiKeyMaxLabel.setBounds(midiKeyRangeSlider.getRight(), 7, 40, 22*s - 4);
 
-    velocityComponent.setBounds(midiKeyComponent.getRight() - 1, y - 2, 102, 33);
-    velocitySource->setBounds(5, 7, 91, 22 * s - 4);
 
-    randomComponent.setBounds(velocityComponent.getRight() - 1, y - 2, x + 60, 33);
-    randomSource->setBounds(5, 7, x+2, 22*s - 4);
-    randomValueLabel.setBounds(randomSource->getRight()+4, 7, 40, 22*s - 4);
         
     int r = (10*align) % 12;
     int w = (10*align) / 12;
@@ -572,23 +571,28 @@ void ElectroAudioProcessorEditor::resized()
                                    midiKeyComponent.getBottom()-1,
                                    w + (r > 0 ? 1 : 0), 27*s); //EBSPECIFIC
     rangeLabel.setBounds(pitchBendSliders[0]->getRight(), midiKeyComponent.getBottom()-1,w + (r > 0 ? 1 : 0), 12*s);
-    rangeSlider.setBounds(pitchBendSliders[0]->getRight(), stringActivityButtons[0]->getY() -17*s ,w + (r > 0 ? 1 : 0), 17*s);
-    
-    numVoicesLabel.setBounds(rangeSlider.getRight(), midiKeyComponent.getBottom()-1, w + (r > 0 ? 1 : 0), 12*s);
-    numVoicesSlider.setBounds(rangeSlider.getRight(), stringActivityButtons[0]->getY() -17*s, w + (r > 0 ? 1 : 0), 17*s);
-    transposeLabel.setBounds(numVoicesSlider.getRight(), midiKeyComponent.getBottom()-1, w + (r > 0 ? 1 : 0), 12*s);
-    transposeSlider.setBounds(numVoicesSlider.getRight(), stringActivityButtons[0]->getY() -17*s, w + (r > 0 ? 1 : 0), 17*s);
-    
+        rangeSlider.setBounds(pitchBendSliders[0]->getRight(), stringActivityButtons[0]->getY() -17*s ,w + (r > 0 ? 1 : 0), 17*s);
+        
+        numVoicesLabel.setBounds(rangeSlider.getRight(), midiKeyComponent.getBottom()-1, w + (r > 0 ? 1 : 0), 12*s);
+        numVoicesSlider.setBounds(rangeSlider.getRight(), stringActivityButtons[0]->getY() -17*s, w + (r > 0 ? 1 : 0), 17*s);
+        transposeLabel.setBounds(numVoicesSlider.getRight(), midiKeyComponent.getBottom()-1, w + (r > 0 ? 1 : 0), 12*s);
+        transposeSlider.setBounds(numVoicesSlider.getRight(), stringActivityButtons[0]->getY() -17*s, w + (r > 0 ? 1 : 0), 17*s);
+    velocityComponent.setBounds(transposeSlider.getRight() + 42, midiKeyComponent.getBottom()-1, 102, 33);
+    velocitySource->setBounds(5, 7, 91, 22 * s - 4);
+
+    randomComponent.setBounds(velocityComponent.getRight() - 1, midiKeyComponent.getBottom()-1, x + 60, 33);
+    randomSource->setBounds(5, 7, x+2, 22*s - 4);
+    randomValueLabel.setBounds(randomSource->getRight()+4, 7, 40, 22*s - 4);
     for (int i = 1; i < NUM_CHANNELS; ++i)
     {
-    
         stringActivityButtons[i]->setBounds(stringActivityButtons[i-1]->getRight(), y,
                                            w + (r-- > 0 ? 1 : 0), 35*s);
     }
     
     //    keyboard.setBoundsRelative(0.f, 0.86f, 1.0f, 0.14f);
     //    keyboard.setKeyWidth(width / 52.0f);
-    
+    OSCILLOSCOPE.setBoundsRelative(0.65,0.87,0.35, 0.13 );
+
     //==============================================================================
     // TAB2 ========================================================================
     

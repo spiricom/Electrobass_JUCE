@@ -135,8 +135,9 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
     //==============================================================================
     for (int i = 0; i < NUM_OSCS; ++i)
     {
+        
         n = "Osc" + String(i+1);
-        layout.add (std::make_unique<AudioParameterChoice> (ParameterID { n,  1 }, n, StringArray("Off", "On"), 1));
+        layout.add (std::make_unique<AudioParameterChoice> (ParameterID { n,  1 }, n, StringArray("Off", "On"), i == 0 ? 1 : 0));
         paramIds.add(n);
         
         for (int j = 0; j < cOscParams.size(); ++j)
