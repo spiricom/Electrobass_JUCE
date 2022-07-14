@@ -676,10 +676,13 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         
         // Parameter values
         // Order is determined in createParameterLayout
+        int count = 0;
         for (auto id : paramIds)
         {
+           
             const NormalisableRange<float>& range = vts.getParameter(id)->getNormalisableRange();
             data.add(range.convertFrom0to1(vts.getParameter(id)->getValue()));
+            DBG(String(count++)+ ": " + id + ": "+ String(range.convertFrom0to1(vts.getParameter(id)->getValue())));
         }
         
         // Mappings
@@ -694,14 +697,19 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
                     if (MappingSourceModel* source = target->currentSource)
                     {
                         data.add(sourceIds.indexOf(source->name));//SourceID
-                        data.add(paramIds.indexOf(target->name));//TargetID
+                        data.add(paramIds.indexOf(id));//TargetID
+                        //int jjjj = paramIds.indexOf(id);
                         data.add(t);//TargetIndex
                         data.add(target->end);//Mapping range length
+                        DBG(tn +": " + String(sourceIds.indexOf(source->name))+ ", " + String(paramIds.indexOf(id))+", " + String(t)+ ", " +String(target->end));
                     }
                 }
             }
         }
-        
+//        for (int i = 0 ; i < sourceIds.size(); i++)
+//        {
+//            DBG(String(i) +  ": " + sourceIds[i]);
+//        }
         Array<uint8_t> data7bitInt;
         union uintfUnion fu;
         
