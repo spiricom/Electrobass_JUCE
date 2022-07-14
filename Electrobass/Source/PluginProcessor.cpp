@@ -874,7 +874,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
 
         for (int i = 0; i < ccParams.size(); ++i)
         {
-            ccParams[i]->tickSkewsNoHooks();
+            ccParams[i]->tickNoHooks();
         }
         
         float globalPitchBend = pitchBendParams[0]->tickNoHooksNoSmoothing();
