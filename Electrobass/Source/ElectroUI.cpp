@@ -1,60 +1,41 @@
 /*
- ==============================================================================
- 
- This file was auto-generated!
- 
- It contains the basic framework code for a JUCE plugin editor.
- 
- ==============================================================================
- */
+  ==============================================================================
 
-#include "PluginProcessor.h"
-#include "PluginEditor.h"
+    ElectroUI.cpp
+    Created: 13 Jul 2022 1:55:06pm
+    Author:  Davis Polito
+
+  ==============================================================================
+*/
+
+#include "ElectroUI.h"
 #include <iostream>
 //==============================================================================
 
-ElectroAudioProcessorEditor::ElectroAudioProcessorEditor (ElectroAudioProcessor& p, AudioProcessorValueTreeState& vts) :
-AudioProcessorEditor (&p),
+ElectroUI::ElectroUI (ElectroAudioProcessor& p, AudioProcessorValueTreeState& vts) :
+TabbedComponent(TabbedButtonBar::Orientation::TabsAtTop),
 processor (p),
 vts(vts),
 OSCILLOSCOPE(processor.getAudioBufferQueue()),
-tabs(TabbedButtonBar::Orientation::TabsAtTop),
 keyboard(p.keyboardState, MidiKeyboardComponent::Orientation::horizontalKeyboard),
 envsAndLFOs(TabbedButtonBar::TabsAtTop),
 tuningTab(processor, vts),
 fxTab(*this, processor,vts),
-constrain(new ComponentBoundsConstrainer()),
-resizer(new ResizableCornerComponent (this, constrain.get())),
 chooser("Select a .wav file to load...", {}, "*.wav")
-
 {
     
    
     
     Typeface::Ptr tp = Typeface::createSystemTypefaceFor(BinaryData::EuphemiaCAS_ttf,
                                                          BinaryData::EuphemiaCAS_ttfSize);
-    euphemia = Font(tp);
-    addAndMakeVisible(tooltipWindow);
-    logo = Drawable::createFromImageData (BinaryData::logo_large_svg,
-                                          BinaryData::logo_large_svgSize);
-    addAndMakeVisible(logo.get());
-    synderphonicsLabel.setText("SNYDERPHONICS", dontSendNotification);
-    synderphonicsLabel.setJustificationType(Justification::topLeft);
-    synderphonicsLabel.setColour(Label::textColourId, Colours::gold.withBrightness(0.9f));
-    addAndMakeVisible(synderphonicsLabel);
-    ElectrobassLabel.setText("Electrobass", dontSendNotification);
-    ElectrobassLabel.setJustificationType(Justification::topLeft);
-    ElectrobassLabel.setColour(Label::textColourId, Colours::gold.withBrightness(0.9f));
-    addAndMakeVisible(ElectrobassLabel);
     
-    setWantsKeyboardFocus(true);
-    
-    getTopLevelComponent()->addKeyListener(this);
-    
+    addTab("Synth", Colours::black, &tab1, false, 0);
+    addTab("Control", Colours::black, &tab2, false, 1);
+    addTab("Tuning", Colours::black, &tab3, false, 2);
+    addTab("FX", Colours::black, &tab4, false, 3);
     //==============================================================================
     // TAB1 ========================================================================
     addAndMakeVisible(tab1);
-    
     currentMappingSource = nullptr;
     uniqueMacroComponent.setOutlineColour(Colours::darkgrey);
     tab1.addAndMakeVisible(uniqueMacroComponent);
@@ -380,34 +361,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     }
     //==============================================================================
     
-    tabs.addTab("Synth", Colours::black, &tab1, false);
-    tabs.addTab("Control", Colours::black, &tab2, false);
-    tabs.addTab("Tuning", Colours::black, &tab3, false);
-    tabs.addTab("FX", Colours::black, &tab4, false);
-    
-    tabs.getTabbedButtonBar().getTabButton(0)->addListener(this);
-    tabs.getTabbedButtonBar().getTabButton(1)->addListener(this);
-    tabs.getTabbedButtonBar().getTabButton(2)->addListener(this);
-    tabs.getTabbedButtonBar().getTabButton(3)->addListener(this);
-    addAndMakeVisible(&tabs);
-    
-    setSize(EDITOR_WIDTH * processor.editorScale, EDITOR_HEIGHT * processor.editorScale);
-    
-    sendOutButton.setButtonText("Send preset via MIDI");
-    sendOutButton.setLookAndFeel(&laf);
-    sendOutButton.onClick = [this] { processor.sendPresetMidiMessage(); };
-    addAndMakeVisible(sendOutButton);
-    
-    constrain->setFixedAspectRatio(EDITOR_WIDTH / EDITOR_HEIGHT);
-    
-//    addAndMakeVisible(*resizer);
-    resizer->setAlwaysOnTop(true);
-    
-    versionLabel.setJustificationType(Justification::centred);
-    versionLabel.setBorderSize(BorderSize<int>(2));
-    versionLabel.setText("v" + String(ProjectInfo::versionString), dontSendNotification);
-    versionLabel.setColour(Label::ColourIds::textColourId, Colours::lightgrey);
-    addAndMakeVisible(versionLabel);
+
     
     //    addAndMakeVisible(&container);
     //processor.setMPEMode(true); //HACKYEB
@@ -417,7 +371,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
 
 
 
-ElectroAudioProcessorEditor::~ElectroAudioProcessorEditor()
+ElectroUI::~ElectroUI()
 {
     //    masterDial->setLookAndFeel(nullptr);
     //    ampDial->setLookAndFeel(nullptr);
@@ -455,7 +409,7 @@ ElectroAudioProcessorEditor::~ElectroAudioProcessorEditor()
     parallelLabel.setLookAndFeel(nullptr);
     envsAndLFOs.setLookAndFeel(nullptr);
     
-    sendOutButton.setLookAndFeel(nullptr);
+
     
     midiKeyRangeSlider.setLookAndFeel(nullptr);
     midiKeyMinLabel.setLookAndFeel(nullptr);
@@ -474,7 +428,7 @@ ElectroAudioProcessorEditor::~ElectroAudioProcessorEditor()
 }
 
 //==============================================================================
-void ElectroAudioProcessorEditor::paint (Graphics& g)
+void ElectroUI::paint (Graphics& g)
 {
     // (Our component is opaque, so we must completely fill the background with a solid colour)
     //    g.setGradientFill(ColourGradient(Colour(25, 25, 25), juce::Point<float>(0,0), Colour(10, 10, 10), juce::Point<float>(0, getHeight()), false));
@@ -490,7 +444,7 @@ void ElectroAudioProcessorEditor::paint (Graphics& g)
     g.fillRect(getWidth() * 0.25f, getHeight() * 0.75f, getWidth() * 0.2f, getHeight() * 0.15f);
 }
 
-void ElectroAudioProcessorEditor::resized()
+void ElectroUI::resized()
 {
 
     int width = getWidth();
@@ -501,15 +455,6 @@ void ElectroAudioProcessorEditor::resized()
     processor.editorScale = 1.05f;
     // Set OSCILLOSCOPE bounds
 
-    
-    //tabs.setBounds(getLocalBounds().expanded(1));
-    tabs.setBoundsRelative(0,0,1,1.0);
-    tabs.setTabBarDepth(30*s);
-    
-    height -= tabs.getTabBarDepth();
-    
-    
-   
     //==============================================================================
     // TAB1 ========================================================================
     for (int i = 0; i < NUM_OSCS; ++i)
@@ -657,41 +602,21 @@ void ElectroAudioProcessorEditor::resized()
     
     //==============================================================================
     
-    versionLabel.setBounds(width*0.79f, 0, width * 0.05f, tabs.getTabBarDepth());
-    versionLabel.setFont(euphemia.withHeight(20*s));
-    
-    sendOutButton.setBounds(width*0.85f, -1, width*0.15f+2, tabs.getTabBarDepth());
-    
-    int logoLeft = tabs.getTabbedButtonBar().getTabButton(2)->getRight() + 90*s;
-    Rectangle<float> logoArea (logoLeft, 0, 98*s, tabs.getTabBarDepth());
-    logo->setTransformToFit (logoArea,
-                             RectanglePlacement::xLeft +
-                             RectanglePlacement::yTop +
-                             RectanglePlacement::fillDestination);
-    synderphonicsLabel.setBounds(logoLeft+50*s, -5*s, 220*s, 34*s);
-    synderphonicsLabel.setFont(euphemia.withHeight(34*s));
-    ElectrobassLabel.setBounds(synderphonicsLabel.getRight(), -5*s, 300*s, 34*s);
-    ElectrobassLabel.setFont(euphemia.withHeight(34*s).withStyle(3));
-    
-    float rt = EDITOR_WIDTH / EDITOR_HEIGHT;
-    constrain->setSizeLimits(200, 200/rt, 800*rt, 800);
-    resizer->setBounds(getWidth()-12, getHeight()-12, 12, 12);
-    
     //    container.setBounds(getLocalBounds());
     
     //==============================================================================
     // TAB3 ========================================================================
     
-    fxTab.setBoundsRelative(0.05f, 0.08f, 0.8f, 0.75f);
+    fxTab.setBoundsRelative(0.05f, 0.08f, 0.8f, 0.8f);
     for (int i = 0; i < allSources.size(); ++i)
     {
-        allSources[i]->setBounds(6*s + (75+2)*(i/5), fxTab.getBottom() + ((i%5)*(40*0.5f)), 75, 40*0.5f);
+        allSources[i]->setBounds(6*s + (75+2)*(i/3), fxTab.getBottom() + ((i%3)*(40*0.5f)), 75, 40*0.5f);
     }
     //==============================================================================
   
 }
 
-void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
+void ElectroUI::sliderValueChanged(Slider* slider)
 {
     if (slider == nullptr) return;
     
@@ -717,7 +642,7 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
     }
 }
 
-void ElectroAudioProcessorEditor::buttonClicked(Button* button)
+void ElectroUI::buttonClicked(Button* button)
 {
     if (button == nullptr) return;
 
@@ -729,30 +654,10 @@ void ElectroAudioProcessorEditor::buttonClicked(Button* button)
         }
     }
     
-    if (button == tabs.getTabbedButtonBar().getTabButton(0))
-    {
-        tab1.addAndMakeVisible(mpeToggle);
-        tab1.addAndMakeVisible(OSCILLOSCOPE);
-        for (auto slider : pitchBendSliders) tab1.addAndMakeVisible(slider);
-        for (auto button : stringActivityButtons) tab1.addAndMakeVisible(button);
-    }
-    else if (button == tabs.getTabbedButtonBar().getTabButton(1))
-    {
-        tab2.addAndMakeVisible(mpeToggle);
-        for (auto slider : pitchBendSliders) tab2.addAndMakeVisible(slider);
-        for (auto button : stringActivityButtons) tab2.addAndMakeVisible(button);
-    }
-    else if (button == tabs.getTabbedButtonBar().getTabButton(2))
-    {
-        
-    }
-    else if (button == tabs.getTabbedButtonBar().getTabButton(3))
-    {
-        tab4.addAndMakeVisible(OSCILLOSCOPE);
-    }
+    
 }
 
-void ElectroAudioProcessorEditor::labelTextChanged(Label* label)
+void ElectroUI::labelTextChanged(Label* label)
 {
     if (label == nullptr) return;
     
@@ -778,7 +683,7 @@ void ElectroAudioProcessorEditor::labelTextChanged(Label* label)
     }
 }
 
-void ElectroAudioProcessorEditor::mouseDown (const MouseEvent &event)
+void ElectroUI::mouseDown (const MouseEvent &event)
 {
     if (MappingSource* ms = dynamic_cast<MappingSource*>(event.originalComponent->getParentComponent()))
     {
@@ -794,12 +699,8 @@ void ElectroAudioProcessorEditor::mouseDown (const MouseEvent &event)
     }
 }
 
-bool ElectroAudioProcessorEditor::keyPressed (const KeyPress &key, Component *originatingComponent)
-{
-    return false;
-}
 
-void ElectroAudioProcessorEditor::timerCallback()
+void ElectroUI::timerCallback()
 {
     for (int i = 0; i < MAX_NUM_VOICES+1; ++i)
     {
@@ -810,7 +711,7 @@ void ElectroAudioProcessorEditor::timerCallback()
 
 }
 
-void ElectroAudioProcessorEditor::update()
+void ElectroUI::update()
 {
     updateMPEToggle(processor.getMPEMode());
     for (int i = 0; i < MAX_NUM_VOICES+1; ++i)
@@ -835,7 +736,7 @@ void ElectroAudioProcessorEditor::update()
 }
 
 
-void ElectroAudioProcessorEditor::updateMPEToggle(bool state)
+void ElectroUI::updateMPEToggle(bool state)
 {
     processor.setMPEMode(state);
     mpeToggle.setToggleState(state, dontSendNotification);
@@ -854,7 +755,7 @@ void ElectroAudioProcessorEditor::updateMPEToggle(bool state)
     }
 }
 
-void ElectroAudioProcessorEditor::updateStringChannel(int string, int ch)
+void ElectroUI::updateStringChannel(int string, int ch)
 {
     ch = jlimit(0, 16, ch);
     // Handle mapping that will be overwritten
@@ -880,7 +781,7 @@ void ElectroAudioProcessorEditor::updateStringChannel(int string, int ch)
     stringChannelEntries[string]->setEnabled(state);
 }
 
-void ElectroAudioProcessorEditor::updateMacroControl(int macro, int ctrl)
+void ElectroUI::updateMacroControl(int macro, int ctrl)
 {
     ctrl = jlimit(0, 127, ctrl);
     // Handle mapping that will be overwritten
@@ -902,13 +803,13 @@ void ElectroAudioProcessorEditor::updateMacroControl(int macro, int ctrl)
     macroControlEntries[macro]->setText(text, dontSendNotification);
 }
 
-void ElectroAudioProcessorEditor::updateMacroNames(int macro, String name)
+void ElectroUI::updateMacroNames(int macro, String name)
 {
     processor.macroNames.set(macro, name);
     macroControlNames[macro]->setText(processor.macroNames[macro], dontSendNotification);
 }
 
-void ElectroAudioProcessorEditor::updateMidiKeyRangeSlider(int min, int max)
+void ElectroUI::updateMidiKeyRangeSlider(int min, int max)
 {
     processor.midiKeyMin = min;
     processor.midiKeyMax = max;
@@ -918,7 +819,7 @@ void ElectroAudioProcessorEditor::updateMidiKeyRangeSlider(int min, int max)
     midiKeyMaxLabel.setText(String(processor.midiKeyMax), dontSendNotification);
 }
 
-void ElectroAudioProcessorEditor::updateNumVoicesSlider(int numVoices)
+void ElectroUI::updateNumVoicesSlider(int numVoices)
 {
     //processor.numVoicesActive = numVoices;
     processor.setNumVoicesActive(numVoices);
@@ -930,7 +831,8 @@ void ElectroAudioProcessorEditor::updateNumVoicesSlider(int numVoices)
     
 }
 
-void ElectroAudioProcessorEditor::updateRandomValueLabel(float value)
+void ElectroUI::updateRandomValueLabel(float value)
 {
     randomValueLabel.setText(String(value, 3), dontSendNotification);
 }
+
