@@ -681,9 +681,12 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         {
            
             const NormalisableRange<float>& range = vts.getParameter(id)->getNormalisableRange();
-            data.add(range.convertFrom0to1(vts.getParameter(id)->getValue()));
-            DBG(String(count++)+ ": " + id + ": "+ String(range.convertFrom0to1(vts.getParameter(id)->getValue())));
+            data.add(vts.getParameter(id)->getValue());
+            DBG(String(count++)+ ": " + id + ": "+ String(vts.getParameter(id)->getValue()));
         }
+        
+        //mark end of parameter values
+        data.add(-1.0f);
         
         // Mappings
         for (auto id : paramIds)
@@ -699,13 +702,25 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
                         data.add(sourceIds.indexOf(source->name));//SourceID
                         data.add(paramIds.indexOf(id));//TargetID
                         //int jjjj = paramIds.indexOf(id);
+                        //don't need index anymore
+                        //scalarSource -- negative 1 if no source
                         data.add(t);//TargetIndex
-                        data.add(target->end);//Mapping range length
-                        DBG(tn +": " + String(sourceIds.indexOf(source->name))+ ", " + String(paramIds.indexOf(id))+", " + String(t)+ ", " +String(target->end));
+                        const NormalisableRange<float>& range = vts.getParameter(id)->getNormalisableRange();
+                        float tempRange = range.convertTo0to1(target->end);
+                        data.add(tempRange);//Mapping range length
+                        DBG(tn +": " + String(sourceIds.indexOf(source->name))+ ", " + String(paramIds.indexOf(id))+", " + String(t)+ ", " +String(tempRange));
                     }
                 }
             }
         }
+        //mark end of mapping values
+        data.add(-1.0f);
+
+        //next things that would be useful to send:
+        // string assignment midi notes
+        // tunings
+        // how many extra wavetables are used and which oscillators are they assigned to
+        // 
 //        for (int i = 0 ; i < sourceIds.size(); i++)
 //        {
 //            DBG(String(i) +  ": " + sourceIds[i]);
@@ -713,24 +728,65 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         Array<uint8_t> data7bitInt;
         union uintfUnion fu;
         
+        uint16_t sizeOfSysexChunk = (64 / 5) - 3;
+        int dataToSend = data.size();
+        uint16_t currentChunk = 0;
+        uint16_t currentDataPointer = 0;
+        while(currentDataPointer < dataToSend)
+        {
+            data7bitInt.clear();
+            data7bitInt.add(0); // saying it's a preset
+            data7bitInt.add(1); // which preset are we saving
+            data7bitInt.add(currentChunk); // whichChhunk
+            uint16_t toSendInThisChunk;
+            uint16_t dataRemaining = dataToSend - currentDataPointer;
+            if (dataRemaining < sizeOfSysexChunk)
+            {
+                toSendInThisChunk = dataRemaining;
+            }
+            else
+            {
+                toSendInThisChunk = sizeOfSysexChunk;
+            }
+
+            for (int i = currentDataPointer; i < toSendInThisChunk+currentDataPointer; i++)
+            {
+                fu.f = data[i];
+                data7bitInt.add((fu.i >> 28) & 15);
+                data7bitInt.add((fu.i >> 21) & 127);
+                data7bitInt.add((fu.i >> 14) & 127);
+                data7bitInt.add((fu.i >> 7) & 127);
+                data7bitInt.add(fu.i & 127);
+
+            }
+            currentDataPointer = currentDataPointer + toSendInThisChunk;
+            MidiMessage presetMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
+        
+            midiMessages.addEvent(presetMessage, 0);
+
+            currentChunk++;
+        }
+        /*
+        data7bitInt.clear();
+        data7bitInt.add(0); // saying it's a preset
+        data7bitInt.add(1); // which preset are we saving
+        data7bitInt.add(0); // whichChhunk
         for (int i = 0; i < data.size(); i++)
         {
-            data7bitInt.add(0); // saying it's a preset
-            
             fu.f = data[i];
             data7bitInt.add((fu.i >> 28) & 15);
             data7bitInt.add((fu.i >> 21) & 127);
             data7bitInt.add((fu.i >> 14) & 127);
             data7bitInt.add((fu.i >> 7) & 127);
             data7bitInt.add(fu.i & 127);
-            
-            MidiMessage presetMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
-            
-            midiMessages.addEvent(presetMessage, 0);
         }
+        MidiMessage presetMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
+    
+        midiMessages.addEvent(presetMessage, 0);
         
+        */
         // Wavetable data
-        
+        /*
         // Determine which tables are in use and therefore should be sent
         Array<String> tableSetsToSend;
         for (auto osc : oscs)
@@ -770,12 +826,13 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
                 data7bitInt.add((fu.i >> 7) & 127);
                 data7bitInt.add(fu.i & 127);
                 
-                MidiMessage presetMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
-                
-                midiMessages.addEvent(presetMessage, 0);
+
             }
+            MidiMessage wtMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
+            
+            midiMessages.addEvent(wtMessage, 0);
         }
-    
+    */
         waitingToSendPreset = false;
     }
     
