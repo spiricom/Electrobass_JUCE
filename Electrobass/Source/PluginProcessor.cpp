@@ -164,6 +164,10 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
         layout.add (std::make_unique<AudioParameterChoice> (ParameterID { n,  1 }, n,  StringArray("Off", "On"), 1));
         paramIds.add(n);
         
+        n = "Osc" + String(i+1) + " isSync";
+        layout.add (std::make_unique<AudioParameterChoice> (ParameterID { n,  1 }, n,  StringArray("Off", "On"), 1));
+        paramIds.add(n);
+        
         n = "Osc" + String(i+1) + " ShapeSet";
         layout.add (std::make_unique<AudioParameterChoice> (ParameterID { n,  1 }, n, oscShapeSetNames, 0));
         paramIds.add(n);
@@ -232,6 +236,8 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
             invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
             layout.add (std::make_unique<AudioParameterFloat> (ParameterID { n,  1 }, n, normRange, def));
             paramIds.add(n);
+            DBG(n+String(normRange.convertFrom0to1(1.0f)));
+            DBG(n+String(normRange.skew));
         }
     }
     
@@ -256,6 +262,7 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
             normRange = NormalisableRange<float>(min, max);
             normRange.setSkewForCentre(center);
             invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
+            //DBG("envelope skew: " + String(normRange.skew + " " + String(i));
             layout.add (std::make_unique<AudioParameterFloat> (ParameterID { n,  1 }, n, normRange, def));
             paramIds.add(n);
         }
@@ -382,6 +389,9 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
         sourceIds.add(n);
     }
     
+    oscs[0]->setSyncSource(oscs[2]);
+    oscs[1]->setSyncSource(oscs[0]);
+    oscs[2]->setSyncSource(oscs[1]);
     noise = std::make_unique<NoiseGenerator>("Noise", *this, vts);
     sourceIds.add("Noise");
     

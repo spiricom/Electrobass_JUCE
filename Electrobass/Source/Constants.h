@@ -121,13 +121,13 @@ typedef enum _LowFreqParam
 {
     LowFreqRate = 0,
     LowFreqShape,
-    LowFreqSyncPhase,
+    LowFreqPhase,
     LowFreqParamNil
 } LowFreqParam;
 static const StringArray cLowFreqParams = {
     "Rate",
     "Shape",
-    "Sync Phase"
+    "Phase"
 };
 static const std::vector<std::vector<float>> vLowFreqInit = {
     { 0.0f, 30.f, 0.5f, 2.f },  //Rate
