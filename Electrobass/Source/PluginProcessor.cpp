@@ -165,7 +165,7 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
         paramIds.add(n);
         
         n = "Osc" + String(i+1) + " isSync";
-        layout.add (std::make_unique<AudioParameterChoice> (ParameterID { n,  1 }, n,  StringArray("Off", "On"), 1));
+        layout.add (std::make_unique<AudioParameterChoice> (ParameterID { n,  1 }, n,  StringArray("Off", "On"), 0));
         paramIds.add(n);
         
         n = "Osc" + String(i+1) + " ShapeSet";
@@ -941,7 +941,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
 
         for (int i = 0; i < ccParams.size(); ++i)
         {
-            ccParams[i]->tickNoHooks();
+            ccParams[i]->tickSkewsNoHooks();
         }
         
         float globalPitchBend = pitchBendParams[0]->tickNoHooksNoSmoothing();
