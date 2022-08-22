@@ -687,6 +687,8 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         // Parameter values
         // Order is determined in createParameterLayout
         int count = 0;
+        //first send a count of the number of parameters that will be sent
+        data.add(paramIds.size());
         for (auto id : paramIds)
         {
            
@@ -696,8 +698,11 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         }
         
         //mark end of parameter values
-        data.add(-1.0f);
+        data.add(-2.0f);
         
+        //now prepare the mapping data, need to loop through the array to count how many before adding to the final array
+        Array<float> tempData;
+        int mapCount = 0;
         // Mappings
         for (auto id : paramIds)
         {
@@ -709,22 +714,44 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
                     MappingTargetModel* target = targetMap[tn];
                     if (MappingSourceModel* source = target->currentSource)
                     {
-                        data.add(sourceIds.indexOf(source->name));//SourceID
-                        data.add(paramIds.indexOf(id));//TargetID
+                        tempData.add(sourceIds.indexOf(source->name));//SourceID
+                        tempData.add(paramIds.indexOf(id));//TargetID
                         //int jjjj = paramIds.indexOf(id);
                         //don't need index anymore
                         //scalarSource -- negative 1 if no source
-                        data.add(t);//TargetIndex
+                        float scalarsource = -1.0f;
+                        if (target->currentScalarSource != nullptr)
+                        {
+                            scalarsource = sourceIds.indexOf(target->currentScalarSource->name);
+                        }
+                            
+                        tempData.add(scalarsource);
+                        float multiplier = 1.0f;
                         const NormalisableRange<float>& range = vts.getParameter(id)->getNormalisableRange();
-                        float tempRange = range.convertTo0to1(target->end);
-                        data.add(tempRange);//Mapping range length
-                        DBG(tn +": " + String(sourceIds.indexOf(source->name))+ ", " + String(paramIds.indexOf(id))+", " + String(t)+ ", " +String(tempRange));
+                        float tempRange = target->end;
+                        if (tempRange < 0.0f)
+                        {
+                            multiplier = -1.0f;
+                            tempRange = fabsf(target->end);
+                        }
+                        tempRange = range.convertTo0to1(tempRange);
+                        tempData.add(tempRange * multiplier);//Mapping range length
+                        DBG(tn +": " + String(sourceIds.indexOf(source->name))+ ", " + String(paramIds.indexOf(id))+", " + String(scalarsource)+ ", " +String(tempRange * multiplier));
+                        mapCount++;
                     }
                 }
             }
         }
+        
+        //now send how many mappings will follow
+        data.add(mapCount);
+        for (int i = 0; i < tempData.size(); i++)
+        {
+            data.add(tempData[i]);
+        }
+        
         //mark end of mapping values
-        data.add(-1.0f);
+        data.add(-3.0f);
 
         //next things that would be useful to send:
         // string assignment midi notes
