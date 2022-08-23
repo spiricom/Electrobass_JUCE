@@ -29,7 +29,7 @@
 #define NUM_ENVS 4
 #define NUM_LFOS 4
 #define NUM_FX 4
-#define OVERSAMPLE 4
+#define OVERSAMPLE 2
 #define EXP_BUFFER_SIZE 2048
 #define DECAY_EXP_BUFFER_SIZE 2048
 

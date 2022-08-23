@@ -687,12 +687,13 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         // Parameter values
         // Order is determined in createParameterLayout
         int count = 0;
+       // int myCount = 0;
         //first send a count of the number of parameters that will be sent
         data.add(paramIds.size());
         for (auto id : paramIds)
         {
-           
-            const NormalisableRange<float>& range = vts.getParameter(id)->getNormalisableRange();
+            //data.add((float)myCount++);
+            //const NormalisableRange<float>& range = vts.getParameter(id)->getNormalisableRange();
             data.add(vts.getParameter(id)->getValue());
             DBG(String(count++)+ ": " + id + ": "+ String(vts.getParameter(id)->getValue()));
         }
@@ -772,9 +773,11 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         while(currentDataPointer < dataToSend)
         {
             data7bitInt.clear();
+
             data7bitInt.add(0); // saying it's a preset
             data7bitInt.add(1); // which preset are we saving
-            data7bitInt.add(currentChunk); // whichChhunk
+            
+            //data7bitInt.add(currentChunk); // whichChhunk
             uint16_t toSendInThisChunk;
             uint16_t dataRemaining = dataToSend - currentDataPointer;
             if (dataRemaining < sizeOfSysexChunk)
@@ -803,6 +806,12 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
 
             currentChunk++;
         }
+        data7bitInt.clear();
+        data7bitInt.add(126); // custom command to start parsing, sysex send is finished!
+        data7bitInt.add(1); // which preset did we just finish
+        MidiMessage presetMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
+        midiMessages.addEvent(presetMessage, 0);
+        
         /*
         data7bitInt.clear();
         data7bitInt.add(0); // saying it's a preset
