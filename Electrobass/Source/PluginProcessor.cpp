@@ -679,7 +679,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         m = metadata.getMessage();
         handleMidiMessage(m);
     }
-    
+    midiMessages.clear();
     if (waitingToSendPreset)
     {
         Array<float> data;
