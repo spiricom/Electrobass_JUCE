@@ -77,6 +77,7 @@ typedef enum _OscParam
     OscFreq,
     OscShape,
     OscAmp,
+    OscHarm,
     OscParamNil
 } OscParam;
 static const StringArray cOscParams = {
@@ -85,6 +86,7 @@ static const StringArray cOscParams = {
     "Freq",
     "Shape",
     "Amp",
+    "Harmonics"
 };
 static const std::vector<std::vector<float>> vOscInit = {
     { -24.0f, 24.0f, 0.0f, 0.0f }, //Pitch
@@ -92,6 +94,7 @@ static const std::vector<std::vector<float>> vOscInit = {
     { -2000.f, 2000.f, 0.0f, 0.0f }, //Freq
     { 0.0f, 1.0f, 0.0f, 0.5f },  //Shape
     { 0.0f, 2.0f, 1.0f, 1.0f },  //Amp
+    { -16, 16, 0.0f, 0.0f} //harmonmics
 };
 
 typedef enum _OscShapeSet
