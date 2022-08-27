@@ -386,7 +386,7 @@ static const std::vector<StringArray> FXParamNames = {
     {"Delay","Depth","Speed1","Speed2",""},
     {"Gain","Quality","Sampling Ratio","Round","Operation"},
     {"Tilt","PeakFreq","PeakQ","PeakGain","PostGain"},
-    {"Drive","Offset","PostGain","",""}
+    {"Drive","Offset","FB","FF","Depth"}
 };
 
 static const std::vector<std::vector<float>> FXParamDefaults = {

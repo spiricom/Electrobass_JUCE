@@ -17,7 +17,7 @@ using std::array;
 template <typename Type>
 class AudioBufferQueue {
 public:
-    static constexpr size_t order = 9; // number of points.
+    static constexpr size_t order = 8; // number of points.
     static constexpr size_t bufferSize = 1U << order; // 512 size
     static constexpr size_t size = 5;
 
@@ -58,12 +58,14 @@ public:
 
     void process(const Type* data, size_t numSamples) {
         size_t index = 0;
-
+        size_t numSamplesdiv4 =numSamples/4;
         // If the sample hits a trigger threshold:
         if (state == State::waitingForTrigger) {
-            while (index++ < numSamples) {
-                auto curSample = (*data++) + ((0.0001f * (juce::Random::getSystemRandom().nextFloat() - 0.5f))); // Get the current sample, then move onto the next.  Add a tiny bit of noise to avoid stuck scope lines when amplitude goes to zero.
+            while (index++ < numSamplesdiv4) {
+                auto curSample = *data + ((0.0001f * (juce::Random::getSystemRandom().nextFloat() - 0.5f))); // Get the current sample, then move onto the next.  Add a tiny bit of noise to avoid stuck scope lines when amplitude goes to zero.
                 // If a new trigger level:
+                data+=4;
+
                 if ((curSample >= triggerLevel) && (prevSample < triggerLevel)) {
                     collectedIndex = 0;
                     state = State::collecting;
@@ -75,8 +77,10 @@ public:
 
         // Audio is ready for collecting:
         if (state == State::collecting) {
-            while (index++ < numSamples) {
-                buffer[collectedIndex++] = *data++; // Copy current sample into the buffer, then move onto the next.
+            while (index++ < numSamplesdiv4) {
+                buffer[collectedIndex++] = *data; // Copy current sample into the buffer, then move onto the next.
+                data+=4;
+
                 // If we hit the end of the buffer, push and reset.
                 if (collectedIndex == buffer.size()) {
                     audioBufferQueue.push(buffer.data(), buffer.size());
@@ -153,7 +157,7 @@ private:
         auto center = rect.getBottom() - offset;
         auto gain = h * scaler;
 
-        for (size_t i = 1; i < numSamples; ++i)
+        for (size_t i = 1; i < numSamples; i++)
             g.drawLine({ juce::jmap(Type(i-1), Type(0), Type(numSamples-1), Type(right-w), Type(right)),
                           center-gain * data[i-1],
                           juce::jmap(Type(i), Type(0), Type(numSamples-1), Type(right-w), Type(right)),

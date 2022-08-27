@@ -735,7 +735,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
                             multiplier = -1.0f;
                             tempRange = fabsf(target->end);
                         }
-                        tempRange = range.convertTo0to1(tempRange);
+                        tempRange = ((tempRange) / (range.end - range.start));
                         tempData.add(tempRange * multiplier);//Mapping range length
                         DBG(tn +": " + String(sourceIds.indexOf(source->name))+ ", " + String(paramIds.indexOf(id))+", " + String(scalarsource)+ ", " +String(tempRange * multiplier));
                         mapCount++;
