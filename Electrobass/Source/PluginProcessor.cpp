@@ -94,16 +94,12 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
                      string3FromValueFunction));
         paramIds.add(n);
     }
-    n = "PitchBendRangeUp";
+    n = "PitchBendRange";
     normRange = NormalisableRange<float>(0., 24., 1.);
     layout.add (std::make_unique<AudioParameterFloat>
                 (ParameterID { n,  1 }, n, normRange, 2., String(), AudioProcessorParameter::genericParameter));
     paramIds.add(n);
-    n = "PitchBendRangeDown";
-    normRange = NormalisableRange<float>(0., 24., 1.);
-    layout.add (std::make_unique<AudioParameterFloat>
-                (ParameterID { n,  1 }, n, normRange, 2., String(), AudioProcessorParameter::genericParameter));
-    paramIds.add(n);
+ 
     //==============================================================================
     n = "Noise";
     layout.add (std::make_unique<AudioParameterChoice> (ParameterID { n,  1 }, n, StringArray("Off", "On"), 1));
@@ -322,6 +318,7 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
         n = cCopedentColumnNames[i];
         layout.add (std::make_unique<AudioParameterChoice>(ParameterID { n,  1 }, n, StringArray("Off", "On"), 0));
     }
+
     
     DBG("PARAMS//");
     for (int i = 0; i < paramIds.size(); ++i)
@@ -445,10 +442,13 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
     
     midiKeySource = std::make_unique<MappingSourceModel>(*this, "MIDI Key In",
                                                          true, false, Colours::white);
+    sourceIds.add("MIDI Key In");
 	velocitySource = std::make_unique<MappingSourceModel>(*this, "Velocity In",
 														  true, false, Colours::white);
+    sourceIds.add("Velocity In");
 	randomSource = std::make_unique<MappingSourceModel>(*this, "Random on Attack",
                                                         true, false, Colours::white);
+    sourceIds.add("Random on Attack");
     for (int i = 0; i < numInvParameterSkews; ++i)
     {
         midiKeyValues[i] = (float*)leaf_alloc(&leaf, sizeof(float) * MAX_NUM_VOICES);
@@ -485,8 +485,8 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
         pitchBendParams.add(new SmoothedParameter(*this, vts, "PitchBend" + String(i)));
     }
     
-    pitchBendRangeUp = std::make_unique<SmoothedParameter>(*this, vts, "PitchBendRangeUp");
-    pitchBendRangeDown = std::make_unique<SmoothedParameter>(*this, vts, "PitchBendRangeDown");
+    _pitchBendRange = std::make_unique<SmoothedParameter>(*this, vts, "PitchBendRange");
+    //pitchBendRangeDown = std::make_unique<SmoothedParameter>(*this, vts, "PitchBendRangeDown");
 
     
     for (int i = 1; i <= 16; ++i) channelToStringMap.set(i, -1);
@@ -689,7 +689,11 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         int count = 0;
        // int myCount = 0;
         //first send a count of the number of parameters that will be sent
-        data.add(paramIds.size());
+        data.add(paramIds.size() + 2);
+        data.add(midiKeyMax);
+        DBG(String(count++)+ ": Midi Key Max: "+ String(midiKeyMax));
+        data.add(midiKeyMin);
+        DBG(String(count++)+ ": Midi Key Min: "+ String(midiKeyMin));
         for (auto id : paramIds)
         {
             //data.add((float)myCount++);
@@ -705,6 +709,8 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         Array<float> tempData;
         int mapCount = 0;
         // Mappings
+        DBG("Mappings");
+        DBG("Name: sourceparamid, targetparamaid, scalarsource, range ");
         for (auto id : paramIds)
         {
             for (int t = 0; t < 3; ++t)

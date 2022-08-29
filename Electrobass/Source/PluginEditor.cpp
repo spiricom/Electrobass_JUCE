@@ -196,9 +196,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     rangeSlider.addListener(this);
     tab1.addAndMakeVisible(rangeSlider);
     
-    sliderAttachments.add(new SliderAttachment(vts, "PitchBendRangeUp",
-                                               rangeSlider));
-    sliderAttachments.add(new SliderAttachment(vts, "PitchBendRangeDown",
+    sliderAttachments.add(new SliderAttachment(vts, "PitchBendRange",
                                                rangeSlider));
     rangeLabel.setText("RANGE", dontSendNotification);
     rangeLabel.setLookAndFeel(&laf);
@@ -707,11 +705,8 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
     
     if (slider == &rangeSlider)
     {
-        vts.getParameter("PitchBendRangeUp")->setValue(rangeSlider.getValue());
+        //vts.getParameter("PitchBendRange")->setValue(rangeSlider.getValue());
         processor.pitchBendRange->end = rangeSlider.getValue();
-        processor.pitchBendRange->setSkewForCentre(0.0f);
-        vts.getParameter("PitchBendRangeDown")->setValue(rangeSlider.getValue());
-        processor.pitchBendRange->start = - rangeSlider.getValue();
         processor.pitchBendRange->setSkewForCentre(0.0f);
         //pitchBendSliders[0]->setRange(- (rangeDownSlider.getValue()), rangeUpSlider.getValue());
     }

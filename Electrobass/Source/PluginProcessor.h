@@ -131,8 +131,8 @@ public:
     OwnedArray<Effect> fx;
     std::unique_ptr<SmoothedParameter> transposeParam;
     OwnedArray<SmoothedParameter> pitchBendParams;
-    std::unique_ptr<SmoothedParameter> pitchBendRangeUp;
-    std::unique_ptr<SmoothedParameter> pitchBendRangeDown;
+    std::unique_ptr<SmoothedParameter> _pitchBendRange;
+    
     OwnedArray<SmoothedParameter> ccParams;
     OwnedArray<MappingSourceModel> ccSources;
     std::unique_ptr<SmoothedParameter> seriesParallelParam;
@@ -225,22 +225,22 @@ public:
     std::unique_ptr<NormalisableRange<float>> pitchBendRange;
     float convertFrom0to1Func(float value0To1)
     {
-        if (pitchBendRangeDown  && pitchBendRangeDown )
+        if (_pitchBendRange)
         {
             
-            float range  = (pitchBendRangeUp->getRawValue() + pitchBendRangeDown->getRawValue());
+            float range  = (_pitchBendRange->getRawValue() + _pitchBendRange->getRawValue());
             float a = (range)*(value0To1);
-            float val = (( a / 1)) - pitchBendRangeDown->getRawValue();
+            float val = (( a / 1)) - _pitchBendRange->getRawValue();
             return val;
         }
         else return 0;
     }
     float convertTo0To1Func(float worldValue)
     {
-        if (pitchBendRangeDown && pitchBendRangeDown )
+        if (_pitchBendRange )
         {
-            float a = worldValue + pitchBendRangeDown->getRawValue();
-            float val = a / (pitchBendRangeUp->getRawValue() + pitchBendRangeDown->getRawValue());
+            float a = worldValue + _pitchBendRange->getRawValue();
+            float val = a / (_pitchBendRange->getRawValue() + _pitchBendRange->getRawValue());
             return val;
         }
         else return 0;
