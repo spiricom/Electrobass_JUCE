@@ -261,13 +261,16 @@ static const std::vector<std::vector<float>> vEnvelopeInit = {
 typedef enum _OutputParam
 {
     OutputAmp,
+    OutputTone,
     OutputParamNil
 } OutputParam;
 static const StringArray cOutputParams = {
     "Amp",
+    "Tone"
 };
 static const std::vector<std::vector<float>> vOutputInit = {
     { 0.0f, 2.0f, 0.0f, 1.0f },   //Amp
+    { 0.0f, 127.f, 72.f, 63.5f },   //Tone
 };
 
 
