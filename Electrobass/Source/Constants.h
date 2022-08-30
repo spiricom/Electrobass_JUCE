@@ -14,7 +14,8 @@
 #include <float.h>
 #define EDITOR_WIDTH 900.0f
 #define EDITOR_HEIGHT 700.0f
-#define NUM_GENERIC_MACROS 16
+#define NUM_GENERIC_MACROS 8
+
 #define NUM_UNIQUE_MACROS 5
 #define NUM_MACROS (NUM_GENERIC_MACROS + NUM_UNIQUE_MACROS)
 #define PEDAL_MACRO_ID (NUM_MACROS-1)
@@ -77,6 +78,7 @@ typedef enum _OscParam
     OscFreq,
     OscShape,
     OscAmp,
+    OscHarm,
     OscParamNil
 } OscParam;
 static const StringArray cOscParams = {
@@ -85,6 +87,7 @@ static const StringArray cOscParams = {
     "Freq",
     "Shape",
     "Amp",
+    "Harmonics"
 };
 static const std::vector<std::vector<float>> vOscInit = {
     { -24.0f, 24.0f, 0.0f, 0.0f }, //Pitch
@@ -92,6 +95,7 @@ static const std::vector<std::vector<float>> vOscInit = {
     { -2000.f, 2000.f, 0.0f, 0.0f }, //Freq
     { 0.0f, 1.0f, 0.0f, 0.5f },  //Shape
     { 0.0f, 2.0f, 1.0f, 1.0f },  //Amp
+    { -16, 16, 0.0f, 0.0f} //harmonmics
 };
 
 typedef enum _OscShapeSet
@@ -257,13 +261,16 @@ static const std::vector<std::vector<float>> vEnvelopeInit = {
 typedef enum _OutputParam
 {
     OutputAmp,
+    OutputTone,
     OutputParamNil
 } OutputParam;
 static const StringArray cOutputParams = {
     "Amp",
+    "Tone"
 };
 static const std::vector<std::vector<float>> vOutputInit = {
     { 0.0f, 2.0f, 0.0f, 1.0f },   //Amp
+    { 40.f, 131.f, 72.f, 85.5f },   //Tone
 };
 
 
