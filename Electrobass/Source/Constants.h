@@ -270,7 +270,7 @@ static const StringArray cOutputParams = {
 };
 static const std::vector<std::vector<float>> vOutputInit = {
     { 0.0f, 2.0f, 0.0f, 1.0f },   //Amp
-    { 0.0f, 127.f, 72.f, 63.5f },   //Tone
+    { 40.f, 131.f, 72.f, 85.5f },   //Tone
 };
 
 
