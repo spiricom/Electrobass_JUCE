@@ -12,7 +12,7 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 #include "RingBuffer.h"
-
+#include <regex>
 //==============================================================================
 AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParameterLayout()
 {
@@ -702,8 +702,15 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         {
             //data.add((float)myCount++);
             //const NormalisableRange<float>& range = vts.getParameter(id)->getNormalisableRange();
-            data.add(vts.getParameter(id)->getValue());
-            DBG(String(count++)+ ": " + id + ": "+ String(vts.getParameter(id)->getValue()));
+            std::regex e("^PitchBend[0-9]+$");
+            if (!std::regex_match(id.toStdString(), e))
+            {
+                data.add(vts.getParameter(id)->getValue());
+                DBG(String(count++)+ ": " + id + ": "+ String(vts.getParameter(id)->getValue()));
+            }
+         
+                
+                
         }
         
         //mark end of parameter values
