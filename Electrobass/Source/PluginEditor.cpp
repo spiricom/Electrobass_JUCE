@@ -680,7 +680,7 @@ void ElectroAudioProcessorEditor::resized()
     //==============================================================================
     // TAB3 ========================================================================
     
-    fxTab.setBoundsRelative(0.05f, 0.08f, 0.8f, 0.75f);
+    fxTab.setBoundsRelative(0.05f, 0.08f, 0.99f, 0.75f);
     for (int i = 0; i < allSources.size(); ++i)
     {
         allSources[i]->setBounds(6*s + (75+2)*(i/5), fxTab.getBottom() + ((i%5)*(40*0.5f)), 75, 40*0.5f);

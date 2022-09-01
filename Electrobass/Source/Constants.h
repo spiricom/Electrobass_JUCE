@@ -333,6 +333,7 @@ typedef enum _FXParam
     Param4,
     Param5,
     Mix,
+    PostGain,
     ParamNil
 } FXParam;
 static const StringArray cFXParams = {
@@ -341,7 +342,8 @@ static const StringArray cFXParams = {
     "Param3",
     "Param4",
     "Param5",
-    "Mix"
+    "Mix",
+    "PostGain"
 };
 static const std::vector<std::vector<float>> vFXInit = {
     { 0.0f, 1.0f, 0.0f, 0.5f },   //
@@ -350,6 +352,7 @@ static const std::vector<std::vector<float>> vFXInit = {
     { 0.0f, 1.0f, 0.0f, 0.5f },   //
     { 0.0f, 1.0f, 0.0f, 0.5f },   //
     { 0.0f, 1.0f, 1.0f, 0.5f },   // mix
+    { 0.0f, 1.0f, 0.5f, 0.5f }   // postgain
 };
 
 typedef enum _FXType
@@ -365,6 +368,15 @@ typedef enum _FXType
     Bitcrush,
     TiltFilter,
     Wavefolder,
+    LpFilter,
+    HpFilter,
+    BpFilter,
+    DLFilter,
+    VZPFilter,
+    VZLFilter,
+    VZHFilter,
+    VZBFilter,
+    LLFilter,
     FXTypeNil
 } FXType;
 
@@ -379,21 +391,31 @@ static const StringArray FXTypeNames = {
     "Chorus",
     "Bitcrush",
     "TiltFilter",
-    "Wavefolder"
+    "Wavefolder",
+    "Lowpass",
+    "Highpass",
+    "Bandpass",
+    "DiodeLowpass",
+    "Peak",
+    "Lowshelf",
+    "Highshelf",
+    "Notch",
+    "LadderLowpass"
 };
 
 static const std::vector<StringArray> FXParamNames = {
     {"","","","","" },
-    {"Drive","Offset","Shape","PostGain","" },
-    {"Drive","Offset","Shape","PostGain","" },
-    {"Drive","Offset","Shape","PostGain",""},
-    {"Drive","Offset","Shape","PostGain",""},
-    {"Gain","Offset","Drive","PostGain",""},
+    {"Drive","Offset","Shape","","" },
+    {"Drive","Offset","Shape","","" },
+    {"Drive","Offset","Shape","",""},
+    {"Drive","Offset","Shape","",""},
+    {"Gain","Offset","Drive","",""},
     {"Threshold","Ratio","Makeup","Attack","Release"},
     {"Delay","Depth","Speed1","Speed2",""},
     {"Gain","Quality","Sampling Ratio","Round","Operation"},
-    {"Tilt","PeakFreq","PeakQ","PeakGain","PostGain"},
-    {"Drive","Offset","FB","FF","Depth"}
+    {"Tilt","PeakFreq","PeakQ","PeakGain",""},
+    {"Drive","Offset","FB","FF","Depth"},
+    {"Cutoff", "Gain", "Resonance" ,"",""}
 };
 
 static const std::vector<std::vector<float>> FXParamDefaults = {
