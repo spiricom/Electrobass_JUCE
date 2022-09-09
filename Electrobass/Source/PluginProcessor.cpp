@@ -694,11 +694,11 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         int count = 0;
        // int myCount = 0;
         //first send a count of the number of parameters that will be sent
-        data.add(paramIds.size() + 2);
-        data.add(midiKeyMax);
-        DBG(String(count++)+ ": Midi Key Max: "+ String(midiKeyMax));
-        data.add(midiKeyMin);
-        DBG(String(count++)+ ": Midi Key Min: "+ String(midiKeyMin));
+        data.add(paramIds.size() + 2 - 9); //plus midi key values, minus pitch bend
+        data.add(midiKeyMax/127.0f);
+        DBG(String(count++)+ ": Midi Key Max: "+ String(midiKeyMax/127.0f));
+        data.add(midiKeyMin/127.0f);
+        DBG(String(count++)+ ": Midi Key Min: "+ String(midiKeyMin/127.0f));
         for (auto id : paramIds)
         {
             //data.add((float)myCount++);
@@ -708,6 +708,10 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
             {
                 data.add(vts.getParameter(id)->getValue());
                 DBG(String(count++)+ ": " + id + ": "+ String(vts.getParameter(id)->getValue()));
+            }
+            else
+            {
+                DBG("skipped");
             }
          
                 
@@ -734,7 +738,12 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
                     if (MappingSourceModel* source = target->currentSource)
                     {
                         tempData.add(sourceIds.indexOf(source->name));//SourceID
-                        tempData.add(paramIds.indexOf(id));//TargetID
+                        float tempId = paramIds.indexOf(id)+2;
+                        if (tempId > 16)
+                        {
+                            tempId -= 9;//get rid of the extra pitch bend values;
+                        }
+                        tempData.add(tempId);//TargetID
                         //int jjjj = paramIds.indexOf(id);
                         //don't need index anymore
                         //scalarSource -- negative 1 if no source
@@ -755,7 +764,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
                         }
                         tempRange = ((tempRange) / (range.end - range.start));
                         tempData.add(tempRange * multiplier);//Mapping range length
-                        DBG(tn +": " + String(sourceIds.indexOf(source->name))+ ", " + String(paramIds.indexOf(id))+", " + String(scalarsource)+ ", " +String(tempRange * multiplier));
+                        DBG(tn +": " + String(sourceIds.indexOf(source->name))+ ", " + String(tempId)+", " + String(scalarsource)+ ", " +String(tempRange * multiplier));
                         mapCount++;
                     }
                 }
