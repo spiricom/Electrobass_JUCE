@@ -394,6 +394,29 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     sendOutButton.setButtonText("Send preset via MIDI");
     sendOutButton.setLookAndFeel(&laf);
     sendOutButton.onClick = [this] { processor.sendPresetMidiMessage(); };
+    presetNameEditor.setTitle("Preset Name");
+    presetNameEditor.onFocusLost = [this] {processor.setPresetName(presetNameEditor.getText());};
+    presetNameEditor.setInputRestrictions(8);
+    presetNamelabel.setText("Name", dontSendNotification);
+    presetNumberlabel.setText("Number", dontSendNotification);
+    presetNumber.setRange(0, 10, 1);
+    presetNumber.onValueChange = [this] {processor.setPresetNumber(presetNumber.getValue());};
+    presetNumber.setSliderStyle(Slider::SliderStyle::LinearBarVertical);
+    presetNumberlabel.setLookAndFeel(&laf);
+    presetNamelabel.setLookAndFeel(&laf);
+    presetNumber.setMouseDragSensitivity(200);
+    presetNumber.setTextValueSuffix(""); //EBSPECIFIC
+    presetNumber.setTitle("Preset Number");
+    presetNumber.setName("Preset Number");
+    presetNumber.setLookAndFeel(&laf);
+    presetNumber.setColour(Slider::backgroundColourId, Colours::darkgrey.withBrightness(0.2f));
+    presetNumber.setColour(Slider::textBoxOutlineColourId, Colours::transparentBlack);
+    presetNumber.setColour(Slider::textBoxTextColourId, Colours::gold.withBrightness(0.95f));
+    
+    addAndMakeVisible(presetNumber);
+    addAndMakeVisible(presetNamelabel);
+    addAndMakeVisible(presetNumberlabel);
+    addAndMakeVisible(presetNameEditor);
     addAndMakeVisible(sendOutButton);
     
     constrain->setFixedAspectRatio(EDITOR_WIDTH / EDITOR_HEIGHT);
@@ -655,12 +678,14 @@ void ElectroAudioProcessorEditor::resized()
     
     //==============================================================================
     
-    versionLabel.setBounds(width*0.79f, 0, width * 0.05f, tabs.getTabBarDepth());
-    versionLabel.setFont(euphemia.withHeight(20*s));
-    
+    //versionLabel.setBounds(width*0.79f, 0, width * 0.05f, tabs.getTabBarDepth());
+    //versionLabel.setFont(euphemia.withHeight(20*s));
     sendOutButton.setBounds(width*0.85f, -1, width*0.15f+2, tabs.getTabBarDepth());
-    
-    int logoLeft = tabs.getTabbedButtonBar().getTabButton(2)->getRight() + 90*s;
+    presetNameEditor.setBounds(sendOutButton.getX() - width*0.08f+2, tabs.getTabBarDepth()/2, width*0.07f+1, tabs.getTabBarDepth()/2);
+    presetNumber.setBounds(presetNameEditor.getX(), -1, width*0.05f+2, tabs.getTabBarDepth() /2);
+    presetNamelabel.setBounds(presetNameEditor.getX()-  width*0.05f+2, tabs.getTabBarDepth()/2,width*0.05f+2, tabs.getTabBarDepth()/2);
+    presetNumberlabel.setBounds(presetNameEditor.getX()-  width*0.05f+2, -1,width*0.05f+2, tabs.getTabBarDepth()/2);
+    int logoLeft = tabs.getTabbedButtonBar().getTabButton(2)->getRight() + 60*s;
     Rectangle<float> logoArea (logoLeft, 0, 98*s, tabs.getTabBarDepth());
     logo->setTransformToFit (logoArea,
                              RectanglePlacement::xLeft +

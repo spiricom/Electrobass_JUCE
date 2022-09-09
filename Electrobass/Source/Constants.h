@@ -415,7 +415,15 @@ static const std::vector<StringArray> FXParamNames = {
     {"Gain","Quality","Sampling Ratio","Round","Operation"},
     {"Tilt","PeakFreq","PeakQ","PeakGain",""},
     {"Drive","Offset","FB","FF","Depth"},
-    {"Cutoff", "Gain", "Resonance" ,"",""}
+    {"Cutoff", "", "Resonance" ,"",""},
+    {"Cutoff", "", "Resonance" ,"",""},
+    {"Cutoff", "", "Resonance" ,"",""},
+    {"Cutoff", "", "Resonance" ,"",""},
+    {"Cutoff", "Gain", "Resonance" ,"",""},
+    {"Cutoff", "Gain", "Resonance" ,"",""},
+    {"Cutoff", "Gain", "Resonance" ,"",""},
+    {"Cutoff", "Gain", "Resonance" ,"",""},
+    {"Cutoff", "", "Resonance" ,"",""}
 };
 
 static const std::vector<std::vector<float>> FXParamDefaults = {
@@ -429,7 +437,16 @@ static const std::vector<std::vector<float>> FXParamDefaults = {
     {1.0f, 0.1f, 0.0f, 0.1f, 0.1f},
     {0.5f, 0.3f, 0.6f, 0.5f, 0.0f},
     {0.5f, 0.5f, 0.5f, 0.5f, 0.9f},
-    {0.5f, 0.5f, 0.5f, 0.0f, 0.0f}
+    {0.5f, 0.5f, 0.5f, 0.0f, 0.0f},
+    {0.5f, 0.5f, 0.5f, 0.0f, 0.0f},
+    {0.5f, 0.5f, 0.5f, 0.0f, 0.0f},
+    {0.5f, 0.5f, 0.5f, 0.0f, 0.0f},
+    {0.5f, 0.5f, 0.5f, 0.0f, 0.0f},
+    {0.5f, 0.5f, 0.5f, 0.0f, 0.0f},
+    {0.5f, 0.5f, 0.5f, 0.0f, 0.0f},
+    {0.5f, 0.5f, 0.5f, 0.0f, 0.0f},
+    {0.5f, 0.5f, 0.5f, 0.0f, 0.0f},
+    {0.5f, 0.5f, 0.1f, 0.0f, 0.0f}
 };
 
 //==============================================================================

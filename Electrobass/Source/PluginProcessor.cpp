@@ -355,7 +355,8 @@ ElectroAudioProcessor::ElectroAudioProcessor()
 #endif
 ,
 chooser(nullptr),
-vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout())
+vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout()),
+prompt("","",AlertWindow::AlertIconType::NoIcon)
 
 {
     formatManager.registerBasicFormats();   
@@ -1307,6 +1308,7 @@ void ElectroAudioProcessor::sendCopedentMidiMessage()
 
 void ElectroAudioProcessor::sendPresetMidiMessage()
 {
+   
     waitingToSendPreset = true;
 }
 

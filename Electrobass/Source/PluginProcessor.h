@@ -246,6 +246,16 @@ public:
         else return 0;
     }
     AudioBufferQueue<float>& getAudioBufferQueue() noexcept { return audioBufferQueue; }
+    
+    void setPresetName(String name)
+    {
+        presetName = name;
+    }
+    
+    void setPresetNumber(int number)
+    {
+        presetNumber = number;
+    }
 private:
 
     std::mutex m;
@@ -268,10 +278,11 @@ private:
     int stringActivity[MAX_NUM_VOICES+1];
     int stringActivityTimeout;
     
-
+    String presetName;
+    int presetNumber;
     tOversampler os;
     float oversamplerArray[OVERSAMPLE];
-    
+    AlertWindow prompt;
     std::array<std::atomic<float>, 128> m_peakLevels;
     AudioBufferQueue<float> audioBufferQueue;
     ScopeDataCollector<float> scopeDataCollector{ audioBufferQueue };
