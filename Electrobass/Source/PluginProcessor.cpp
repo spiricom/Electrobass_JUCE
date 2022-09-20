@@ -64,7 +64,7 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
                (ParameterID { n,  1 }, n, normRange, 0., String(), AudioProcessorParameter::genericParameter,
             string2FromValueFunction));
 	paramIds.add(n);
-    pitchBendRange = std::make_unique<NormalisableRange<float>>(-2.f, 2.f);
+    pitchBendRange = std::make_unique<NormalisableRange<float>>(-24.f, 24.f);
     //pitchBendRange->setSkewForCentre(.0);
     invParameterSkews.addIfNotAlreadyThere(1.f/pitchBendRange->skew);
 
@@ -97,7 +97,7 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
     n = "PitchBendRange";
     normRange = NormalisableRange<float>(0., 24., 1.);
     layout.add (std::make_unique<AudioParameterFloat>
-                (ParameterID { n,  1 }, n, normRange, 2., String(), AudioProcessorParameter::genericParameter));
+                (ParameterID { n,  1 }, n, normRange, 24., String(), AudioProcessorParameter::genericParameter));
     paramIds.add(n);
  
     //==============================================================================
@@ -377,9 +377,9 @@ prompt("","",AlertWindow::AlertIconType::NoIcon)
         voiceIsSounding[i] = false;
     }
     
-    for (int i = 0; i < 12; ++i)
+    for (int i = 0; i < 128; ++i)
     {
-        centsDeviation[i] = 0.f;
+        centsDeviation[i] = i;
     }
 
     leaf.clearOnAllocation = 0;
@@ -1041,10 +1041,10 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
             }
             int tempNoteIntPart = (int)tempNote;
             float tempNoteFloatPart = tempNote - (float)tempNoteIntPart;
-            int tempPitchClassIntPart =tempNoteIntPart % 12;
-            float dev1 = (centsDeviation[tempPitchClassIntPart] * (1.0f - tempNoteFloatPart));
-            float dev2 =  (centsDeviation[(tempPitchClassIntPart+1)%12] * tempNoteFloatPart);
-            float tunedNote = tempNote + ( dev1  + dev2);
+            //int tempPitchClassIntPart =tempNoteIntPart % 12;
+            float dev1 = (centsDeviation[tempNoteIntPart] * (1.0f - tempNoteFloatPart));
+            float dev2 =  (centsDeviation[(tempNoteIntPart+1)] * tempNoteFloatPart);
+            float tunedNote = ( dev1  + dev2);
             voiceNote[v] = tunedNote;
             //DBG("Tuned note" + String(tunedNote));
             samples[0][v] = 0.f;
@@ -1492,7 +1492,7 @@ void ElectroAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     root.setProperty("midiKeyMin", midiKeyMin, nullptr);
     root.setProperty("midiKeyMax", midiKeyMax, nullptr);
     
-    for (int i = 0; i < 12; ++i)
+    for (int i = 0; i < NUM_MIDI_NOTES; ++i)
     {
         root.setProperty("CentsDev" + String(i+1), centsDeviation[i], nullptr);
     }
@@ -1579,7 +1579,7 @@ void ElectroAudioProcessor::setStateInformation (const void* data, int sizeInByt
         //setNumVoicesActive(xml->getIntAttribute("numVoices", 1));//EBSPECIFIC
         midiKeyMin = xml->getIntAttribute("midiKeyMin", 21);
         midiKeyMax = xml->getIntAttribute("midiKeyMax", 108);
-        for (int i = 0; i < 12; ++i)
+        for (int i = 0; i < NUM_MIDI_NOTES; ++i)
         {
             centsDeviation[i] = xml->getDoubleAttribute("CentsDev" + String(i+1));
         }

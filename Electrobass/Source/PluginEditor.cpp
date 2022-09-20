@@ -732,6 +732,7 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
     {
         //vts.getParameter("PitchBendRange")->setValue(rangeSlider.getValue());
         processor.pitchBendRange->end = rangeSlider.getValue();
+        processor.pitchBendRange->start = -rangeSlider.getValue();
         processor.pitchBendRange->setSkewForCentre(0.0f);
         //pitchBendSliders[0]->setRange(- (rangeDownSlider.getValue()), rangeUpSlider.getValue());
     }

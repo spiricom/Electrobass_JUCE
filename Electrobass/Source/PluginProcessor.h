@@ -195,7 +195,7 @@ public:
     int stringChannels[MAX_NUM_VOICES+1];
     HashMap<int, int> channelToStringMap;
     
-    float centsDeviation[12];
+    float centsDeviation[NUM_MIDI_NOTES];
 
     StringArray macroNames;
     TuningControl tuner;
