@@ -92,7 +92,7 @@ public:
     //==============================================================================
     void sendCopedentMidiMessage();
     void sendPresetMidiMessage();
-    
+    void sendTuningMidiMessage();
     //==============================================================================
     void addMappingSource(MappingSourceModel* source);
     void addMappingTarget(MappingTargetModel* source);
@@ -272,7 +272,7 @@ private:
     
     bool waitingToSendCopedent = false;
     bool waitingToSendPreset = false;
-    
+    bool waitingToSendTuning = false;
     bool mpeMode = false;
     
     int stringActivity[MAX_NUM_VOICES+1];

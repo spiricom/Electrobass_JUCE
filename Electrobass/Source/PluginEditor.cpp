@@ -394,6 +394,9 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     sendOutButton.setButtonText("Send preset via MIDI");
     sendOutButton.setLookAndFeel(&laf);
     sendOutButton.onClick = [this] { processor.sendPresetMidiMessage(); };
+    
+    
+    
     presetNameEditor.setTitle("Preset Name");
     presetNameEditor.onFocusLost = [this] {processor.setPresetName(presetNameEditor.getText());};
     presetNameEditor.setInputRestrictions(8);

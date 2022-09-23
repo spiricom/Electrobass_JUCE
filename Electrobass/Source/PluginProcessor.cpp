@@ -909,6 +909,66 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         waitingToSendPreset = false;
     }
     
+    
+    if (waitingToSendTuning)
+    {
+        Array<float> data;
+        for (int i = 0; i < 128; i++)
+        {
+            data.add(centsDeviation[i]);
+        }
+        
+        Array<uint8_t> data7bitInt;
+        union uintfUnion fu;
+        
+        uint16_t sizeOfSysexChunk = (64 / 5) - 3;
+        int dataToSend = data.size();
+        uint16_t currentChunk = 0;
+        uint16_t currentDataPointer = 0;
+        while(currentDataPointer < dataToSend)
+        {
+            data7bitInt.clear();
+
+            data7bitInt.add(1); // saying it's a tuning
+            data7bitInt.add(1); // which tuning are we saving
+            
+            //data7bitInt.add(currentChunk); // whichChhunk
+            uint16_t toSendInThisChunk;
+            uint16_t dataRemaining = dataToSend - currentDataPointer;
+            if (dataRemaining < sizeOfSysexChunk)
+            {
+                toSendInThisChunk = dataRemaining;
+            }
+            else
+            {
+                toSendInThisChunk = sizeOfSysexChunk;
+            }
+
+            for (int i = currentDataPointer; i < toSendInThisChunk+currentDataPointer; i++)
+            {
+                fu.f = data[i];
+                data7bitInt.add((fu.i >> 28) & 15);
+                data7bitInt.add((fu.i >> 21) & 127);
+                data7bitInt.add((fu.i >> 14) & 127);
+                data7bitInt.add((fu.i >> 7) & 127);
+                data7bitInt.add(fu.i & 127);
+
+            }
+            currentDataPointer = currentDataPointer + toSendInThisChunk;
+            MidiMessage presetMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
+        
+            midiMessages.addEvent(presetMessage, 0);
+
+            currentChunk++;
+        }
+        data7bitInt.clear();
+        data7bitInt.add(126); // custom command to start parsing, sysex send is finished!
+        data7bitInt.add(1); // which tuning did we just finish
+        MidiMessage presetMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
+        midiMessages.addEvent(presetMessage, 0);
+        waitingToSendTuning = false;
+    }
+    
     if (waitingToSendCopedent)
     {
         Array<float> flat;
@@ -1319,6 +1379,11 @@ void ElectroAudioProcessor::sendPresetMidiMessage()
 {
    
     waitingToSendPreset = true;
+}
+
+void ElectroAudioProcessor::sendTuningMidiMessage()
+{
+    waitingToSendTuning = true;
 }
 
 //==============================================================================
