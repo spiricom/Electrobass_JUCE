@@ -797,6 +797,17 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         int dataToSend = data.size();
         uint16_t currentChunk = 0;
         uint16_t currentDataPointer = 0;
+        data7bitInt.add(0); // saying it's a preset
+        data7bitInt.add(1); // which preset are we saving
+        for (int i = 0; i < presetName.length(); i++)
+        {
+            data7bitInt.add(presetName.toUTF8()[i]);
+        }
+        //MidiMessage presetMessage = ;
+    
+        midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+
+        currentChunk++;
         while(currentDataPointer < dataToSend)
         {
             data7bitInt.clear();
