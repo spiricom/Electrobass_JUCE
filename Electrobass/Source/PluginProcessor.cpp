@@ -798,10 +798,17 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         uint16_t currentChunk = 0;
         uint16_t currentDataPointer = 0;
         data7bitInt.add(0); // saying it's a preset
-        data7bitInt.add(1); // which preset are we saving
+        data7bitInt.add(presetNumber); // which preset are we saving
+        
         for (int i = 0; i < presetName.length(); i++)
         {
-            data7bitInt.add(presetName.toUTF8()[i]);
+            data7bitInt.add((presetName.toUTF8()[i] & 127)); //printable characters are in the 0-127 range
+            
+        }
+        uint16 remainingBlanks = 14 - presetName.length();
+        for (uint16 i = 0; i < remainingBlanks; i++)
+        {
+            data7bitInt.add(32);
         }
         //MidiMessage presetMessage = ;
     
@@ -813,7 +820,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
             data7bitInt.clear();
 
             data7bitInt.add(0); // saying it's a preset
-            data7bitInt.add(1); // which preset are we saving
+            data7bitInt.add(presetNumber); // which preset are we saving
             
             //data7bitInt.add(currentChunk); // whichChhunk
             uint16_t toSendInThisChunk;

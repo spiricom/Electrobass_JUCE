@@ -399,10 +399,10 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     
     presetNameEditor.setTitle("Preset Name");
     presetNameEditor.onFocusLost = [this] {processor.setPresetName(presetNameEditor.getText());};
-    presetNameEditor.setInputRestrictions(8);
+    presetNameEditor.setInputRestrictions(14);
     presetNamelabel.setText("Name", dontSendNotification);
     presetNumberlabel.setText("Number", dontSendNotification);
-    presetNumber.setRange(0, 10, 1);
+    presetNumber.setRange(0, 99, 1);
     presetNumber.onValueChange = [this] {processor.setPresetNumber(presetNumber.getValue());};
     presetNumber.setSliderStyle(Slider::SliderStyle::LinearBarVertical);
     presetNumberlabel.setLookAndFeel(&laf);
