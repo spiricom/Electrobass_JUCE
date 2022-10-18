@@ -106,7 +106,8 @@ public:
     //==============================================================================
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
-
+    
+    void addToKnobsToSmoothArray(SmoothedParameter* param);
     //==============================================================================
     float editorScale = 1.05f;
     String wavTableFolder;
@@ -122,6 +123,7 @@ public:
     float voiceNote[MAX_NUM_VOICES];
     float voicePrevBend[MAX_NUM_VOICES];
     int highByteVolume;
+    OwnedArray<SmoothedParameter> knobsToSmooth;
     OwnedArray<Oscillator> oscs;
     std::unique_ptr<NoiseGenerator> noise;
     OwnedArray<Filter> filt;
@@ -260,6 +262,7 @@ public:
     std::unique_ptr<SmoothedParameter> master;
 private:
 
+   
     std::mutex m;
     MTSClient *client;
     StringArray paramIds;

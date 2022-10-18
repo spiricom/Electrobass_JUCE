@@ -543,6 +543,7 @@ prompt("","",AlertWindow::AlertIconType::NoIcon)
     DBG("Post init: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
 }
 
+
 ElectroAudioProcessor::~ElectroAudioProcessor()
 {
     DBG("Pre exit: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
@@ -572,6 +573,25 @@ ElectroAudioProcessor::~ElectroAudioProcessor()
         delete chooser;
 }
 
+
+//==============================================================================
+void ElectroAudioProcessor::addToKnobsToSmoothArray(SmoothedParameter* param)
+{
+    bool found = false;
+    for (auto target: targetMap)
+    {
+        for(auto _param : target->targetParameters) //looping through all voices
+        {
+            if(_param == param)
+            {
+                found = true;
+               
+            }
+                
+        }
+    }
+    if(!found) knobsToSmooth.add(param);
+}
 //==============================================================================
 void ElectroAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
@@ -1070,7 +1090,14 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
     }
     output->frame();
     
-  
+    
+    for (auto target : targetMap)
+    {
+        for (auto voiceTarget : target->targetParameters)
+        {
+            voiceTarget->tick();
+        }
+    }
     
     int mpe = mpeMode ? 1 : 0;
     int impe = 1-mpe;
