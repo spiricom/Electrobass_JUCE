@@ -94,7 +94,7 @@ static const std::vector<std::vector<float>> vOscInit = {
     { -100.f, 100.f, 0.0f, 0.0f }, //Fine
     { -2000.f, 2000.f, 0.0f, 0.0f }, //Freq
     { 0.0f, 1.0f, 0.0f, 0.5f },  //Shape
-    { 0.0f, 2.0f, 1.0f, 1.0f },  //Amp
+    { 0.0f, 1.0f, 1.0f, 0.5f },  //Amp
     { -16, 16, 0.0f, 0.0f} //harmonmics
 };
 
@@ -269,7 +269,7 @@ static const StringArray cOutputParams = {
     "Tone"
 };
 static const std::vector<std::vector<float>> vOutputInit = {
-    { 0.0f, 2.0f, 0.0f, 1.0f },   //Amp
+    { 0.0f, 1.0f, 0.0f, 0.5f },   //Amp
     { 0.0f, 1.0, 1.0f, 0.5f },   //Tone
 };
 

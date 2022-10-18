@@ -28,8 +28,29 @@ resizer(new ResizableCornerComponent (this, constrain.get())),
 chooser("Select a .wav file to load...", {}, "*.wav")
 
 {
+    meters.setChannelFormat(juce::AudioChannelSet::stereo());
     
-   
+    tab1.addAndMakeVisible (meters);
+    sd::SoundMeter::Options meterOptions;
+    
+    meterOptions.faderEnabled = true;  // Enable or disable the 'fader' overlay. Use the sd::SoundMeter::MetersComponent::FadersChangeListener to get the fader value updates.
+    
+    meterOptions.headerEnabled         = true;           // Enable the 'header' part above the meter, displaying the channel ID.
+    meterOptions.valueEnabled          = true;           // Enable the 'value' part below the level, displaying the peak level.
+    meterOptions.refreshRate           = 30;  // Frequency of the meter updates (when using the internal timer).
+    meterOptions.useGradient           = true;            // Use gradients to fill the meter (hard segment boundaries otherwise).
+    meterOptions.showPeakHoldIndicator = false;           // Show the peak hold indicator (double click value to reset).
+    meterOptions.peakSegment_db        = -3.0f;           // -3.0 dB peak segment divider.
+    meterOptions.warningSegment_db     = -12.0f;          // -12.0 dB warning segment indicator.
+    meterOptions.tickMarksEnabled      = true;            // Enable tick-marks. Divider lines at certain levels on the meter and label strip.
+    meterOptions.tickMarksOnTop        = true;            // Put the tick-marks above the level readout.
+    meterOptions.tickMarks             = { -1.0f, -3.0f, -6.0f, -12.0f };  // Positions (in decibels) of the tick-marks.
+    meterOptions.decayTime_ms          = 1000.0f;                                          // The meter will take 1000 ms to decay to 0.
+    
+    
+    meters.setOptions (meterOptions);
+    meters.setLabelStripPosition (sd::SoundMeter::LabelStripPosition::right);
+    meters.addFadersListener(*this);
     
     Typeface::Ptr tp = Typeface::createSystemTypefaceFor(BinaryData::EuphemiaCAS_ttf,
                                                          BinaryData::EuphemiaCAS_ttfSize);
@@ -440,7 +461,6 @@ chooser("Select a .wav file to load...", {}, "*.wav")
 }
 
 
-
 ElectroAudioProcessorEditor::~ElectroAudioProcessorEditor()
 {
     //    masterDial->setLookAndFeel(nullptr);
@@ -621,8 +641,11 @@ void ElectroAudioProcessorEditor::resized()
     
     //    keyboard.setBoundsRelative(0.f, 0.86f, 1.0f, 0.14f);
     //    keyboard.setKeyWidth(width / 52.0f);
+    
     OSCILLOSCOPE.setBoundsRelative(0.65,0.87,0.35, 0.13 );
-
+    //OSCILLOSCOPE.get
+    //meters.setBounds(540*s-1, outputModule->getBottom()-1, 360*s+2, 114*s);
+    setVerticalRotatedWithBounds(meters, true, Rectangle<int>(540*s+100, outputModule->getBottom()-1, 300*s+2, 60*s));
     //==============================================================================
     // TAB2 ========================================================================
     
@@ -741,6 +764,11 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
     }
 }
 
+void ElectroAudioProcessorEditor::fadersChanged (std::vector<float> faderValues)
+{
+    vts.getParameter("Master")->setValueNotifyingHost(faderValues[0]);
+}
+
 void ElectroAudioProcessorEditor::buttonClicked(Button* button)
 {
     if (button == nullptr) return;
@@ -831,7 +859,14 @@ void ElectroAudioProcessorEditor::timerCallback()
                                                  dontSendNotification);
     }
     updateRandomValueLabel(processor.lastRandomValue);
+    // Loop through all meters (channels)...
+    for (int meterIndex = 0; meterIndex < meters.getNumChannels(); ++meterIndex)
+    {
+       // Get the level, of the specified meter (channel), from the audio processor...
+       meters.setInputLevel (meterIndex, processor.getPeakLevel (meterIndex));
+    }
 
+    meters.refresh(true);
 }
 
 void ElectroAudioProcessorEditor::update()

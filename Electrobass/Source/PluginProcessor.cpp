@@ -27,12 +27,11 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
     invParameterSkews.add(1.f);
     
     n = "Master";
-    auto normRange = NormalisableRange<float>(0., 2.);
-    normRange.setSkewForCentre(1.);
+    auto normRange = NormalisableRange<float>(0., 1.);
+    normRange.setSkewForCentre(0.5);
     invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
     layout.add(std::make_unique<AudioParameterFloat>(ParameterID { n,  1 }, n, normRange, 1.));
     paramIds.add(n);
-    
     for (int i = 0; i < NUM_MACROS; ++i)
     {
         n = i < NUM_GENERIC_MACROS ? "M" + String(i + 1) : cUniqueMacroNames[i - NUM_GENERIC_MACROS];
@@ -484,6 +483,7 @@ prompt("","",AlertWindow::AlertIconType::NoIcon)
     
     output = std::make_unique<Output>("Output", *this, vts);
     
+    master = std::make_unique<SmoothedParameter>(*this, vts, "Master");
     transposeParam = std::make_unique<SmoothedParameter>(*this, vts, "Transpose");
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
@@ -1162,9 +1162,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
             
        
         
-        float mastergain = output->master->tickNoHooks();
-        
-        
+        float mastergain = master->tickNoHooks();
         outputSamples[0] = sampleOutput * mastergain;
         
         for (int channel = 0; channel < totalNumOutputChannels; ++channel)

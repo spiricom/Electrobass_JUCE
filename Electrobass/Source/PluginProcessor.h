@@ -256,13 +256,14 @@ public:
     {
         presetNumber = number;
     }
+    
+    std::unique_ptr<SmoothedParameter> master;
 private:
 
     std::mutex m;
     MTSClient *client;
     StringArray paramIds;
     StringArray sourceIds;
-
     AudioProcessorValueTreeState vts;
     
     char dummy_memory[1];

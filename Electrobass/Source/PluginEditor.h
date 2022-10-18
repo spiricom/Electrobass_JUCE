@@ -31,7 +31,9 @@ class ElectroAudioProcessorEditor : public AudioProcessorEditor,
                                public Label::Listener,
                                public KeyListener,
                                public Timer,
-                               public DragAndDropContainer
+                               public DragAndDropContainer,
+                               public sd::SoundMeter::MetersComponent::FadersChangeListener
+
 {
 public:
     ElectroAudioProcessorEditor (ElectroAudioProcessor&, AudioProcessorValueTreeState& vts);
@@ -65,6 +67,21 @@ private:
     void updateNumVoicesSlider(int numVoices);
     void updateVelocityLabel(float velocity);
     void updateRandomValueLabel(float value);
+    static void setVerticalRotatedWithBounds (Component& component, bool clockWiseRotation, Rectangle<int> verticalBounds)
+    {
+        auto angle = MathConstants<float>::pi / 2.0f;
+
+        if (! clockWiseRotation)
+            angle *= -1.0f;
+
+        component.setTransform ({});
+        component.setSize (verticalBounds.getHeight(), verticalBounds.getWidth());
+        component.setCentrePosition (0, 0);
+        component.setTransform (AffineTransform::rotation (angle).translated (verticalBounds.getCentreX(), verticalBounds.getCentreY()));
+    }
+    
+    void fadersChanged (std::vector<float> faderValues) override;
+    sd::SoundMeter::MetersComponent meters;
     
     TextEditor presetNameEditor;
     Slider presetNumber;
