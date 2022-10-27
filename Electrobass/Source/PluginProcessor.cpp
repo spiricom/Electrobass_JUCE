@@ -314,7 +314,10 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
         layout.add (std::make_unique<AudioParameterFloat> (ParameterID { n,  1 }, n, normRange, def));
         paramIds.add(n);
     }
-   
+    n = "FX Order";
+    layout.add (std::make_unique<AudioParameterChoice> (ParameterID { n,  1 }, n, StringArray("Off", "On"), 0));
+    paramIds.add(n);
+    
     //==============================================================================
     for (int i = 1; i < CopedentColumnNil; ++i)
     {
@@ -358,6 +361,7 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout()),
 prompt("","",AlertWindow::AlertIconType::NoIcon)
 
 {
+    fxPost = vts.getRawParameterValue("FX Order");
     formatManager.registerBasicFormats();   
     keyboardState.addListener(this);
     
@@ -1149,9 +1153,13 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         {
             samples[1][v] += samples[0][v]*parallel;
         }
+        if (fxPost == nullptr || *fxPost <= 0)
+        {
+            output->tick(samples[1]);
+        }
+           
         
-        output->tick(samples[1]);
-        float sampleOutput  = 0.0f;
+        
         
         for (int v = 0; v < numVoicesActive; ++v)
         {
@@ -1164,11 +1172,19 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
             {
                 oversamplerArray[i] = LEAF_clip(-1.0f, oversamplerArray[i], 1.0f);
             }
-            sampleOutput += tOversampler_downsample(&os, oversamplerArray);
+            samples[1][v] = tOversampler_downsample(&os, oversamplerArray);
         }
             
-       
+        if (fxPost == nullptr || *fxPost > 0)
+        {
+            output->tick(samples[1]);
+        }
+        float sampleOutput = 0.0f;
         
+        for(int v = 0; v < numVoicesActive; v++)
+        {
+            sampleOutput = samples[1][v];
+        }
         float mastergain = master->tickNoHooks();
         outputSamples[0] = sampleOutput * mastergain;
         

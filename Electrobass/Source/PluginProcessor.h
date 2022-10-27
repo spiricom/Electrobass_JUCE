@@ -259,7 +259,7 @@ public:
     
     std::unique_ptr<SmoothedParameter> master;
 private:
-
+    std::atomic<float>* fxPost;
     std::mutex m;
     MTSClient *client;
     StringArray paramIds;
