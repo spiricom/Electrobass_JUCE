@@ -276,7 +276,7 @@ private:
     bool waitingToSendCopedent = false;
     bool waitingToSendPreset = false;
     bool waitingToSendTuning = false;
-    bool mpeMode = true;
+    bool mpeMode = false;
     
     int stringActivity[MAX_NUM_VOICES+1];
     int stringActivityTimeout;

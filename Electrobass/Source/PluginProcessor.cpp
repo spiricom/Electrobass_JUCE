@@ -1708,7 +1708,7 @@ void ElectroAudioProcessor::setStateInformation (const void* data, int sizeInByt
         // Top level settings
         String presetPath = xml->getStringAttribute("path");
         editorScale = xml->getDoubleAttribute("editorScale", 1.05);
-        setMPEMode(xml->getBoolAttribute("mpeMode", true)); //EB
+        setMPEMode(xml->getBoolAttribute("mpeMode", false)); //EB
         //setNumVoicesActive(xml->getIntAttribute("numVoices", 1));//EBSPECIFIC
         midiKeyMin = xml->getIntAttribute("midiKeyMin", 21);
         midiKeyMax = xml->getIntAttribute("midiKeyMax", 108);
