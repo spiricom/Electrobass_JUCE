@@ -455,7 +455,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     addAndMakeVisible(versionLabel);
     
     //    addAndMakeVisible(&container);
-    processor.setMPEMode(true); //HACKYEB
+    processor.setMPEMode(false); //HACKYEB
     update();
     startTimerHz(30);
 }
