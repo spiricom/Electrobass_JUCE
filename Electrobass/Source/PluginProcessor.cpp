@@ -528,7 +528,7 @@ prompt("","",AlertWindow::AlertIconType::NoIcon)
 	Mapping defaultOutputAmp;
 	defaultOutputAmp.sourceName = "Envelope1";
 	defaultOutputAmp.targetName = "Output Amp T3";
-	defaultOutputAmp.value = 2.f;
+	defaultOutputAmp.value = 1.f;
 
 	initialMappings.add(defaultFilter1Cutoff);
 	initialMappings.add(defaultOutputAmp);
@@ -580,7 +580,7 @@ void ElectroAudioProcessor::addToKnobsToSmoothArray(SmoothedParameter* param)
     bool found = false;
     for (auto target: targetMap)
     {
-        for(auto _param : target->targetParameters) //looping through all voices
+        for(auto _param : target->targetParameters)
         {
             if(_param == param)
             {
@@ -590,7 +590,10 @@ void ElectroAudioProcessor::addToKnobsToSmoothArray(SmoothedParameter* param)
                 
         }
     }
-    if(!found) knobsToSmooth.add(param);
+    if(found)
+    {
+        ;
+    }
 }
 //==============================================================================
 void ElectroAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
@@ -1111,8 +1114,13 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         {
             ccParams[i]->tickSkewsNoHooks();
         }
-        
-        float globalPitchBend = pitchBendParams[0]->tickNoHooksNoSmoothing();
+        float pitchBends[4];
+        for (int i = 0; i < 4; i++)
+        {
+            pitchBends[i] = pitchBendParams[i]->tickNoHooksNoSmoothing();
+        }
+
+        float globalPitchBend = pitchBends[0];
         
         float samples[2][MAX_NUM_VOICES];
         float outputSamples[2];
@@ -1296,7 +1304,8 @@ void ElectroAudioProcessor::noteOff(int channel, int key, float velocity)
     int v = tSimplePoly_markPendingNoteOff(&strings[i], key);
     
     if (!mpeMode) i = 0;
-    else i = v;
+    //else i = v;
+    
     
     
     //If stack_IsNOTEmpty
@@ -1309,7 +1318,7 @@ void ElectroAudioProcessor::noteOff(int channel, int key, float velocity)
         }
         return;
     }
-    
+    if (mpeMode) v = i;
     if (v >= 0)
     {
         for (auto e : envs) e->noteOff(v, velocity);
@@ -1683,7 +1692,7 @@ void ElectroAudioProcessor::setStateInformation (const void* data, int sizeInByt
         // Top level settings
         String presetPath = xml->getStringAttribute("path");
         editorScale = xml->getDoubleAttribute("editorScale", 1.05);
-        setMPEMode(xml->getBoolAttribute("mpeMode", false)); //EB
+        setMPEMode(xml->getBoolAttribute("mpeMode", true)); //EB
         //setNumVoicesActive(xml->getIntAttribute("numVoices", 1));//EBSPECIFIC
         midiKeyMin = xml->getIntAttribute("midiKeyMin", 21);
         midiKeyMax = xml->getIntAttribute("midiKeyMax", 108);
