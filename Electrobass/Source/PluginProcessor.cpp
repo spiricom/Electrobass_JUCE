@@ -238,6 +238,12 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
             DBG(n+String(normRange.convertFrom0to1(1.0f)));
             DBG(n+String(normRange.skew));
         }
+        n = "Filter" + String(i+1) + " FilterPanning";
+        normRange = NormalisableRange<float>(0., 1.);
+        normRange.setSkewForCentre(.5);
+        invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
+        layout.add (std::make_unique<AudioParameterFloat> (ParameterID { n,  1 }, n, normRange, 0.5f));
+        paramIds.add(n);
     }
     
     n = "Filter Series-Parallel Mix";
@@ -406,8 +412,8 @@ prompt("","",AlertWindow::AlertIconType::NoIcon)
     }
     
     
-    tOversampler_init(&os, OVERSAMPLE, 1, &leaf);
-    
+    tOversampler_init(&os[1], OVERSAMPLE, 1, &leaf);
+    tOversampler_init(&os[0], OVERSAMPLE, 1, &leaf);
     for (int i = 0; i < NUM_FX; i++)
     {
         fx.add(new Effect("Effect" + String(i+1), *this, vts));
@@ -1014,65 +1020,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         waitingToSendTuning = false;
     }
     
-    if (waitingToSendCopedent)
-    {
-        Array<float> flat;
     
-        for (int i = 0; i < copedentArray.size(); ++i)
-        {
-            for (auto value : copedentArray.getReference(i))
-            {
-                flat.add(value);
-            }
-        }
-
-        //RangedAudioParameter* fund = vts.getParameter("Copedent Fundamental");
-        //flat.add(fund->convertFrom0to1(fund->getValue()));
-        
-        Array<uint8_t> flat7bitInt;
-        union uintfUnion fu;
-        
-        for (int j = 0; j < 11; j++)
-        {
-            flat7bitInt.clear();
-            
-            flat7bitInt.add(1); // saying it's a copedent
-            flat7bitInt.add(copedentNumber); // saying which copedent number to store (need this to be a user entered value)
-            flat7bitInt.add(50 + j);
-            
-            for (int i = 0; i < 12; i++)
-            {
-                fu.f = flat[i + (j*12)];
-                flat7bitInt.add((fu.i >> 28) & 15);
-                flat7bitInt.add((fu.i >> 21) & 127);
-                flat7bitInt.add((fu.i >> 14) & 127);
-                flat7bitInt.add((fu.i >> 7) & 127);
-                flat7bitInt.add(fu.i & 127);
-            }
-            
-            MidiMessage copedentMessage = MidiMessage::createSysExMessage(flat7bitInt.getRawDataPointer(), sizeof(uint8_t) * flat7bitInt.size());
-            
-            midiMessages.addEvent(copedentMessage, 0);
-        }
-        waitingToSendCopedent = false;
-    }
-    
-    Array<float> resolvedCopedent;
-    for (int r = 0; r < MAX_NUM_VOICES; ++r)
-    {
-        float minBelowZero = 0.0f;
-        float maxAboveZero = 0.0f;
-        for (int c = 1; c < CopedentColumnNil; ++c)
-        {
-            if (pedalValues[c]->load() > 0)
-            {
-                float value = copedentArray.getReference(c)[r];
-                if (value < minBelowZero) minBelowZero = value;
-                else if (value > maxAboveZero) maxAboveZero = value;
-            }
-        }
-        resolvedCopedent.add(minBelowZero + maxAboveZero);
-    }
     //Optimize this away
     for (int i = 0; i < envs.size(); ++i)
     {
@@ -1126,8 +1074,9 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
 
         float globalPitchBend = pitchBends[0];
         
-        float samples[2][MAX_NUM_VOICES];
-        float outputSamples[2];
+//        float samplesL[2][MAX_NUM_VOICES]; //parallel, voices
+//        float samplesR[2][MAX_NUM_VOICES]; //parallel, voices
+        
         outputSamples[0] = 0.f;
         outputSamples[1] = 0.f;
         
@@ -1164,69 +1113,76 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
             float tunedNote = ( dev1  + dev2);
             voiceNote[v] = tunedNote;
             //DBG("Tuned note" + String(tunedNote));
-            samples[0][v] = 0.f;
-            samples[1][v] = 0.f;
+            panArr3d[0][0][v] = 0.f;
+            panArr3d[0][1][v] = 0.f;
         }
         //per voice inside the tick
         for (int i = 0; i < oscs.size(); ++i)
         {
-            oscs[i]->tick(samples);
+            oscs[i]->tick(panArr3d[0]);
         }
         //per voice inside
-        noise->tick(samples);
+        noise->tick(panArr3d[0]);
         //per voice inside
-        filt[0]->tick(samples[0]);
-        
+//        filt[0]->tick(panArr3d, 0);
+//        for (int v = 0; v < numVoicesActive; ++v)
+//        {
+//            panArr3d[0][1][v] = panArr3d[0][0][v]*(1.f-parallel);
+//            panArr3d[1][1][v] = panArr3d[1][0][v]*(1.f-parallel);
+//        }
+//
+//        filt[1]->tick(panArr3d,1);
+//
         for (int v = 0; v < numVoicesActive; ++v)
         {
-            samples[1][v] += samples[0][v]*(1.f-parallel);
-        }
-        
-        filt[1]->tick(samples[1]);
-        
-        for (int v = 0; v < numVoicesActive; ++v)
-        {
-            samples[1][v] += samples[0][v]*parallel;
+            sampleOut[0][v] = panArr3d[0][0][v];//*parallel //+ panArr3d[0][1][v];
+            sampleOut[1][v] = panArr3d[0][0][v];//*parallel + panArr3d[1][1][v];
         }
         if (fxPost == nullptr || *fxPost <= 0)
         {
-            output->tick(samples[1]);
+            output->tick(sampleOut);
         }
            
         
         
         
-        for (int v = 0; v < numVoicesActive; ++v)
-        {
-            tOversampler_upsample(&os, samples[1][v], oversamplerArray);
-            for (int i = 0; i < fx.size(); i++) {
-                fx[i]->oversample_tick(oversamplerArray, v);
-            }
-            //hard clip before downsampling to get a little more antialiasing from clipped signal.
-            for (int i = 0; i < (OVERSAMPLE); i++)
-            {
-                oversamplerArray[i] = LEAF_clip(-1.0f, oversamplerArray[i], 1.0f);
-            }
-            samples[1][v] = tOversampler_downsample(&os, oversamplerArray);
-        }
+//        for (int v = 0; v < numVoicesActive; ++v)
+//        {
+//            tOversampler_upsample(&os[0], sampleOut[0][v], oversamplerArray[0]);
+//            tOversampler_upsample(&os[1], sampleOut[1][v], oversamplerArray[1]);
+//            for (int i = 0; i < fx.size(); i++) {
+//                fx[i]->oversample_tick(oversamplerArray, v);
+//            }
+//            //hard clip before downsampling to get a little more antialiasing from clipped signal.
+//            for (int i = 0; i < (OVERSAMPLE); i++)
+//            {
+//                oversamplerArray[0][i] = LEAF_clip(-1.0f, oversamplerArray[0][i], 1.0f);
+//                oversamplerArray[1][i] = LEAF_clip(-1.0f, oversamplerArray[1][i], 1.0f);
+//            }
+//            sampleOut[0][v] = tOversampler_downsample(&os[0], oversamplerArray[0]);
+//            sampleOut[1][v] = tOversampler_downsample(&os[1], oversamplerArray[1]);
+//        }
             
         if (fxPost == nullptr || *fxPost > 0)
         {
-            output->tick(samples[1]);
+            output->tick(sampleOut);
         }
-        float sampleOutput = 0.0f;
         
         for(int v = 0; v < numVoicesActive; v++)
         {
-            sampleOutput = samples[1][v];
+            sampleOutput[0] += sampleOut[0][v];
+            sampleOutput[1] += sampleOut[1][v];
         }
         float mastergain = master->tickNoHooks();
-        outputSamples[0] = sampleOutput * mastergain;
-        
-        for (int channel = 0; channel < totalNumOutputChannels; ++channel)
-        {
-            buffer.setSample(channel, s, LEAF_clip(-1.0f, outputSamples[0], 1.0f));
-        }
+        outputSamples[0] = sampleOutput[0] * mastergain;
+        outputSamples[1] = sampleOutput[1] * mastergain;
+        buffer.setSample(0, s, LEAF_clip(-1.0f, outputSamples[0], 1.0f));
+        buffer.setSample(1, s, LEAF_clip(-1.0f, outputSamples[1], 1.0f));
+       
+//        for (int channel = 0; channel < totalNumOutputChannels; ++channel)
+//        {
+//            buffer.setSample(channel, s, LEAF_clip(-1.0f, outputSamples[0], 1.0f));
+//        }
     }
     for (int channel = 0; channel < totalNumOutputChannels; ++channel)
           setPeakLevel (channel, buffer.getMagnitude (channel, 0, buffer.getNumSamples()));
