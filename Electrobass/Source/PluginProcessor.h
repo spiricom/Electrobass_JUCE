@@ -97,6 +97,8 @@ public:
     void addMappingSource(MappingSourceModel* source);
     void addMappingTarget(MappingTargetModel* source);
     
+    void tickKnobsToSmooth();
+    
     MappingSourceModel* getMappingSource(const String& name);
     MappingTargetModel* getMappingTarget(const String& name);
     

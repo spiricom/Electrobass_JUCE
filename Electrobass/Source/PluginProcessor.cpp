@@ -582,21 +582,27 @@ ElectroAudioProcessor::~ElectroAudioProcessor()
 void ElectroAudioProcessor::addToKnobsToSmoothArray(SmoothedParameter* param)
 {
     bool found = false;
-    for (auto target: targetMap)
+    if(!knobsToSmooth.contains(param))
+        knobsToSmooth.add(param);
+//    for (auto target: targetMap)
+//    {
+//        for(auto _param : target->targetParameters)
+//        {
+//            if(_param == param)
+//            {
+//                found = true;
+//
+//            }
+//
+//        }
+//    }
+//    if(found)
+//    {
+//        ;
+//    }
+    for (auto knob : knobsToSmooth)
     {
-        for(auto _param : target->targetParameters)
-        {
-            if(_param == param)
-            {
-                found = true;
-               
-            }
-                
-        }
-    }
-    if(found)
-    {
-        ;
+        DBG("knob being msooth " + String(knob->getName()));
     }
 }
 //==============================================================================
@@ -1097,7 +1103,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
     }
     output->frame();
     
-    
+    /*
     for (auto target : targetMap)
     {
         for (auto voiceTarget : target->targetParameters)
@@ -1105,12 +1111,15 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
             voiceTarget->tick();
         }
     }
+    */
+    
     
     int mpe = mpeMode ? 1 : 0;
     int impe = 1-mpe;
     
     for (int s = 0; s < buffer.getNumSamples(); s++)
     {
+        tickKnobsToSmooth();
 		float parallel = seriesParallelParam->tickNoHooksNoSmoothing();
 		float transp = transposeParam->tickNoHooksNoSmoothing();
 
@@ -1118,13 +1127,13 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         {
             ccParams[i]->tickSkewsNoHooks();
         }
-        float pitchBends[4];
-        for (int i = 0; i < 4; i++)
-        {
-            pitchBends[i] = pitchBendParams[i]->tickNoHooksNoSmoothing();
-        }
+//        float pitchBends[8];
+//        for (int i = 0; i < 8; i++)
+//        {
+//            pitchBends[i] = pitchBendParams[i]->tickNoHooksNoSmoothing();
+//        }
 
-        float globalPitchBend = pitchBends[0];
+        float globalPitchBend = pitchBendParams[0]->tickNoHooksNoSmoothing();
         
         float samples[2][MAX_NUM_VOICES];
         float outputSamples[2];
@@ -1218,7 +1227,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         
         for(int v = 0; v < numVoicesActive; v++)
         {
-            sampleOutput = samples[1][v];
+            sampleOutput += samples[1][v];
         }
         float mastergain = master->tickNoHooks();
         outputSamples[0] = sampleOutput * mastergain;
@@ -1228,11 +1237,25 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
             buffer.setSample(channel, s, LEAF_clip(-1.0f, outputSamples[0], 1.0f));
         }
     }
-    for (int channel = 0; channel < totalNumOutputChannels; ++channel)
-          setPeakLevel (channel, buffer.getMagnitude (channel, 0, buffer.getNumSamples()));
-    for (int i = 0; i < NUM_CHANNELS; ++i)
-        if (stringActivity[i] > 0) stringActivity[i]--;
-    scopeDataCollector.process(buffer.getReadPointer(0), (size_t)buffer.getNumSamples());
+    //for (int channel = 0; channel < totalNumOutputChannels; ++channel)
+    //      setPeakLevel (channel, buffer.getMagnitude (channel, 0, buffer.getNumSamples()));
+    //for (int i = 0; i < NUM_CHANNELS; ++i)
+    //    if (stringActivity[i] > 0) stringActivity[i]--;
+    //scopeDataCollector.process(buffer.getReadPointer(0), (size_t)buffer.getNumSamples());
+}
+
+
+//TODO: need to add mapped sources to knobs to smooth array (currently only added by GUI knob twist)
+void ElectroAudioProcessor::tickKnobsToSmooth()
+{
+    for (auto knob : knobsToSmooth)
+    {
+        knob->tick();
+        if (knob->getRemoveMe())
+        {
+            knobsToSmooth.removeObject(knob);
+        }
+    }
 }
 
 //==============================================================================

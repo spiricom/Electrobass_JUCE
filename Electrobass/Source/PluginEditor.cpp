@@ -17,7 +17,7 @@ ElectroAudioProcessorEditor::ElectroAudioProcessorEditor (ElectroAudioProcessor&
 AudioProcessorEditor (&p),
 processor (p),
 vts(vts),
-OSCILLOSCOPE(processor.getAudioBufferQueue()),
+//OSCILLOSCOPE(processor.getAudioBufferQueue()),
 tabs(TabbedButtonBar::Orientation::TabsAtTop),
 keyboard(p.keyboardState, MidiKeyboardComponent::Orientation::horizontalKeyboard),
 envsAndLFOs(TabbedButtonBar::TabsAtTop),
@@ -312,7 +312,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
             bar.getTabButton(i)->setAlpha(i == 0 ? 1.0f : 0.5f);
         }
     }
-    tab1.addAndMakeVisible(OSCILLOSCOPE);
+    //tab1.addAndMakeVisible(OSCILLOSCOPE);
     //==============================================================================
     // TAB2 ========================================================================
     addAndMakeVisible(tab2);
@@ -457,7 +457,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     //    addAndMakeVisible(&container);
     processor.setMPEMode(false); //HACKYEB
     update();
-    startTimerHz(30);
+    startTimerHz(30);//30
 }
 
 
@@ -642,7 +642,7 @@ void ElectroAudioProcessorEditor::resized()
     //    keyboard.setBoundsRelative(0.f, 0.86f, 1.0f, 0.14f);
     //    keyboard.setKeyWidth(width / 52.0f);
     
-    OSCILLOSCOPE.setBoundsRelative(0.65,0.87,0.35, 0.13 );
+    //OSCILLOSCOPE.setBoundsRelative(0.65,0.87,0.35, 0.13 );
     //OSCILLOSCOPE.get
     //meters.setBounds(540*s-1, outputModule->getBottom()-1, 360*s+2, 114*s);
     setVerticalRotatedWithBounds(meters, true, Rectangle<int>(540*s+100, outputModule->getBottom()-1, 300*s+2, 60*s));
@@ -784,7 +784,7 @@ void ElectroAudioProcessorEditor::buttonClicked(Button* button)
     if (button == tabs.getTabbedButtonBar().getTabButton(0))
     {
         tab1.addAndMakeVisible(mpeToggle);
-        tab1.addAndMakeVisible(OSCILLOSCOPE);
+        //tab1.addAndMakeVisible(OSCILLOSCOPE);
         for (auto slider : pitchBendSliders) tab1.addAndMakeVisible(slider);
         for (auto button : stringActivityButtons) tab1.addAndMakeVisible(button);
     }
@@ -800,7 +800,7 @@ void ElectroAudioProcessorEditor::buttonClicked(Button* button)
     }
     else if (button == tabs.getTabbedButtonBar().getTabButton(3))
     {
-        tab4.addAndMakeVisible(OSCILLOSCOPE);
+        //tab4.addAndMakeVisible(OSCILLOSCOPE);
     }
 }
 
