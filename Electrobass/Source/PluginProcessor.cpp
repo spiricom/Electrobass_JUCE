@@ -63,7 +63,7 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
                (ParameterID { n,  1 }, n, normRange, 0., String(), AudioProcessorParameter::genericParameter,
             string2FromValueFunction));
 	paramIds.add(n);
-    pitchBendRange = std::make_unique<NormalisableRange<float>>(-24.f, 24.f);
+    pitchBendRange = std::make_unique<NormalisableRange<float>>(-48.f, 48.f);
     //pitchBendRange->setSkewForCentre(.0);
     invParameterSkews.addIfNotAlreadyThere(1.f/pitchBendRange->skew);
 
@@ -72,7 +72,7 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
         n = "PitchBend" + String(i);
         NormalisableRange<float> myParamRange = NormalisableRange<float>
     (
-        -24.f, 24.f, // ignored in functions below
+        -48.f, 48.f, // ignored in functions below
         [this]( float start, float end, float value0To1 ) // convertFrom0To1Func
         {
             return pitchBendRange->convertFrom0to1(value0To1); //this->convertFrom0to1Func(value0To1);
@@ -94,9 +94,9 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
         paramIds.add(n);
     }
     n = "PitchBendRange";
-    normRange = NormalisableRange<float>(0., 24., 1.);
+    normRange = NormalisableRange<float>(0., 48., 1.);
     layout.add (std::make_unique<AudioParameterFloat>
-                (ParameterID { n,  1 }, n, normRange, 24., String(), AudioProcessorParameter::genericParameter));
+                (ParameterID { n,  1 }, n, normRange, 48., String(), AudioProcessorParameter::genericParameter));
     paramIds.add(n);
  
     //==============================================================================
@@ -1197,7 +1197,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         {
             samples[1][v] += samples[0][v]*parallel;
         }
-        if (fxPost == nullptr || *fxPost <= 0)
+        if (fxPost == nullptr || *fxPost > 0)
         {
             output->tick(samples[1]);
         }
@@ -1219,12 +1219,12 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
             samples[1][v] = tOversampler_downsample(&os, oversamplerArray);
         }
             
-        if (fxPost == nullptr || *fxPost > 0)
+        if (fxPost == nullptr || *fxPost <= 0)
         {
             output->tick(samples[1]);
         }
         float sampleOutput = 0.0f;
-        
+        output->tickLowpass(samples[1]);
         for(int v = 0; v < numVoicesActive; v++)
         {
             sampleOutput += samples[1][v];
@@ -1237,11 +1237,11 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
             buffer.setSample(channel, s, LEAF_clip(-1.0f, outputSamples[0], 1.0f));
         }
     }
-    //for (int channel = 0; channel < totalNumOutputChannels; ++channel)
-    //      setPeakLevel (channel, buffer.getMagnitude (channel, 0, buffer.getNumSamples()));
-    //for (int i = 0; i < NUM_CHANNELS; ++i)
-    //    if (stringActivity[i] > 0) stringActivity[i]--;
-    //scopeDataCollector.process(buffer.getReadPointer(0), (size_t)buffer.getNumSamples());
+    for (int channel = 0; channel < totalNumOutputChannels; ++channel)
+          setPeakLevel (channel, buffer.getMagnitude (channel, 0, buffer.getNumSamples()));
+    for (int i = 0; i < NUM_CHANNELS; ++i)
+        if (stringActivity[i] > 0) stringActivity[i]--;
+    scopeDataCollector.process(buffer.getReadPointer(0), (size_t)buffer.getNumSamples());
 }
 
 
