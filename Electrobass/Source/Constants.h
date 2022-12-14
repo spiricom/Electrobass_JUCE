@@ -95,7 +95,7 @@ static const std::vector<std::vector<float>> vOscInit = {
     { -2000.f, 2000.f, 0.0f, 0.0f }, //Freq
     { 0.0f, 1.0f, 0.0f, 0.5f },  //Shape
     { 0.0f, 1.0f, 1.0f, 0.5f },  //Amp
-    { -16, 16, 0.0f, 0.0f} //harmonmics
+    { -16, 16, 0.0f, 0.0f} //harmonics
 };
 
 typedef enum _OscShapeSet

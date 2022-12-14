@@ -125,7 +125,7 @@ public:
     float voiceNote[MAX_NUM_VOICES];
     float voicePrevBend[MAX_NUM_VOICES];
     int highByteVolume;
-    OwnedArray<SmoothedParameter> knobsToSmooth;
+    Array<SmoothedParameter*> knobsToSmooth;
     OwnedArray<Oscillator> oscs;
     std::unique_ptr<NoiseGenerator> noise;
     OwnedArray<Filter> filt;

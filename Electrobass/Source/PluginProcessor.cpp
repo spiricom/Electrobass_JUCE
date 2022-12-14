@@ -63,7 +63,7 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
                (ParameterID { n,  1 }, n, normRange, 0., String(), AudioProcessorParameter::genericParameter,
             string2FromValueFunction));
 	paramIds.add(n);
-    pitchBendRange = std::make_unique<NormalisableRange<float>>(-48.f, 48.f);
+    pitchBendRange = std::make_unique<NormalisableRange<float>>(-48.f,48.f);
     //pitchBendRange->setSkewForCentre(.0);
     invParameterSkews.addIfNotAlreadyThere(1.f/pitchBendRange->skew);
 
@@ -94,7 +94,7 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
         paramIds.add(n);
     }
     n = "PitchBendRange";
-    normRange = NormalisableRange<float>(0., 48., 1.);
+    normRange = NormalisableRange<float>(1., 48., 1.);
     layout.add (std::make_unique<AudioParameterFloat>
                 (ParameterID { n,  1 }, n, normRange, 48., String(), AudioProcessorParameter::genericParameter));
     paramIds.add(n);
@@ -1154,25 +1154,27 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
             float pitchBend = transp + globalPitchBend + pitchBendParams[v+1]->tickNoHooksNoSmoothing();
             float tempNote = (float)tSimplePoly_getPitch(&strings[v*mpe], v*impe);
             //tempNote += resolvedCopedent[v];
-            
-            //freeze pitch bend data on voices where a note off has happened and we are in the release phase
-            if (tSimplePoly_isOn(&strings[v*mpe], v*impe))
+            if ((tempNote >= 0) && (tempNote < 128))
             {
-                 tempNote += pitchBend;
-                 voicePrevBend[v] = pitchBend;
+                //freeze pitch bend data on voices where a note off has happened and we are in the release phase
+                if (tSimplePoly_isOn(&strings[v*mpe], v*impe))
+                {
+                     tempNote += pitchBend;
+                     voicePrevBend[v] = pitchBend;
+                }
+                else
+                {
+                      tempNote += voicePrevBend[v];
+                }
+                int tempNoteIntPart = (int)tempNote;
+                float tempNoteFloatPart = tempNote - (float)tempNoteIntPart;
+                //int tempPitchClassIntPart =tempNoteIntPart % 12;
+                float dev1 = (centsDeviation[tempNoteIntPart] * (1.0f - tempNoteFloatPart));
+                float dev2 =  (centsDeviation[(tempNoteIntPart+1)] * tempNoteFloatPart);
+                float tunedNote = ( dev1  + dev2);
+                voiceNote[v] = tunedNote;
+                //DBG("Tuned note" + String(tunedNote));
             }
-            else
-            {
-                  tempNote += voicePrevBend[v];
-            }
-            int tempNoteIntPart = (int)tempNote;
-            float tempNoteFloatPart = tempNote - (float)tempNoteIntPart;
-            //int tempPitchClassIntPart =tempNoteIntPart % 12;
-            float dev1 = (centsDeviation[tempNoteIntPart] * (1.0f - tempNoteFloatPart));
-            float dev2 =  (centsDeviation[(tempNoteIntPart+1)] * tempNoteFloatPart);
-            float tunedNote = ( dev1  + dev2);
-            voiceNote[v] = tunedNote;
-            //DBG("Tuned note" + String(tunedNote));
             samples[0][v] = 0.f;
             samples[1][v] = 0.f;
         }
@@ -1248,12 +1250,13 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
 //TODO: need to add mapped sources to knobs to smooth array (currently only added by GUI knob twist)
 void ElectroAudioProcessor::tickKnobsToSmooth()
 {
-    for (auto knob : knobsToSmooth)
+    for (int i = 0; i < knobsToSmooth.size(); i++)
     {
+        SmoothedParameter* knob = knobsToSmooth.getUnchecked(i);
         knob->tick();
         if (knob->getRemoveMe())
         {
-            knobsToSmooth.removeObject(knob);
+            knobsToSmooth.remove(i);
         }
     }
 }
