@@ -262,6 +262,8 @@ public:
     }
     
     std::unique_ptr<SmoothedParameter> master;
+    float oscAmpMult;
+    float oscAmpMultArr[4] = {0,1, 0.5, .3333f};
 private:
     std::atomic<float>* fxPost;
     std::mutex m;
@@ -285,7 +287,7 @@ private:
     
     String presetName;
     int presetNumber;
-    tOversampler os;
+    tOversampler os[MAX_NUM_VOICES];
     float oversamplerArray[OVERSAMPLE];
     AlertWindow prompt;
     std::array<std::atomic<float>, 128> m_peakLevels;

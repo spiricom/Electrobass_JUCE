@@ -405,9 +405,10 @@ prompt("","",AlertWindow::AlertIconType::NoIcon)
         filt.add(new Filter("Filter" + String(i+1), *this, vts));
     }
     
-    
-    tOversampler_init(&os, OVERSAMPLE, 1, &leaf);
-    
+    for (int i = 0; i < MAX_NUM_VOICES; ++i)
+    {
+        tOversampler_init(&os[i], OVERSAMPLE, 1, &leaf);
+    }
     for (int i = 0; i < NUM_FX; i++)
     {
         fx.add(new Effect("Effect" + String(i+1), *this, vts));
@@ -1148,12 +1149,18 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         {
             lfos[i]->tick();
         }
-        
+        for (int v = 0; v < MAX_NUM_VOICES; v++)
+        {
+            samples[0][v] = 0.f;
+            samples[1][v] = 0.f;//
+        }
         for (int v = 0; v < numVoicesActive; ++v)
         {
             float pitchBend = transp + globalPitchBend + pitchBendParams[v+1]->tickNoHooksNoSmoothing();
             float tempNote = (float)tSimplePoly_getPitch(&strings[v*mpe], v*impe);
             //tempNote += resolvedCopedent[v];
+            
+            //added this check because if there is no active voice "getPitch" returns -1
             if ((tempNote >= 0) && (tempNote < 128))
             {
                 //freeze pitch bend data on voices where a note off has happened and we are in the release phase
@@ -1175,10 +1182,16 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
                 voiceNote[v] = tunedNote;
                 //DBG("Tuned note" + String(tunedNote));
             }
-            samples[0][v] = 0.f;
-            samples[1][v] = 0.f;
+            //samples[0][v] = 0.f;
+            //samples[1][v] = 0.f;
         }
         //per voice inside the tick
+        int index = 0;
+        for (int i = 0; i < oscs.size();i++)
+        {
+            if(oscs[i]->getEnabled()) index++;
+        }
+        oscAmpMult = oscAmpMultArr[index];
         for (int i = 0; i < oscs.size(); ++i)
         {
             oscs[i]->tick(samples);
@@ -1209,7 +1222,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         
         for (int v = 0; v < numVoicesActive; ++v)
         {
-            tOversampler_upsample(&os, samples[1][v], oversamplerArray);
+            tOversampler_upsample(&os[v], samples[1][v], oversamplerArray);
             for (int i = 0; i < fx.size(); i++) {
                 fx[i]->oversample_tick(oversamplerArray, v);
             }
@@ -1218,9 +1231,9 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
             {
                 oversamplerArray[i] = LEAF_clip(-1.0f, oversamplerArray[i], 1.0f);
             }
-            samples[1][v] = tOversampler_downsample(&os, oversamplerArray);
+            samples[1][v] = tOversampler_downsample(&os[v], oversamplerArray);
         }
-            
+    
         if (fxPost == nullptr || *fxPost <= 0)
         {
             output->tick(samples[1]);
@@ -1232,7 +1245,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
             sampleOutput += samples[1][v];
         }
         float mastergain = master->tickNoHooks();
-        outputSamples[0] = sampleOutput * mastergain;
+        outputSamples[0] = sampleOutput * mastergain * 0.98f; //drop a little bit to avoid touching clipping
         
         for (int channel = 0; channel < totalNumOutputChannels; ++channel)
         {
@@ -1240,9 +1253,13 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         }
     }
     for (int channel = 0; channel < totalNumOutputChannels; ++channel)
+    {
           setPeakLevel (channel, buffer.getMagnitude (channel, 0, buffer.getNumSamples()));
+    }
     for (int i = 0; i < NUM_CHANNELS; ++i)
+    {
         if (stringActivity[i] > 0) stringActivity[i]--;
+    }
     scopeDataCollector.process(buffer.getReadPointer(0), (size_t)buffer.getNumSamples());
 }
 
@@ -1834,6 +1851,7 @@ void ElectroAudioProcessor::setStateInformation (const void* data, int sizeInByt
         else
         {
 			// A couple of default mappings that will be used if nothing has been saved
+            //TODO: this seems wrong now that we changed envelope 1 to always be amp mapping
 			Mapping defaultFilter1Cutoff;
 			defaultFilter1Cutoff.sourceName = "Envelope3";
 			defaultFilter1Cutoff.targetName = "Filter1 Cutoff T3";
