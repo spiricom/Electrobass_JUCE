@@ -135,6 +135,9 @@ private:
     TuningTab tuningTab;
     Component tab2;
     Component tab4;
+    Component tab5;
+    CopedentTable copedentTable;
+    
     FXTab fxTab;
     /* ToggleButton mpeToggle */// Declared above but will be include in this tab too
     OwnedArray<Label> macroControlEntries;
