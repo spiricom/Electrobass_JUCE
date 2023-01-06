@@ -1074,11 +1074,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
 
         float globalPitchBend = pitchBends[0];
         
-//        float samplesL[2][MAX_NUM_VOICES]; //parallel, voices
-//        float samplesR[2][MAX_NUM_VOICES]; //parallel, voices
-        
-        outputSamples[0] = 0.f;
-        outputSamples[1] = 0.f;
+
         
         for (int i = 0; i < envs.size(); ++i)
         {
@@ -1115,6 +1111,11 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
             //DBG("Tuned note" + String(tunedNote));
             panArr3d[0][0][v] = 0.f;
             panArr3d[0][1][v] = 0.f;
+            panArr3d[1][0][v] = 0.f;
+            panArr3d[1][1][v] = 0.f;
+            sampleOut[0][v] = 0.0f;
+            sampleOut[1][v] = 0.0f;
+
         }
         //per voice inside the tick
         for (int i = 0; i < oscs.size(); ++i)
@@ -1124,19 +1125,19 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         //per voice inside
         noise->tick(panArr3d[0]);
         //per voice inside
-//        filt[0]->tick(panArr3d, 0);
-//        for (int v = 0; v < numVoicesActive; ++v)
-//        {
-//            panArr3d[0][1][v] = panArr3d[0][0][v]*(1.f-parallel);
-//            panArr3d[1][1][v] = panArr3d[1][0][v]*(1.f-parallel);
-//        }
-//
-//        filt[1]->tick(panArr3d,1);
-//
+        filt[0]->tick(panArr3d, 0);
         for (int v = 0; v < numVoicesActive; ++v)
         {
-            sampleOut[0][v] = panArr3d[0][0][v];//*parallel //+ panArr3d[0][1][v];
-            sampleOut[1][v] = panArr3d[0][0][v];//*parallel + panArr3d[1][1][v];
+            panArr3d[0][1][v] = panArr3d[0][0][v]*(1.f-parallel);
+            panArr3d[1][1][v] = panArr3d[1][0][v]*(1.f-parallel);
+        }
+
+        filt[1]->tick(panArr3d,1);
+
+        for (int v = 0; v < numVoicesActive; ++v)
+        {
+            sampleOut[0][v] = panArr3d[0][0][v]*parallel + panArr3d[0][1][v];
+            sampleOut[1][v] = panArr3d[1][0][v]*parallel + panArr3d[1][1][v];
         }
         if (fxPost == nullptr || *fxPost <= 0)
         {
@@ -1146,38 +1147,40 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         
         
         
-//        for (int v = 0; v < numVoicesActive; ++v)
-//        {
-//            tOversampler_upsample(&os[0], sampleOut[0][v], oversamplerArray[0]);
-//            tOversampler_upsample(&os[1], sampleOut[1][v], oversamplerArray[1]);
-//            for (int i = 0; i < fx.size(); i++) {
-//                fx[i]->oversample_tick(oversamplerArray, v);
-//            }
-//            //hard clip before downsampling to get a little more antialiasing from clipped signal.
-//            for (int i = 0; i < (OVERSAMPLE); i++)
-//            {
-//                oversamplerArray[0][i] = LEAF_clip(-1.0f, oversamplerArray[0][i], 1.0f);
-//                oversamplerArray[1][i] = LEAF_clip(-1.0f, oversamplerArray[1][i], 1.0f);
-//            }
-//            sampleOut[0][v] = tOversampler_downsample(&os[0], oversamplerArray[0]);
-//            sampleOut[1][v] = tOversampler_downsample(&os[1], oversamplerArray[1]);
-//        }
+        for (int v = 0; v < numVoicesActive; ++v)
+        {
+            tOversampler_upsample(&os[0], sampleOut[0][v], oversamplerArray[0]);
+            tOversampler_upsample(&os[1], sampleOut[1][v], oversamplerArray[1]);
+            for (int i = 0; i < fx.size(); i++) {
+                fx[i]->oversample_tick(oversamplerArray, v);
+            }
+            //hard clip before downsampling to get a little more antialiasing from clipped signal.
+            for (int i = 0; i < (OVERSAMPLE); i++)
+            {
+                oversamplerArray[0][i] = LEAF_clip(-1.0f, oversamplerArray[0][i], 1.0f);
+                oversamplerArray[1][i] = LEAF_clip(-1.0f, oversamplerArray[1][i], 1.0f);
+            }
+            sampleOut[0][v] = tOversampler_downsample(&os[0], oversamplerArray[0]);
+            sampleOut[1][v] = tOversampler_downsample(&os[1], oversamplerArray[1]);
+        }
             
         if (fxPost == nullptr || *fxPost > 0)
         {
             output->tick(sampleOut);
         }
         
-        for(int v = 0; v < numVoicesActive; v++)
+        for(int v = 1; v < numVoicesActive; v++)
         {
-            sampleOutput[0] += sampleOut[0][v];
-            sampleOutput[1] += sampleOut[1][v];
+            sampleOut[0][0] += sampleOut[0][v];
+            sampleOut[1][0] += sampleOut[1][v];
         }
+//        sampleOutput[0] = sampleOut[0][0];
+//        sampleOutput[1] = sampleOut[1][0];
         float mastergain = master->tickNoHooks();
-        outputSamples[0] = sampleOutput[0] * mastergain;
-        outputSamples[1] = sampleOutput[1] * mastergain;
-        buffer.setSample(0, s, LEAF_clip(-1.0f, outputSamples[0], 1.0f));
-        buffer.setSample(1, s, LEAF_clip(-1.0f, outputSamples[1], 1.0f));
+        sampleOut[0][0] *= mastergain;
+        sampleOut[1][0] *= mastergain;
+        buffer.setSample(0, s, LEAF_clip(-1.0f, sampleOut[0][0], 1.0f));
+        buffer.setSample(1, s, LEAF_clip(-1.0f, sampleOut[1][0], 1.0f));
        
 //        for (int channel = 0; channel < totalNumOutputChannels; ++channel)
 //        {
