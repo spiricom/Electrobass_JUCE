@@ -231,7 +231,9 @@ chooser("Select a .wav file to load...", {}, "*.wav")
 //    mpeToggle.addListener(this);
 //    tab1.addAndMakeVisible(mpeToggle);
     
-
+    muteToggle.setButtonText("Mute");
+    muteToggle.addListener(this);
+    tab1.addAndMakeVisible(muteToggle);
     keyboard.setAvailableRange(21, 108);
     keyboard.setOctaveForMiddleC(4);
     //    tab1.addAndMakeVisible(&keyboard);
@@ -617,7 +619,7 @@ void ElectroAudioProcessorEditor::resized()
     int r = (10*align) % 12;
     int w = (10*align) / 12;
     y = height-35*s+2;//
-    //mpeToggle.setBounds(6*s, y, x-w-5*s, 35*s); //EBSPECIFIC
+     //EBSPECIFIC
     //pitchBendSliders[0]->setBounds(0, midiKeyComponent.getBottom()-1, x, 27*s);
     stringActivityButtons[0]->setBounds(0, y, w, 35*s);
     pitchBendSliders[0]->setBounds(0,
@@ -646,6 +648,7 @@ void ElectroAudioProcessorEditor::resized()
     //    keyboard.setKeyWidth(width / 52.0f);
     
     OSCILLOSCOPE.setBoundsRelative(0.65,0.87,0.35, 0.13 );
+    muteToggle.setBounds(OSCILLOSCOPE.getX(), OSCILLOSCOPE.getY() - 100, x-w-5*s, 35*s);
     //OSCILLOSCOPE.get
     //meters.setBounds(540*s-1, outputModule->getBottom()-1, 360*s+2, 114*s);
     setVerticalRotatedWithBounds(meters, true, Rectangle<int>(540*s+100, outputModule->getBottom()-1, 300*s+2, 60*s));
@@ -782,11 +785,17 @@ void ElectroAudioProcessorEditor::buttonClicked(Button* button)
         {
             updateMPEToggle(tb->getToggleState());
         }
+        
+        if (tb == &muteToggle)
+        {
+            processor.setMute(tb->getToggleState());
+        }
     }
     
     if (button == tabs.getTabbedButtonBar().getTabButton(0))
     {
         tab1.addAndMakeVisible(mpeToggle);
+        tab1.addAndMakeVisible(muteToggle);
         tab1.addAndMakeVisible(OSCILLOSCOPE);
         for (auto slider : pitchBendSliders) tab1.addAndMakeVisible(slider);
         for (auto button : stringActivityButtons) tab1.addAndMakeVisible(button);

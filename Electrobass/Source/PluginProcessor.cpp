@@ -1261,6 +1261,16 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         if (stringActivity[i] > 0) stringActivity[i]--;
     }
     scopeDataCollector.process(buffer.getReadPointer(0), (size_t)buffer.getNumSamples());
+    if(mute)
+    {
+        for (int s = 0; s < buffer.getNumSamples(); s++)
+        {
+            for (int channel = 0; channel < totalNumOutputChannels; ++channel)
+            {
+                buffer.setSample(channel, s, 0.0f);
+            }
+        }
+    }
 }
 
 

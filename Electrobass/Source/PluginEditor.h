@@ -115,6 +115,7 @@ private:
     ElectroTabbedComponent envsAndLFOs;
     MappingSource* currentMappingSource;
     ToggleButton mpeToggle;
+    ToggleButton muteToggle;
     ElectroComponent seriesParallelComponent;
     Slider seriesParallelSlider;
     Label seriesLabel;

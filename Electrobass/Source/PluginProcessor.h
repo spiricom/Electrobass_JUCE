@@ -264,7 +264,10 @@ public:
     std::unique_ptr<SmoothedParameter> master;
     float oscAmpMult;
     float oscAmpMultArr[4] = {0,1, 0.5, .3333f};
+    void setMute(bool _mute) {mute = _mute;}
 private:
+    
+    bool mute = false;
     std::atomic<float>* fxPost;
     std::mutex m;
     MTSClient *client;
