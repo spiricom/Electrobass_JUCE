@@ -151,11 +151,12 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     numVoicesLabel.setJustificationType(Justification::centred);
     numVoicesLabel.setLookAndFeel(&laf);
     tab1.addAndMakeVisible(numVoicesLabel);
-    
+    //numVoicesSlider.setMouseDragSensitivity(40);
     numVoicesSlider.setRange(1., (float)MAX_NUM_VOICES, 1.); //EBSPECIFIC
     numVoicesSlider.setSliderStyle(Slider::SliderStyle::LinearBarVertical);
     numVoicesSlider.setSliderSnapsToMousePosition(false);
-    numVoicesSlider.setMouseDragSensitivity(200);
+    numVoicesSlider.setMouseDragSensitivity(2400);
+    numVoicesSlider.setSliderSnapsToMousePosition(false);
     numVoicesSlider.setTextValueSuffix(""); //EBSPECIFIC
     numVoicesSlider.setLookAndFeel(&laf);
     numVoicesSlider.setColour(Slider::backgroundColourId, Colours::darkgrey.withBrightness(0.2f));
@@ -445,11 +446,13 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     presetNamelabel.setText("Name", dontSendNotification);
     presetNumberlabel.setText("Number", dontSendNotification);
     presetNumber.setRange(0, 99, 1);
+    presetNumber.setMouseDragSensitivity(12000);
+    presetNumber.setSliderSnapsToMousePosition(false);
     presetNumber.onValueChange = [this] {processor.setPresetNumber(presetNumber.getValue());};
     presetNumber.setSliderStyle(Slider::SliderStyle::LinearBarVertical);
     presetNumberlabel.setLookAndFeel(&laf);
     presetNamelabel.setLookAndFeel(&laf);
-    presetNumber.setMouseDragSensitivity(200);
+    //presetNumber.setMouseDragSensitivity(200);
     presetNumber.setTextValueSuffix(""); //EBSPECIFIC
     presetNumber.setTitle("Preset Number");
     presetNumber.setName("Preset Number");
