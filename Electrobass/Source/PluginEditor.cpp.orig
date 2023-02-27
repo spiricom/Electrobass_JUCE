@@ -231,10 +231,15 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     //mpeToggle.setButtonText("MPE");
 //    mpeToggle.addListener(this);
 //    tab1.addAndMakeVisible(mpeToggle);
+<<<<<<< HEAD
     
     muteToggle.setButtonText("Mute");
     muteToggle.addListener(this);
     tab1.addAndMakeVisible(muteToggle);
+=======
+
+
+>>>>>>> 7d7d753049c45f2fb269349995d053e10ca901bd
     keyboard.setAvailableRange(21, 108);
     keyboard.setOctaveForMiddleC(4);
     //    tab1.addAndMakeVisible(&keyboard);
@@ -445,11 +450,10 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     presetNamelabel.setText("Name", dontSendNotification);
     presetNumberlabel.setText("Number", dontSendNotification);
     presetNumber.setRange(0, 99, 1);
-    //presetNumber.setMouseDragSensitivity(12000);
+    presetNumber.setMouseDragSensitivity(12000);
     presetNumber.setSliderSnapsToMousePosition(false);
     presetNumber.onValueChange = [this] {processor.setPresetNumber(presetNumber.getValue());};
-    presetNumber.setSliderStyle(Slider::SliderStyle::IncDecButtons);
-    presetNumber.setIncDecButtonsMode(juce::Slider::incDecButtonsNotDraggable);
+    presetNumber.setSliderStyle(Slider::SliderStyle::LinearBarVertical);
     presetNumberlabel.setLookAndFeel(&laf);
     presetNamelabel.setLookAndFeel(&laf);
     //presetNumber.setMouseDragSensitivity(200);
@@ -639,7 +643,11 @@ void ElectroAudioProcessorEditor::resized()
     int r = (10*align) % 12;
     int w = (10*align) / 12;
     y = height-35*s+2;//
-    //mpeToggle.setBounds(6*s, y, x-w-5*s, 35*s); //EBSPECIFIC
+<<<<<<< HEAD
+     //EBSPECIFIC
+=======
+
+>>>>>>> 7d7d753049c45f2fb269349995d053e10ca901bd
     //pitchBendSliders[0]->setBounds(0, midiKeyComponent.getBottom()-1, x, 27*s);
     stringActivityButtons[0]->setBounds(0, y, w, 35*s);
     pitchBendSliders[0]->setBounds(0,
@@ -814,7 +822,12 @@ void ElectroAudioProcessorEditor::buttonClicked(Button* button)
     
     if (button == tabs.getTabbedButtonBar().getTabButton(0))
     {
+<<<<<<< HEAD
         tab1.addAndMakeVisible(mpeToggle);
+        tab1.addAndMakeVisible(muteToggle);
+=======
+        //tab1.addAndMakeVisible(mpeToggle);
+>>>>>>> 7d7d753049c45f2fb269349995d053e10ca901bd
         tab1.addAndMakeVisible(OSCILLOSCOPE);
         for (auto slider : pitchBendSliders) tab1.addAndMakeVisible(slider);
         for (auto button : stringActivityButtons) tab1.addAndMakeVisible(button);
