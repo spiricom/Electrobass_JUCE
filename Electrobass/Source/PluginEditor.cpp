@@ -275,10 +275,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     
     outputModule = std::make_unique<OutputModule>(*this, vts, *processor.output);
     tab1.addAndMakeVisible(outputModule.get());
-    muteToggle.setButtonText("Mute");
-    muteToggle.setBoundsRelative(0.00f, 0.0f, 0.2f, 0.2f);
-    muteToggle.addListener(this);
-    tab1.addAndMakeVisible(muteToggle);
+
     envsAndLFOs.setLookAndFeel(&laf);
     for (int i = 0; i < NUM_ENVS; ++i)
     {
@@ -806,14 +803,6 @@ void ElectroAudioProcessorEditor::buttonClicked(Button* button)
         }
     }
     
-    if (ToggleButton* tb = dynamic_cast<ToggleButton*>(button))
-    {
-        if (tb == &muteToggle)
-        {
-            updateMuteToggle(tb->getToggleState());
-        }
-    }
-    
     if (button == tabs.getTabbedButtonBar().getTabButton(0))
     {
         //tab1.addAndMakeVisible(mpeToggle);
@@ -948,13 +937,6 @@ void ElectroAudioProcessorEditor::updateMPEToggle(bool state)
         stringChannelEntries[i]->setText(text, dontSendNotification);
         stringChannelEntries[i]->setEnabled(state);
     }
-}
-
-
-void ElectroAudioProcessorEditor::updateMuteToggle(bool state)
-{
-    processor.setMuteMode(state);
-    muteToggle.setToggleState(state, dontSendNotification);
 }
 
 
