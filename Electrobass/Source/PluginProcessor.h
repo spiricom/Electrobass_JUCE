@@ -87,6 +87,7 @@ public:
     bool getMPEMode();
     void setMPEMode(bool enabled);
     
+    
     void setNumVoicesActive(int numVoices);
     
     //==============================================================================

@@ -22,6 +22,7 @@ tabs(TabbedButtonBar::Orientation::TabsAtTop),
 keyboard(p.keyboardState, MidiKeyboardComponent::Orientation::horizontalKeyboard),
 envsAndLFOs(TabbedButtonBar::TabsAtTop),
 tuningTab(processor, vts),
+copedentTable(processor, vts),
 fxTab(*this, processor,vts),
 constrain(new ComponentBoundsConstrainer()),
 resizer(new ResizableCornerComponent (this, constrain.get())),
@@ -63,10 +64,10 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     synderphonicsLabel.setJustificationType(Justification::topLeft);
     synderphonicsLabel.setColour(Label::textColourId, Colours::gold.withBrightness(0.9f));
     addAndMakeVisible(synderphonicsLabel);
-    ElectrobassLabel.setText("Electrobass", dontSendNotification);
-    ElectrobassLabel.setJustificationType(Justification::topLeft);
-    ElectrobassLabel.setColour(Label::textColourId, Colours::gold.withBrightness(0.9f));
-    addAndMakeVisible(ElectrobassLabel);
+    //ElectrobassLabel.setText("Electrobass", dontSendNotification);
+    //ElectrobassLabel.setJustificationType(Justification::topLeft);
+    //ElectrobassLabel.setColour(Label::textColourId, Colours::gold.withBrightness(0.9f));
+    //addAndMakeVisible(ElectrobassLabel);
     
     setWantsKeyboardFocus(true);
     
@@ -227,7 +228,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
    
     
     
-//    mpeToggle.setButtonText("MPE");
+    //mpeToggle.setButtonText("MPE");
 //    mpeToggle.addListener(this);
 //    tab1.addAndMakeVisible(mpeToggle);
     
@@ -276,7 +277,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     
     outputModule = std::make_unique<OutputModule>(*this, vts, *processor.output);
     tab1.addAndMakeVisible(outputModule.get());
-    
+
     envsAndLFOs.setLookAndFeel(&laf);
     for (int i = 0; i < NUM_ENVS; ++i)
     {
@@ -315,6 +316,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
             bar.getTabButton(i)->setAlpha(i == 0 ? 1.0f : 0.5f);
         }
     }
+
     tab1.addAndMakeVisible(OSCILLOSCOPE);
     //==============================================================================
     // TAB2 ========================================================================
@@ -351,6 +353,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
             macroControlNames.add(new Label());
             macroControlNames.getLast()->setLookAndFeel(&laf);
             macroControlNames.getLast()->setEditable(true);
+            //macroControlNames.getLast()->setInputRestrictions(8);
             macroControlNames.getLast()->setJustificationType(Justification::centred);
             macroControlNames.getLast()->setColour(Label::backgroundColourId,
                                                    Colours::darkgrey.withBrightness(0.2f));
@@ -360,7 +363,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
         
     }
    
-    
+
     for (int i = 0; i < MAX_NUM_VOICES+1; ++i)
     {
         String n = "String " + String(i);
@@ -402,15 +405,30 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     }
     //==============================================================================
     
+    
+    // TAB5 ========================================================================
+    addAndMakeVisible(tab5);
+    copedentTable.setBoundsRelative(0.02f, 0.04f, 0.45f, 0.55f);
+    mpeToggle.setBoundsRelative(0.02f, 0.6f, 0.2f, 0.2f);
+    mpeToggle.setButtonText("MPE mode");
+    tab5.addAndMakeVisible(copedentTable);
+    mpeToggle.addListener(this);
+    tab5.addAndMakeVisible(mpeToggle);
+    
+
+
+    
     tabs.addTab("Synth", Colours::black, &tab1, false);
     tabs.addTab("Control", Colours::black, &tab2, false);
     tabs.addTab("Tuning", Colours::black, &tab3, false);
     tabs.addTab("FX", Colours::black, &tab4, false);
+    tabs.addTab("Copedent", Colours::black, &tab5, false);
     
     tabs.getTabbedButtonBar().getTabButton(0)->addListener(this);
     tabs.getTabbedButtonBar().getTabButton(1)->addListener(this);
     tabs.getTabbedButtonBar().getTabButton(2)->addListener(this);
     tabs.getTabbedButtonBar().getTabButton(3)->addListener(this);
+    tabs.getTabbedButtonBar().getTabButton(4)->addListener(this);
     addAndMakeVisible(&tabs);
     
     setSize(EDITOR_WIDTH * processor.editorScale, EDITOR_HEIGHT * processor.editorScale);
@@ -520,6 +538,7 @@ ElectroAudioProcessorEditor::~ElectroAudioProcessorEditor()
     sliderAttachments.clear();
     buttonAttachments.clear();
     fxTab.setLookAndFeel(nullptr);
+
 }
 
 //==============================================================================
@@ -619,7 +638,7 @@ void ElectroAudioProcessorEditor::resized()
     int r = (10*align) % 12;
     int w = (10*align) / 12;
     y = height-35*s+2;//
-     //EBSPECIFIC
+    //mpeToggle.setBounds(6*s, y, x-w-5*s, 35*s); //EBSPECIFIC
     //pitchBendSliders[0]->setBounds(0, midiKeyComponent.getBottom()-1, x, 27*s);
     stringActivityButtons[0]->setBounds(0, y, w, 35*s);
     pitchBendSliders[0]->setBounds(0,
@@ -717,7 +736,7 @@ void ElectroAudioProcessorEditor::resized()
     presetNumber.setBounds(presetNameEditor.getX(), -1, width*0.05f+2, tabs.getTabBarDepth() /2);
     presetNamelabel.setBounds(presetNameEditor.getX()-  width*0.05f+2, tabs.getTabBarDepth()/2,width*0.05f+2, tabs.getTabBarDepth()/2);
     presetNumberlabel.setBounds(presetNameEditor.getX()-  width*0.05f+2, -1,width*0.05f+2, tabs.getTabBarDepth()/2);
-    int logoLeft = tabs.getTabbedButtonBar().getTabButton(2)->getRight() + 60*s;
+    int logoLeft = tabs.getTabbedButtonBar().getTabButton(4)->getRight() + 60*s;
     Rectangle<float> logoArea (logoLeft, 0, 98*s, tabs.getTabBarDepth());
     logo->setTransformToFit (logoArea,
                              RectanglePlacement::xLeft +
@@ -795,14 +814,13 @@ void ElectroAudioProcessorEditor::buttonClicked(Button* button)
     if (button == tabs.getTabbedButtonBar().getTabButton(0))
     {
         tab1.addAndMakeVisible(mpeToggle);
-        tab1.addAndMakeVisible(muteToggle);
         tab1.addAndMakeVisible(OSCILLOSCOPE);
         for (auto slider : pitchBendSliders) tab1.addAndMakeVisible(slider);
         for (auto button : stringActivityButtons) tab1.addAndMakeVisible(button);
     }
     else if (button == tabs.getTabbedButtonBar().getTabButton(1))
     {
-        tab2.addAndMakeVisible(mpeToggle);
+        //tab2.addAndMakeVisible(mpeToggle);
         for (auto slider : pitchBendSliders) tab2.addAndMakeVisible(slider);
         for (auto button : stringActivityButtons) tab2.addAndMakeVisible(button);
     }
@@ -813,6 +831,10 @@ void ElectroAudioProcessorEditor::buttonClicked(Button* button)
     else if (button == tabs.getTabbedButtonBar().getTabButton(3))
     {
         tab4.addAndMakeVisible(OSCILLOSCOPE);
+    }
+    else if (button == tabs.getTabbedButtonBar().getTabButton(4))
+    {
+        tab5.addAndMakeVisible(mpeToggle);
     }
 }
 
@@ -924,6 +946,8 @@ void ElectroAudioProcessorEditor::updateMPEToggle(bool state)
         stringChannelEntries[i]->setEnabled(state);
     }
 }
+
+
 
 void ElectroAudioProcessorEditor::updateStringChannel(int string, int ch)
 {

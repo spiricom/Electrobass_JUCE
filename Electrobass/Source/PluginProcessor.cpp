@@ -728,7 +728,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         int count = 0;
        // int myCount = 0;
         //first send a count of the number of parameters that will be sent
-        data.add(paramIds.size() + 2 - 9); //plus midi key values, minus pitch bend
+        data.add(paramIds.size() + 2 - 13); //plus midi key values, minus pitch bend
         data.add(midiKeyMax/127.0f);
         DBG(String(count++)+ ": Midi Key Max: "+ String(midiKeyMax/127.0f));
         data.add(midiKeyMin/127.0f);
@@ -775,7 +775,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
                         float tempId = paramIds.indexOf(id)+2;
                         if (tempId > 16)
                         {
-                            tempId -= 9;//get rid of the extra pitch bend values;
+                            tempId -= 13;//get rid of the extra pitch bend values;
                         }
                         tempData.add(tempId);//TargetID
                         //int jjjj = paramIds.indexOf(id);
@@ -849,6 +849,34 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
 
         currentChunk++;
+        
+        //now send the macro names (14 characters each)
+        for (int i = 0; i < NUM_GENERIC_MACROS; i++)
+        {
+            data7bitInt.clear();
+            data7bitInt.add(0); // saying it's a preset
+            data7bitInt.add(presetNumber); // which preset are we saving
+        
+            //clip macro names to 14 letters if they are longer
+            int myLength = 14;
+            if (macroNames[i].length() < 14)
+            {
+                myLength = macroNames[i].length();
+            }
+            for (int j = 0; j < myLength; j++)
+            {
+                data7bitInt.add((macroNames[i].toUTF8()[j] & 127)); //printable characters are in the 0-127 range
+            }
+            remainingBlanks = 14 - myLength;
+            for (int  j = 0; j < remainingBlanks; j++)
+            {
+                data7bitInt.add(32);
+            }
+            //MidiMessage presetMessage = ;
+        
+            midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+            currentChunk++;
+        }
         while(currentDataPointer < dataToSend)
         {
             data7bitInt.clear();
@@ -1021,46 +1049,87 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         waitingToSendTuning = false;
     }
     
+    
     if (waitingToSendCopedent)
     {
-        Array<float> flat;
-    
+        Array<float> data;
         for (int i = 0; i < copedentArray.size(); ++i)
         {
             for (auto value : copedentArray.getReference(i))
             {
-                flat.add(value);
+                data.add(value);
             }
         }
-
-        //RangedAudioParameter* fund = vts.getParameter("Copedent Fundamental");
-        //flat.add(fund->convertFrom0to1(fund->getValue()));
         
-        Array<uint8_t> flat7bitInt;
+        Array<uint8_t> data7bitInt;
         union uintfUnion fu;
         
-        for (int j = 0; j < 11; j++)
+        uint16_t sizeOfSysexChunk = (64 / 5) - 3;
+        int dataToSend = data.size();
+        uint16_t currentChunk = 0;
+        uint16_t currentDataPointer = 0;
+        
+        data7bitInt.clear();
+        data7bitInt.add(2); // saying it's a copedent
+        data7bitInt.add(copedentNumber); // saying which copedent number to store (need this to be a user entered value)
+        for (int i = 0; i < copedentName.length(); i++)
         {
-            flat7bitInt.clear();
+            data7bitInt.add((copedentName.toUTF8()[i] & 127)); //printable characters are in the 0-127 range
             
-            flat7bitInt.add(1); // saying it's a copedent
-            flat7bitInt.add(copedentNumber); // saying which copedent number to store (need this to be a user entered value)
-            flat7bitInt.add(50 + j);
-            
-            for (int i = 0; i < 12; i++)
-            {
-                fu.f = flat[i + (j*12)];
-                flat7bitInt.add((fu.i >> 28) & 15);
-                flat7bitInt.add((fu.i >> 21) & 127);
-                flat7bitInt.add((fu.i >> 14) & 127);
-                flat7bitInt.add((fu.i >> 7) & 127);
-                flat7bitInt.add(fu.i & 127);
-            }
-            
-            MidiMessage copedentMessage = MidiMessage::createSysExMessage(flat7bitInt.getRawDataPointer(), sizeof(uint8_t) * flat7bitInt.size());
-            
-            midiMessages.addEvent(copedentMessage, 0);
         }
+        uint16 remainingBlanks = 14 - copedentName.length();
+        for (uint16 i = 0; i < remainingBlanks; i++)
+        {
+            data7bitInt.add(32);
+        }
+    
+        midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+
+        currentChunk++;
+        
+        
+        while(currentDataPointer < dataToSend)
+        {
+            data7bitInt.clear();
+
+            data7bitInt.add(2); // saying it's a copedent
+            data7bitInt.add(copedentNumber); // saying which copedent number to store (need this to be a user entered value)
+            //flat7bitInt.add(50 + j);
+            
+            //data7bitInt.add(currentChunk); // whichChhunk
+            uint16_t toSendInThisChunk;
+            uint16_t dataRemaining = dataToSend - currentDataPointer;
+            if (dataRemaining < sizeOfSysexChunk)
+            {
+                toSendInThisChunk = dataRemaining;
+            }
+            else
+            {
+                toSendInThisChunk = sizeOfSysexChunk;
+            }
+
+            for (int i = currentDataPointer; i < toSendInThisChunk+currentDataPointer; i++)
+            {
+                fu.f = data[i];
+                data7bitInt.add((fu.i >> 28) & 15);
+                data7bitInt.add((fu.i >> 21) & 127);
+                data7bitInt.add((fu.i >> 14) & 127);
+                data7bitInt.add((fu.i >> 7) & 127);
+                data7bitInt.add(fu.i & 127);
+
+            }
+            currentDataPointer = currentDataPointer + toSendInThisChunk;
+            MidiMessage presetMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
+        
+            midiMessages.addEvent(presetMessage, 0);
+
+            currentChunk++;
+        }
+        data7bitInt.clear();
+        data7bitInt.add(126); // custom command to start parsing, sysex send is finished!
+        data7bitInt.add(copedentNumber); // which copedent did we just finish
+        MidiMessage copedentMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
+        midiMessages.addEvent(copedentMessage, 0);
         waitingToSendCopedent = false;
     }
     
@@ -1173,13 +1242,16 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
                 {
                       tempNote += voicePrevBend[v];
                 }
-                int tempNoteIntPart = (int)tempNote;
-                float tempNoteFloatPart = tempNote - (float)tempNoteIntPart;
-                //int tempPitchClassIntPart =tempNoteIntPart % 12;
-                float dev1 = (centsDeviation[tempNoteIntPart] * (1.0f - tempNoteFloatPart));
-                float dev2 =  (centsDeviation[(tempNoteIntPart+1)] * tempNoteFloatPart);
-                float tunedNote = ( dev1  + dev2);
-                voiceNote[v] = tunedNote;
+                if ((tempNote >= 0) && (tempNote < 128))
+                {
+                    int tempNoteIntPart = (int)tempNote;
+                    float tempNoteFloatPart = tempNote - (float)tempNoteIntPart;
+                    //int tempPitchClassIntPart =tempNoteIntPart % 12;
+                    float dev1 = (centsDeviation[tempNoteIntPart] * (1.0f - tempNoteFloatPart));
+                    float dev2 =  (centsDeviation[(tempNoteIntPart+1)] * tempNoteFloatPart);
+                    float tunedNote = ( dev1  + dev2);
+                    voiceNote[v] = tunedNote;
+                }
                 //DBG("Tuned note" + String(tunedNote));
             }
             //samples[0][v] = 0.f;
@@ -1246,7 +1318,6 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         }
         float mastergain = master->tickNoHooks();
         outputSamples[0] = sampleOutput * mastergain * 0.98f; //drop a little bit to avoid touching clipping
-        
         for (int channel = 0; channel < totalNumOutputChannels; ++channel)
         {
             buffer.setSample(channel, s, LEAF_clip(-1.0f, outputSamples[0], 1.0f));
