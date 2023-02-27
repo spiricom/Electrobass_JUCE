@@ -407,13 +407,13 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     
     
     // TAB5 ========================================================================
-    addAndMakeVisible(tab5);
-    copedentTable.setBoundsRelative(0.02f, 0.04f, 0.45f, 0.55f);
-    mpeToggle.setBoundsRelative(0.02f, 0.6f, 0.2f, 0.2f);
-    mpeToggle.setButtonText("MPE mode");
-    tab5.addAndMakeVisible(copedentTable);
-    mpeToggle.addListener(this);
-    tab5.addAndMakeVisible(mpeToggle);
+//    addAndMakeVisible(tab5);
+//    copedentTable.setBoundsRelative(0.02f, 0.04f, 0.45f, 0.55f);
+//    mpeToggle.setBoundsRelative(0.02f, 0.6f, 0.2f, 0.2f);
+//    mpeToggle.setButtonText("MPE mode");
+//    tab5.addAndMakeVisible(copedentTable);
+//    mpeToggle.addListener(this);
+//    tab5.addAndMakeVisible(mpeToggle);
     
 
 
@@ -422,13 +422,13 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     tabs.addTab("Control", Colours::black, &tab2, false);
     tabs.addTab("Tuning", Colours::black, &tab3, false);
     tabs.addTab("FX", Colours::black, &tab4, false);
-    tabs.addTab("Copedent", Colours::black, &tab5, false);
+//    tabs.addTab("Copedent", Colours::black, &tab5, false);
     
     tabs.getTabbedButtonBar().getTabButton(0)->addListener(this);
     tabs.getTabbedButtonBar().getTabButton(1)->addListener(this);
     tabs.getTabbedButtonBar().getTabButton(2)->addListener(this);
     tabs.getTabbedButtonBar().getTabButton(3)->addListener(this);
-    tabs.getTabbedButtonBar().getTabButton(4)->addListener(this);
+//    tabs.getTabbedButtonBar().getTabButton(4)->addListener(this);
     addAndMakeVisible(&tabs);
     
     setSize(EDITOR_WIDTH * processor.editorScale, EDITOR_HEIGHT * processor.editorScale);
@@ -460,6 +460,10 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     presetNumber.setColour(Slider::backgroundColourId, Colours::darkgrey.withBrightness(0.2f));
     presetNumber.setColour(Slider::textBoxOutlineColourId, Colours::transparentBlack);
     presetNumber.setColour(Slider::textBoxTextColourId, Colours::gold.withBrightness(0.95f));
+    
+    
+    
+    
     
     addAndMakeVisible(presetNumber);
     addAndMakeVisible(presetNamelabel);
@@ -737,7 +741,7 @@ void ElectroAudioProcessorEditor::resized()
     presetNumber.setBounds(presetNameEditor.getX(), -1, width*0.05f+2, tabs.getTabBarDepth() /2);
     presetNamelabel.setBounds(presetNameEditor.getX()-  width*0.05f+2, tabs.getTabBarDepth()/2,width*0.05f+2, tabs.getTabBarDepth()/2);
     presetNumberlabel.setBounds(presetNameEditor.getX()-  width*0.05f+2, -1,width*0.05f+2, tabs.getTabBarDepth()/2);
-    int logoLeft = tabs.getTabbedButtonBar().getTabButton(4)->getRight() + 60*s;
+    int logoLeft = tabs.getTabbedButtonBar().getTabButton(3)->getRight() + 60*s;
     Rectangle<float> logoArea (logoLeft, 0, 98*s, tabs.getTabBarDepth());
     logo->setTransformToFit (logoArea,
                              RectanglePlacement::xLeft +

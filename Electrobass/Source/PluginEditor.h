@@ -87,6 +87,7 @@ private:
     Slider presetNumber;
     Label presetNamelabel;
     Label presetNumberlabel;
+    
     WaveformComponent<float> OSCILLOSCOPE;
     
     TabbedComponent tabs;

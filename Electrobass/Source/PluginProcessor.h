@@ -93,7 +93,8 @@ public:
     //==============================================================================
     void sendCopedentMidiMessage();
     void sendPresetMidiMessage();
-    void sendTuningMidiMessage();
+    void sendTuningMidiMessage(String name, int number
+                               );
     //==============================================================================
     void addMappingSource(MappingSourceModel* source);
     void addMappingTarget(MappingTargetModel* source);
@@ -267,7 +268,8 @@ public:
     float oscAmpMultArr[4] = {0,1, 0.5, .3333f};
     void setMute(bool _mute) {mute = _mute;}
 private:
-    
+    String tuningName;
+    int tuningNumber;
     bool mute = false;
     std::atomic<float>* fxPost;
     std::mutex m;

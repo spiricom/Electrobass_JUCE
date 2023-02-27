@@ -992,25 +992,45 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
     
     if (waitingToSendTuning)
     {
+        
+        Array<uint8_t> data7bitInt;
+        union uintfUnion fu;
+        
+        data7bitInt.add(1); // saying it's a preset
+        data7bitInt.add(tuningNumber); // which preset are we saving
+        
+        for (int i = 0; i < presetName.length(); i++)
+        {
+            data7bitInt.add((presetName.toUTF8()[i] & 127)); //printable characters are in the 0-127 range
+            
+        }
+        uint16 remainingBlanks = 14 - presetName.length();
+        for (uint16 i = 0; i < remainingBlanks; i++)
+        {
+            data7bitInt.add(32);
+        }
+        //MidiMessage presetMessage = ;
+    
+        midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+
+        currentChunk++;
         Array<float> data;
         for (int i = 0; i < 128; i++)
         {
             data.add(centsDeviation[i]);
         }
         
-        Array<uint8_t> data7bitInt;
-        union uintfUnion fu;
-        
-        uint16_t sizeOfSysexChunk = (64 / 5) - 3;
-        int dataToSend = data.size();
+       
         uint16_t currentChunk = 0;
         uint16_t currentDataPointer = 0;
+        uint16_t sizeOfSysexChunk = (64 / 5) - 3;
+        int dataToSend = data.size();
         while(currentDataPointer < dataToSend)
         {
             data7bitInt.clear();
 
             data7bitInt.add(1); // saying it's a tuning
-            data7bitInt.add(1); // which tuning are we saving
+            data7bitInt.add(presetNumber); // which tuning are we saving
             
             //data7bitInt.add(currentChunk); // whichChhunk
             uint16_t toSendInThisChunk;
@@ -1573,8 +1593,10 @@ void ElectroAudioProcessor::sendPresetMidiMessage()
     waitingToSendPreset = true;
 }
 
-void ElectroAudioProcessor::sendTuningMidiMessage()
+void ElectroAudioProcessor::sendTuningMidiMessage(String name, int number)
 {
+    tuningName = name;
+    tuningNumber = number;
     waitingToSendTuning = true;
 }
 
