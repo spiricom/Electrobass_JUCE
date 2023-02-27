@@ -227,10 +227,10 @@ chooser("Select a .wav file to load...", {}, "*.wav")
    
     
     
-//    mpeToggle.setButtonText("MPE");
+    //mpeToggle.setButtonText("MPE");
 //    mpeToggle.addListener(this);
 //    tab1.addAndMakeVisible(mpeToggle);
-    
+
 
     keyboard.setAvailableRange(21, 108);
     keyboard.setOctaveForMiddleC(4);
@@ -274,7 +274,10 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     
     outputModule = std::make_unique<OutputModule>(*this, vts, *processor.output);
     tab1.addAndMakeVisible(outputModule.get());
-    
+    muteToggle.setButtonText("Mute");
+    muteToggle.setBoundsRelative(0.00f, 0.0f, 0.2f, 0.2f);
+    muteToggle.addListener(this);
+    tab1.addAndMakeVisible(muteToggle);
     envsAndLFOs.setLookAndFeel(&laf);
     for (int i = 0; i < NUM_ENVS; ++i)
     {
@@ -313,6 +316,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
             bar.getTabButton(i)->setAlpha(i == 0 ? 1.0f : 0.5f);
         }
     }
+
     tab1.addAndMakeVisible(OSCILLOSCOPE);
     //==============================================================================
     // TAB2 ========================================================================
@@ -359,7 +363,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
         
     }
    
-    
+
     for (int i = 0; i < MAX_NUM_VOICES+1; ++i)
     {
         String n = "String " + String(i);
@@ -404,7 +408,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     
     // TAB5 ========================================================================
     addAndMakeVisible(tab5);
-    copedentTable.setBoundsRelative(0.02f, 0.04f, 0.52f, 0.59f);
+    copedentTable.setBoundsRelative(0.02f, 0.04f, 0.45f, 0.55f);
     mpeToggle.setBoundsRelative(0.02f, 0.6f, 0.2f, 0.2f);
     mpeToggle.setButtonText("MPE mode");
     tab5.addAndMakeVisible(copedentTable);
@@ -799,6 +803,14 @@ void ElectroAudioProcessorEditor::buttonClicked(Button* button)
         }
     }
     
+    if (ToggleButton* tb = dynamic_cast<ToggleButton*>(button))
+    {
+        if (tb == &muteToggle)
+        {
+            updateMuteToggle(tb->getToggleState());
+        }
+    }
+    
     if (button == tabs.getTabbedButtonBar().getTabButton(0))
     {
         //tab1.addAndMakeVisible(mpeToggle);
@@ -934,6 +946,15 @@ void ElectroAudioProcessorEditor::updateMPEToggle(bool state)
         stringChannelEntries[i]->setEnabled(state);
     }
 }
+
+
+void ElectroAudioProcessorEditor::updateMuteToggle(bool state)
+{
+    processor.setMuteMode(state);
+    muteToggle.setToggleState(state, dontSendNotification);
+}
+
+
 
 void ElectroAudioProcessorEditor::updateStringChannel(int string, int ch)
 {

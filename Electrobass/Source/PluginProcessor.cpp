@@ -1318,7 +1318,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         }
         float mastergain = master->tickNoHooks();
         outputSamples[0] = sampleOutput * mastergain * 0.98f; //drop a little bit to avoid touching clipping
-        
+        outputSamples[0] = sampleOutput * muteMode;
         for (int channel = 0; channel < totalNumOutputChannels; ++channel)
         {
             buffer.setSample(channel, s, LEAF_clip(-1.0f, outputSamples[0], 1.0f));
@@ -1544,6 +1544,11 @@ void ElectroAudioProcessor::setMPEMode(bool enabled)
 {
     mpeMode = enabled;
     tSimplePoly_setNumVoices(&strings[0], mpeMode ? 1 : numVoicesActive);
+}
+
+void ElectroAudioProcessor::setMuteMode(bool enabled)
+{
+    muteMode = enabled;
 }
 
 void ElectroAudioProcessor::setNumVoicesActive(int numVoices)

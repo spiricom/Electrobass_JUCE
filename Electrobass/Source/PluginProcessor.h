@@ -87,6 +87,8 @@ public:
     bool getMPEMode();
     void setMPEMode(bool enabled);
     
+    void setMuteMode(bool enabled);
+    
     void setNumVoicesActive(int numVoices);
     
     //==============================================================================
@@ -281,6 +283,8 @@ private:
     bool waitingToSendPreset = false;
     bool waitingToSendTuning = false;
     bool mpeMode = false;
+    
+    bool muteMode = true;
     
     int stringActivity[MAX_NUM_VOICES+1];
     int stringActivityTimeout;

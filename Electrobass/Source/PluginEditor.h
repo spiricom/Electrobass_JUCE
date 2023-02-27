@@ -60,6 +60,7 @@ private:
     
     // Updating things that don't have attachments to the vts
     void updateMPEToggle(bool state);
+    void updateMuteToggle(bool state);
     void updateStringChannel(int string, int ch);
     void updateMacroControl(int macro, int ctrl);
     void updateMacroNames(int macro, String name);
@@ -115,6 +116,7 @@ private:
     ElectroTabbedComponent envsAndLFOs;
     MappingSource* currentMappingSource;
     ToggleButton mpeToggle;
+    ToggleButton muteToggle;
     ElectroComponent seriesParallelComponent;
     Slider seriesParallelSlider;
     Label seriesLabel;
