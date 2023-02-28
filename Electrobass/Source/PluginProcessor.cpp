@@ -992,7 +992,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
     
     if (waitingToSendTuning)
     {
-        
+        uint16_t currentChunk = 0;
         Array<uint8_t> data7bitInt;
         union uintfUnion fu;
         
@@ -1021,7 +1021,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         }
         
        
-        uint16_t currentChunk = 0;
+        
         uint16_t currentDataPointer = 0;
         uint16_t sizeOfSysexChunk = (64 / 5) - 3;
         int dataToSend = data.size();
