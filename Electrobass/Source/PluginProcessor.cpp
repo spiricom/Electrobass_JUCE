@@ -1063,12 +1063,78 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         }
         data7bitInt.clear();
         data7bitInt.add(126); // custom command to start parsing, sysex send is finished!
-        data7bitInt.add(1); // which tuning did we just finish
+        data7bitInt.add(tuningNumber); // which tuning did we just finish
         MidiMessage presetMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
         midiMessages.addEvent(presetMessage, 0);
         waitingToSendTuning = false;
     }
     
+    if (waitingToSendOpenString)
+    {
+        uint16_t currentChunk = 0;
+        Array<uint8_t> data7bitInt;
+        union uintfUnion fu;
+        
+        data7bitInt.add(3); // saying it's a preset
+        data7bitInt.add(0); // which preset are we saving
+        
+       
+
+        
+        Array<float> data;
+        for (int i = 0; i < 4; i++)
+        {
+            data.add(openStrings[i]);
+        }
+        
+       
+        
+        uint16_t currentDataPointer = 0;
+        uint16_t sizeOfSysexChunk = (64 / 5) - 3;
+        int dataToSend = data.size();
+        while(currentDataPointer < dataToSend)
+        {
+            data7bitInt.clear();
+
+            data7bitInt.add(3); // saying it's a tuning
+            data7bitInt.add(0); // which tuning are we saving
+            
+            //data7bitInt.add(currentChunk); // whichChhunk
+            uint16_t toSendInThisChunk;
+            uint16_t dataRemaining = dataToSend - currentDataPointer;
+            if (dataRemaining < sizeOfSysexChunk)
+            {
+                toSendInThisChunk = dataRemaining;
+            }
+            else
+            {
+                toSendInThisChunk = sizeOfSysexChunk;
+            }
+
+            for (int i = currentDataPointer; i < toSendInThisChunk+currentDataPointer; i++)
+            {
+                fu.f = data[i];
+                data7bitInt.add((fu.i >> 28) & 15);
+                data7bitInt.add((fu.i >> 21) & 127);
+                data7bitInt.add((fu.i >> 14) & 127);
+                data7bitInt.add((fu.i >> 7) & 127);
+                data7bitInt.add(fu.i & 127);
+
+            }
+            currentDataPointer = currentDataPointer + toSendInThisChunk;
+            MidiMessage presetMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
+        
+            midiMessages.addEvent(presetMessage, 0);
+
+            currentChunk++;
+        }
+        data7bitInt.clear();
+        data7bitInt.add(126); // custom command to start parsing, sysex send is finished!
+        data7bitInt.add(0); // which tuning did we just finish
+        MidiMessage presetMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
+        midiMessages.addEvent(presetMessage, 0);
+        waitingToSendOpenString = false;
+    }
     
     if (waitingToSendCopedent)
     {
@@ -1599,6 +1665,13 @@ void ElectroAudioProcessor::sendTuningMidiMessage(String name, int number)
     tuningNumber = number;
     waitingToSendTuning = true;
 }
+
+void ElectroAudioProcessor::sendOpenStringMidiMessage()
+{
+    waitingToSendOpenString = true;
+}
+
+
 
 //==============================================================================
 const juce::String ElectroAudioProcessor::getName() const

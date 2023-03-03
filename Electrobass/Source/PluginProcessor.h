@@ -267,7 +267,19 @@ public:
     float oscAmpMult;
     float oscAmpMultArr[4] = {0,1, 0.5, .3333f};
     void setMute(bool _mute) {mute = _mute;}
+    
+    inline float getOpenString(int i)
+    {
+        return openStrings[i];
+    }
+    inline void setOpenString(float val, int i)
+    {
+        openStrings[i] = val;
+    }
+    void sendOpenStringMidiMessage();
 private:
+    
+    float openStrings[4] = {28, 33, 38, 43};
     String tuningName;
     int tuningNumber;
     bool mute = false;
@@ -286,6 +298,7 @@ private:
     bool waitingToSendCopedent = false;
     bool waitingToSendPreset = false;
     bool waitingToSendTuning = false;
+    bool waitingToSendOpenString = false;
     bool mpeMode = false;
     
     int stringActivity[MAX_NUM_VOICES+1];
