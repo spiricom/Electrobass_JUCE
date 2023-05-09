@@ -601,10 +601,10 @@ void ElectroAudioProcessor::addToKnobsToSmoothArray(SmoothedParameter* param)
 //    {
 //        ;
 //    }
-    for (auto knob : knobsToSmooth)
-    {
-        DBG("knob being msooth " + String(knob->getName()));
-    }
+//    for (auto knob : knobsToSmooth)
+//    {
+//        DBG("knob being msooth " + String(knob->getName()));
+//    }
 }
 //==============================================================================
 void ElectroAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
@@ -1984,6 +1984,26 @@ void ElectroAudioProcessor::setStateInformation (const void* data, int sizeInByt
         // Audio processor value tree state
         if (XmlElement* state = xml->getChildByName(vts.state.getType()))
             vts.replaceState (juce::ValueTree::fromXml (*state));
+        for (int v = 0; v < numVoicesActive; v++)
+        {
+            for (int i = 0; i < NUM_OSCS; i++)
+            {
+                oscs[i]->loadAll(v);
+            }
+            for (int i = 0; i < NUM_ENVS; i++)
+            {
+                envs[i]->loadAll(v);
+            }
+            noise->loadAll(v);
+            for (int i = 0; i < NUM_FILT; i++)
+            {
+                filt[i]->loadAll(v);
+            }
+            for (int i = 0; i < NUM_LFOS; i++)
+            {
+                lfos[i]->loadAll(v);
+            }
+        }
         
         // Copedent
         if (XmlElement* copedent = xml->getChildByName("Copedent"))
