@@ -100,7 +100,7 @@ public:
     void addMappingTarget(MappingTargetModel* source);
     
     void tickKnobsToSmooth();
-    
+    void removeKnobsToSmooth();
     MappingSourceModel* getMappingSource(const String& name);
     MappingTargetModel* getMappingTarget(const String& name);
     

@@ -584,7 +584,12 @@ void ElectroAudioProcessor::addToKnobsToSmoothArray(SmoothedParameter* param)
 {
     bool found = false;
     if(!knobsToSmooth.contains(param))
+    {
+        param->setRemoveMe(false);
         knobsToSmooth.add(param);
+        
+    }
+        
 //    for (auto target: targetMap)
 //    {
 //        for(auto _param : target->targetParameters)
@@ -1408,6 +1413,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         {
             buffer.setSample(channel, s, LEAF_clip(-1.0f, outputSamples[0], 1.0f));
         }
+        removeKnobsToSmooth();
     }
     for (int channel = 0; channel < totalNumOutputChannels; ++channel)
     {
@@ -1438,13 +1444,24 @@ void ElectroAudioProcessor::tickKnobsToSmooth()
     {
         SmoothedParameter* knob = knobsToSmooth.getUnchecked(i);
         knob->tick();
-        if (knob->getRemoveMe())
-        {
-            knobsToSmooth.remove(i);
-        }
+        
     }
 }
 
+
+void  ElectroAudioProcessor::removeKnobsToSmooth()
+{
+    for (int i = 0; i < knobsToSmooth.size(); i++)
+    {
+        SmoothedParameter* knob = knobsToSmooth.getUnchecked(i);
+        if (knob->getRemoveMe())
+        {
+            knob->setRemoveMe(false);
+            knobsToSmooth.remove(i);
+        }
+    }
+    
+}
 //==============================================================================
 bool ElectroAudioProcessor::hasEditor() const
 {
