@@ -333,10 +333,21 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
     }
     
     numInvParameterSkews = invParameterSkews.size();
+    DBG("INVPARAMSKEWS");
+    DBG("INVPARAMSKEWS");
+    DBG("INVPARAMSKEWS");
+    DBG("INVPARAMSKEWS");
+    DBG("INVPARAMSKEWS");
     for (int i = 0; i < numInvParameterSkews; ++i)
     {
         quickInvParameterSkews[i] = invParameterSkews[i];
+        DBG(invParameterSkews[i]);
     }
+    
+    DBG("INVPARAMSKEWS");
+    DBG("INVPARAMSKEWS");
+    DBG("INVPARAMSKEWS");
+    DBG("INVPARAMSKEWS");
     
     return layout;
 }

@@ -29,8 +29,9 @@ resizer(new ResizableCornerComponent (this, constrain.get())),
 chooser("Select a .wav file to load...", {}, "*.wav")
 
 {
+    
     LookAndFeel::setDefaultLookAndFeel(ElectroLookAndFeel::getInstance());
-    tabs.getTabbedButtonBar().setLookAndFeel(new LookAndFeel_V4());
+    tabs.getTabbedButtonBar().setLookAndFeel(&laf);
     meters.setChannelFormat(juce::AudioChannelSet::stereo());
     
     tab1.addAndMakeVisible (meters);
@@ -305,7 +306,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
         }
     }
 
-    tab1.addAndMakeVisible(OSCILLOSCOPE);
+    //tab1.addAndMakeVisible(OSCILLOSCOPE);
     //==============================================================================
     // TAB2 ========================================================================
     addAndMakeVisible(tab2);
