@@ -23,13 +23,10 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
     //==============================================================================
     // Top level parameters
     
-    // Ensure the first skew is always 1.f
-    invParameterSkews.add(1.f);
     
     n = "Master";
     auto normRange = NormalisableRange<float>(0., 1.);
     normRange.setSkewForCentre(0.5);
-    invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
     layout.add(std::make_unique<AudioParameterFloat>(ParameterID { n,  1 }, n, normRange, 1.));
     paramIds.add(n);
     for (int i = 0; i < NUM_MACROS; ++i)
@@ -58,14 +55,12 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
     n = "Transpose";
     normRange = NormalisableRange<float>(-48., 48.);
 	normRange.setSkewForCentre(.0);
-	invParameterSkews.addIfNotAlreadyThere(1.f / normRange.skew);
     layout.add(std::make_unique<AudioParameterFloat>
                (ParameterID { n,  1 }, n, normRange, 0., String(), AudioProcessorParameter::genericParameter,
             string2FromValueFunction));
 	paramIds.add(n);
     pitchBendRange = std::make_unique<NormalisableRange<float>>(-48.f,48.f);
     //pitchBendRange->setSkewForCentre(.0);
-    invParameterSkews.addIfNotAlreadyThere(1.f/pitchBendRange->skew);
 
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
@@ -115,7 +110,6 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
         
         normRange = NormalisableRange<float>(min, max);
         normRange.setSkewForCentre(center);
-        invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
         layout.add (std::make_unique<AudioParameterFloat> (ParameterID { n,  1 }, n, normRange, def));
         paramIds.add(n);
     }
@@ -123,7 +117,6 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
     n = "Noise FilterSend";
     normRange = NormalisableRange<float>(0., 1.);
     normRange.setSkewForCentre(.5);
-    invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
     layout.add (std::make_unique<AudioParameterFloat> (ParameterID { n,  1 }, n, normRange, 1.f));
     paramIds.add(n);
     
@@ -146,7 +139,6 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
             
             normRange = NormalisableRange<float>(min, max);
             normRange.setSkewForCentre(center);
-            invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
             layout.add (std::make_unique<AudioParameterFloat> (ParameterID { n,  1 }, n, normRange, def));
             paramIds.add(n);
         }
@@ -174,7 +166,6 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
         n = "Osc" + String(i+1) + " FilterSend";
         normRange = NormalisableRange<float>(0., 1.);
         normRange.setSkewForCentre(.5);
-        invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
         layout.add (std::make_unique<AudioParameterFloat> (ParameterID { n,  1 }, n, normRange, 1.f));
         paramIds.add(n);
     }
@@ -201,7 +192,6 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
             
             normRange = NormalisableRange<float>(min, max);
             normRange.setSkewForCentre(center);
-            invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
             layout.add (std::make_unique<AudioParameterFloat> (ParameterID { n,  1 }, n, normRange, def));
             paramIds.add(n);
         }
@@ -232,7 +222,6 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
             n = "Filter" + String(i+1) + " " + cFilterParams[j];
             normRange = NormalisableRange<float>(min, max);
             normRange.setSkewForCentre(center);
-            invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
             layout.add (std::make_unique<AudioParameterFloat> (ParameterID { n,  1 }, n, normRange, def));
             paramIds.add(n);
             DBG(n+String(normRange.convertFrom0to1(1.0f)));
@@ -243,7 +232,6 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
     n = "Filter Series-Parallel Mix";
     normRange = NormalisableRange<float>(0., 1.);
     normRange.setSkewForCentre(.5);
-    invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
     layout.add (std::make_unique<AudioParameterFloat> (ParameterID { n,  1 }, n, normRange, 0.));
     paramIds.add(n);
     
@@ -260,7 +248,6 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
             n = "Envelope" + String(i+1) + " " + cEnvelopeParams[j];
             normRange = NormalisableRange<float>(min, max);
             normRange.setSkewForCentre(center);
-            invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
             //DBG("envelope skew: " + String(normRange.skew + " " + String(i));
             layout.add (std::make_unique<AudioParameterFloat> (ParameterID { n,  1 }, n, normRange, def));
             paramIds.add(n);
@@ -284,7 +271,6 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
             n = "LFO" + String(i+1) + " " + cLowFreqParams[j];
             normRange = NormalisableRange<float>(min, max);
             normRange.setSkewForCentre(center);
-            invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
             layout.add (std::make_unique<AudioParameterFloat> (ParameterID { n,  1 }, n, normRange, def));
             paramIds.add(n);
         }
@@ -310,7 +296,6 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
         n = "Output " + cOutputParams[i];
         normRange = NormalisableRange<float>(min, max);
         normRange.setSkewForCentre(center);
-        invParameterSkews.addIfNotAlreadyThere(1.f/normRange.skew);
         layout.add (std::make_unique<AudioParameterFloat> (ParameterID { n,  1 }, n, normRange, def));
         paramIds.add(n);
     }
@@ -332,11 +317,6 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
         DBG(paramIds[i] + ": " + String(i));
     }
     
-    numInvParameterSkews = invParameterSkews.size();
-    for (int i = 0; i < numInvParameterSkews; ++i)
-    {
-        quickInvParameterSkews[i] = invParameterSkews[i];
-    }
     
     return layout;
 }
@@ -436,11 +416,8 @@ prompt("","",AlertWindow::AlertIconType::NoIcon)
         
         ccParams.add(new SmoothedParameter(*this, vts, n));
         ccSources.add(new MappingSourceModel(*this, n, false, false, c));
-        for (int j = 0; j < invParameterSkews.size(); ++j)
-        {
-            float** source = ccParams.getLast()->getValuePointerArray(j);
-            ccSources.getLast()->sources[j] = source;
-        }
+        //float* source = ccParams.getLast()->getValuePointer();
+        //ccSources.getLast()->source = source;
         sourceIds.add(n);
     }
     for (int i = 1; i <= 127; ++i) ccNumberToMacroMap.set(i, -1);
@@ -458,17 +435,15 @@ prompt("","",AlertWindow::AlertIconType::NoIcon)
 	randomSource = std::make_unique<MappingSourceModel>(*this, "Random on Attack",
                                                         true, false, Colours::white);
     sourceIds.add("Random on Attack");
-    for (int i = 0; i < numInvParameterSkews; ++i)
-    {
-        midiKeyValues[i] = (float*)leaf_alloc(&leaf, sizeof(float) * MAX_NUM_VOICES);
-        midiKeySource->sources[i] = &midiKeyValues[i];
+    //midiKeyValues = (float*)leaf_alloc(&leaf, sizeof(float) * MAX_NUM_VOICES);
+    midiKeyValues = midiKeySource->getValuePointerArray();
 
-		velocityValues[i] = (float*)leaf_alloc(&leaf, sizeof(float) * MAX_NUM_VOICES);
-		velocitySource->sources[i] = &velocityValues[i];
+    //velocityValues = (float*)leaf_alloc(&leaf, sizeof(float) * MAX_NUM_VOICES);
+    velocityValues = velocitySource->getValuePointerArray();
 
-		randomValues[i] = (float*)leaf_alloc(&leaf, sizeof(float) * MAX_NUM_VOICES);
-		randomSource->sources[i] = &randomValues[i];
-    }
+    //randomValues //= (float*)leaf_alloc(&leaf, sizeof(float) * MAX_NUM_VOICES);
+    randomValues = randomSource->getValuePointerArray();
+    //randomSource->source = randomValues;
     
     for (int i = 0; i < NUM_ENVS; ++i)
     {
@@ -566,14 +541,18 @@ ElectroAudioProcessor::~ElectroAudioProcessor()
         tSimplePoly_free(&strings[i]);
     }
     
-    for (int i = 0; i < numInvParameterSkews; ++i)
-    {
-        leaf_free(&leaf, (char*)midiKeyValues[i]);
-        leaf_free(&leaf, (char*)velocityValues[i]);
-        leaf_free(&leaf, (char*)randomValues[i]);
-    }
-    
+
+//    leaf_free(&leaf, (char*)midiKeyValues);
+//    leaf_free(&leaf, (char*)velocityValues);
+//    leaf_free(&leaf, (char*)randomValues);
+
+    DBG("Pre clear: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
+//    for (auto p : params)
+//    {
+//        DBG(p->getName());
+//    }
     params.clearQuick(false);
+    DBG("Pre delete: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
     if (chooser != nullptr)
         delete chooser;
 }
@@ -1286,7 +1265,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
 
         for (int i = 0; i < ccParams.size(); ++i)
         {
-            ccParams[i]->tickSkewsNoHooks();
+            ccParams[i]->tickNoHooks();
         }
 //        float pitchBends[8];
 //        for (int i = 0; i < 8; i++)
@@ -1521,18 +1500,12 @@ void ElectroAudioProcessor::noteOn(int channel, int key, float velocity)
             velocity = velocity * velocity;
             key -= midiKeyMin;
             float norm = key / float(midiKeyMax - midiKeyMin);
-            midiKeyValues[0][i] = jlimit(0.f, 1.f, norm);
-            velocityValues[0][i] = velocity;
+            midiKeyValues[i] = jlimit(0.f, 1.f, norm);
+            velocityValues[i] = velocity;
             float r = leaf.random();
-            randomValues[0][i] = r;
+            randomValues[i] = r;
             lastRandomValue = r;
-            for (int s = 1; s < numInvParameterSkews; ++s)
-            {
-                float invSkew = quickInvParameterSkews[s];
-                midiKeyValues[s][i] = powf(norm, invSkew);
-                velocityValues[s][i] = powf(velocity, invSkew);
-                randomValues[s][i] = powf(r, invSkew);
-            }
+    
             for (auto e : envs) e->noteOn(i, velocity);
             for (auto o : lfos) o->noteOn(i, velocity);
         }
@@ -1945,7 +1918,7 @@ void ElectroAudioProcessor::setStateInformation (const void* data, int sizeInByt
         String presetPath = xml->getStringAttribute("path");
         editorScale = xml->getDoubleAttribute("editorScale", 1.05);
         setMPEMode(xml->getBoolAttribute("mpeMode", false)); //EB
-        //setNumVoicesActive(xml->getIntAttribute("numVoices", 1));//EBSPECIFIC
+        setNumVoicesActive(xml->getIntAttribute("numVoices", 1));//EBSPECIFIC
         midiKeyMin = xml->getIntAttribute("midiKeyMin", 21);
         midiKeyMax = xml->getIntAttribute("midiKeyMax", 108);
         for (int i = 0; i < NUM_MIDI_NOTES; ++i)

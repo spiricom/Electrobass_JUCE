@@ -57,7 +57,7 @@ public:
     
     
 private:
-    
+    LookAndFeel_V4 laf;
     // Updating things that don't have attachments to the vts
     void updateMPEToggle(bool state);
     void updateStringChannel(int string, int ch);
