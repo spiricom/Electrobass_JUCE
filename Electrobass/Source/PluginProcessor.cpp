@@ -23,7 +23,6 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
     //==============================================================================
     // Top level parameters
     
-    
     n = "Master";
     auto normRange = NormalisableRange<float>(0., 1.);
     normRange.setSkewForCentre(0.5);
@@ -416,9 +415,10 @@ prompt("","",AlertWindow::AlertIconType::NoIcon)
         
         ccParams.add(new SmoothedParameter(*this, vts, n));
         ccSources.add(new MappingSourceModel(*this, n, false, false, c));
-        //float* source = ccParams.getLast()->getValuePointer();
-        //ccSources.getLast()->source = source;
-        sourceIds.add(n);
+        if (i < NUM_MACROS-10)
+        {
+            sourceIds.add(n);
+        }
     }
     for (int i = 1; i <= 127; ++i) ccNumberToMacroMap.set(i, -1);
     for (int i = 0; i < NUM_MACROS+1; ++i)
@@ -460,7 +460,16 @@ prompt("","",AlertWindow::AlertIconType::NoIcon)
         lfos.add(new LowFreqOscillator(n, *this, vts));
         sourceIds.add(n);
     }
-    
+    //add pedals and knee levers at the end of the source array to avoid breaking existing presets
+        for (int i = 0; i < NUM_MACROS - NUM_GENERIC_MACROS - 5; ++i)
+        {
+            String n;
+            Colour c;
+
+            n = cUniqueMacroNames[i+5];
+            
+            sourceIds.add(n);
+        }
     output = std::make_unique<Output>("Output", *this, vts);
     
     master = std::make_unique<SmoothedParameter>(*this, vts, "Master");
@@ -712,7 +721,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         int count = 0;
        // int myCount = 0;
         //first send a count of the number of parameters that will be sent
-        data.add(paramIds.size() + 2 - 13); //plus midi key values, minus pitch bend
+        data.add(paramIds.size() + 2 - 23); //plus midi key values, minus pitch bend
         data.add(midiKeyMax/127.0f);
         DBG(String(count++)+ ": Midi Key Max: "+ String(midiKeyMax/127.0f));
         data.add(midiKeyMin/127.0f);
@@ -721,7 +730,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         {
             //data.add((float)myCount++);
             //const NormalisableRange<float>& range = vts.getParameter(id)->getNormalisableRange();
-            std::regex e("^PitchBend[0-9]+$");
+            std::regex e("^PitchBend[0-9]+$|^F[0-9]+$|^cLKL+$|^cLKV+$|^cLKR+$|^cRKL+$|^cRKR+$");
             if (!std::regex_match(id.toStdString(), e))
             {
                 data.add(vts.getParameter(id)->getValue());
@@ -759,7 +768,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
                         float tempId = paramIds.indexOf(id)+2;
                         if (tempId > 16)
                         {
-                            tempId -= 13;//get rid of the extra pitch bend values;
+                            tempId -= 23; //get rid of the extra pitch bend values, foot pedals, and knee levers
                         }
                         tempData.add(tempId);//TargetID
                         //int jjjj = paramIds.indexOf(id);

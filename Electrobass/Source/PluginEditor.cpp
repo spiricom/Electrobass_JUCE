@@ -83,7 +83,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     currentMappingSource = nullptr;
     uniqueMacroComponent.setOutlineColour(Colours::darkgrey);
     tab1.addAndMakeVisible(uniqueMacroComponent);
-    
+#ifdef ESTEEL
     for (int i = 0; i < NUM_MACROS; ++i)
     {
         String n = i < NUM_GENERIC_MACROS ? "M" + String(i+1) :
@@ -95,6 +95,21 @@ chooser("Select a .wav file to load...", {}, "*.wav")
         if (i < NUM_GENERIC_MACROS) tab1.addAndMakeVisible(macroDials[i]);
         else uniqueMacroComponent.addAndMakeVisible(macroDials[i]);
     }
+#endif
+    
+#ifdef EBASS
+    for (int i = 0; i < NUM_MACROS - 10; ++i)
+    {
+        String n = i < NUM_GENERIC_MACROS ? "M" + String(i+1) :
+        cUniqueMacroNames[i-NUM_GENERIC_MACROS];
+        
+        macroDials.add(new ElectroDial(*this, n, n, true, false));
+        sliderAttachments.add(new SliderAttachment(vts, n, macroDials[i]->getSlider()));
+        
+        if (i < NUM_GENERIC_MACROS) tab1.addAndMakeVisible(macroDials[i]);
+        else uniqueMacroComponent.addAndMakeVisible(macroDials[i]);
+    }
+#endif
     
     // MIDI Key source
     midiKeyComponent.setOutlineColour(Colours::darkgrey);
@@ -306,7 +321,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
         }
     }
 
-    //tab1.addAndMakeVisible(OSCILLOSCOPE);
+    tab1.addAndMakeVisible(OSCILLOSCOPE);
     //==============================================================================
     // TAB2 ========================================================================
     addAndMakeVisible(tab2);
@@ -397,22 +412,37 @@ chooser("Select a .wav file to load...", {}, "*.wav")
 //    tab5.addAndMakeVisible(copedentTable);
 //    mpeToggle.addListener(this);
 //    tab5.addAndMakeVisible(mpeToggle);
-    
 
 
     
     tabs.addTab("Synth", Colours::black, &tab1, false);
     tabs.addTab("Control", Colours::black, &tab2, false);
-    tabs.addTab("Tuning", Colours::black, &tab3, false);
+    
     tabs.addTab("FX", Colours::black, &tab4, false);
-//    tabs.addTab("Copedent", Colours::black, &tab5, false);
+    
     //tabs.getTabbedButtonBar().setLookAndFeel(ElectroLookAndFeel::getInstance());
     tabs.getTabbedButtonBar().getTabButton(0)->addListener(this);
     tabs.getTabbedButtonBar().getTabButton(1)->addListener(this);
+   
     tabs.getTabbedButtonBar().getTabButton(2)->addListener(this);
+  
+#ifdef EBASS
+    tabs.addTab("Tuning", Colours::black, &tab3, false);
     tabs.getTabbedButtonBar().getTabButton(3)->addListener(this);
-//    tabs.getTabbedButtonBar().getTabButton(4)->addListener(this);
+#endif
+    
+#ifdef ESTEEL
+    addAndMakeVisible(tab5);
+    mpeToggle.setButtonText("MPE mode");
+    tab5.addAndMakeVisible(copedentTable);
+    mpeToggle.addListener(this);
+    tab5.addAndMakeVisible(mpeToggle);
+    tabs.addTab("Copedent", Colours::black, &tab5, false);
+    tabs.getTabbedButtonBar().getTabButton(3)->addListener(this);
+#endif
     addAndMakeVisible(&tabs);
+   
+    
     
     setSize(EDITOR_WIDTH * processor.editorScale, EDITOR_HEIGHT * processor.editorScale);
     
@@ -596,15 +626,30 @@ void ElectroAudioProcessorEditor::resized()
         macroDials[i]->setBounds(6*s + (knobSize+2)*i, 523*s, knobSize, knobSize*1.8f);
     }
     
+    
+#ifdef EBASS
     uniqueMacroComponent.setBounds(6*s + (knobSize+2)*NUM_GENERIC_MACROS + 3,
                                    outputModule->getBottom()-1, 300, 69);
-    
-    for (int i = NUM_GENERIC_MACROS; i < NUM_MACROS; ++i)
+    for (int i = NUM_GENERIC_MACROS; i < NUM_MACROS - 10; ++i)
     {
         macroDials[i]->setBounds(11*s + (knobSize+2)*(i-NUM_GENERIC_MACROS) - 3,
                                  523*s - uniqueMacroComponent.getY(),
                                  knobSize, knobSize*1.8f);
     }
+#endif
+    
+#ifdef ESTEEL
+    uniqueMacroComponent.setBounds(6*s + (knobSize+2)*NUM_GENERIC_MACROS + 3,
+                                   outputModule->getBottom()-1, 700, 69);
+    for (int i = NUM_GENERIC_MACROS; i < NUM_MACROS; ++i)
+    {
+        macroDials[i]->setBounds(6*s + (knobSize *.92f)*(i-NUM_GENERIC_MACROS) - 3,
+                                 523*s - uniqueMacroComponent.getY(),
+                                 knobSize*.9f,
+                                 knobSize*1.8f);
+    }
+    
+#endif
     
     int align = 78*s;
     int x = 900*s - 10*align;
@@ -652,8 +697,11 @@ void ElectroAudioProcessorEditor::resized()
     OSCILLOSCOPE.setBoundsRelative(0.65,0.87,0.35, 0.13 );
     muteToggle.setBounds(OSCILLOSCOPE.getX(), OSCILLOSCOPE.getY() - 100, x-w-5*s, 35*s);
     //OSCILLOSCOPE.get
+    OSCILLOSCOPE.setBoundsRelative(0.85,0.87,0.15, 0.13 );
     //meters.setBounds(540*s-1, outputModule->getBottom()-1, 360*s+2, 114*s);
-    setVerticalRotatedWithBounds(meters, true, Rectangle<int>(540*s+100, outputModule->getBottom()-1, 300*s+2, 60*s));
+    setVerticalRotatedWithBounds(meters, true, Rectangle<int>(540*s+ 45, macroDials.getFirst()->getBottom() - 10, 190*s+2, 50*s));
+    //meters.setBounds(540*s-1, outputModule->getBottom()-1, 360*s+2, 114*s);
+//    setVerticalRotatedWithBounds(meters, true, Rectangle<int>(540*s+100, outputModule->getBottom()-1, 300*s+2, 60*s));
     //==============================================================================
     // TAB2 ========================================================================
     
@@ -746,6 +794,11 @@ void ElectroAudioProcessorEditor::resized()
     }
     //==============================================================================
   
+    // TAB5
+    
+    copedentTable.setBoundsRelative(0.02f, 0.04f, 0.52f, 0.59f);
+    mpeToggle.setBoundsRelative(0.02f, 0.63f, 0.2f, 0.1f);
+   
 }
 
 void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
@@ -796,7 +849,7 @@ void ElectroAudioProcessorEditor::buttonClicked(Button* button)
     
     if (button == tabs.getTabbedButtonBar().getTabButton(0))
     {
-        tab1.addAndMakeVisible(mpeToggle);
+        //tab1.addAndMakeVisible(mpeToggle);
         tab1.addAndMakeVisible(OSCILLOSCOPE);
         for (auto slider : pitchBendSliders) tab1.addAndMakeVisible(slider);
         for (auto button : stringActivityButtons) tab1.addAndMakeVisible(button);

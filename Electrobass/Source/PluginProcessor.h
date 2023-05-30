@@ -93,8 +93,7 @@ public:
     //==============================================================================
     void sendCopedentMidiMessage();
     void sendPresetMidiMessage();
-    void sendTuningMidiMessage(String name, int number
-                               );
+    void sendTuningMidiMessage(String name, int number);
     //==============================================================================
     void addMappingSource(MappingSourceModel* source);
     void addMappingTarget(MappingTargetModel* source);
