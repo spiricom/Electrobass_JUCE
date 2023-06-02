@@ -492,7 +492,13 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     addAndMakeVisible(versionLabel);
     
     //    addAndMakeVisible(&container);
+#ifdef EBASS
     processor.setMPEMode(false); //HACKYEB
+#endif
+    
+#ifdef ESTEEL
+    processor.setMPEMode(true);
+#endif
     update();
     startTimerHz(30);//30
 }
@@ -796,8 +802,8 @@ void ElectroAudioProcessorEditor::resized()
   
     // TAB5
     
-    copedentTable.setBoundsRelative(0.02f, 0.04f, 0.52f, 0.59f);
-    mpeToggle.setBoundsRelative(0.02f, 0.63f, 0.2f, 0.1f);
+    copedentTable.setBoundsRelative(0.02f, 0.04f, 0.8f, 0.8f);
+    mpeToggle.setBoundsRelative(0.02f, 0.9f, 0.2f, 0.1f);
    
 }
 

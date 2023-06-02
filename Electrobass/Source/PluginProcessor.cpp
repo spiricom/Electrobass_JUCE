@@ -1396,7 +1396,24 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
             sampleOutput += samples[1][v];
         }
         float mastergain = master->tickNoHooks();
-        outputSamples[0] = sampleOutput * mastergain * 0.98f; //drop a little bit to avoid touching clipping
+        float pedGain = 1.f;
+#ifdef ESTEEL
+        // this is to clip the gain settings so all the way down on the pedal isn't actually
+       // off, it let's a little signal through. Would be more efficient to fix the table to
+       // span a better range.
+       float volumeSmoothed = ccParams.getUnchecked(12)->get();
+       float volIdx = LEAF_clip(47.0f, ((volumeSmoothed * 80.0f) + 47.0f), 127.0f);
+       
+       //then interpolate the value
+       int volIdxInt = (int) volIdx;
+       float alpha = volIdx-volIdxInt;
+       int volIdxIntPlus = (volIdxInt + 1) & 127;
+       float omAlpha = 1.0f - alpha;
+       pedGain = volumeAmps128[volIdxInt] * omAlpha;
+       pedGain += volumeAmps128[volIdxIntPlus] * alpha;
+#endif
+        
+       outputSamples[0] = sampleOutput * mastergain * pedGain * 0.98f; //drop a little bit to avoid touching clipping
         for (int channel = 0; channel < totalNumOutputChannels; ++channel)
         {
             buffer.setSample(channel, s, LEAF_clip(-1.0f, outputSamples[0], 1.0f));
@@ -1926,8 +1943,18 @@ void ElectroAudioProcessor::setStateInformation (const void* data, int sizeInByt
         // Top level settings
         String presetPath = xml->getStringAttribute("path");
         editorScale = xml->getDoubleAttribute("editorScale", 1.05);
+#ifdef ESTEEL
+        setMPEMode(xml->getBoolAttribute("mpeMode", true)); //EB
+#endif
+#ifdef EBASS
         setMPEMode(xml->getBoolAttribute("mpeMode", false)); //EB
+#endif
+#ifdef EBASS
         setNumVoicesActive(xml->getIntAttribute("numVoices", 1));//EBSPECIFIC
+#endif
+#ifdef ESTEEL
+        setNumVoicesActive(xml->getIntAttribute("numVoices", 10));//EBSPECIFIC
+#endif
         midiKeyMin = xml->getIntAttribute("midiKeyMin", 21);
         midiKeyMax = xml->getIntAttribute("midiKeyMax", 108);
         for (int i = 0; i < NUM_MIDI_NOTES; ++i)
