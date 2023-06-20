@@ -491,14 +491,6 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     versionLabel.setColour(Label::ColourIds::textColourId, Colours::lightgrey);
     addAndMakeVisible(versionLabel);
     
-    //    addAndMakeVisible(&container);
-#ifdef EBASS
-    processor.setMPEMode(false); //HACKYEB
-#endif
-    
-#ifdef ESTEEL
-    processor.setMPEMode(true);
-#endif
     update();
     startTimerHz(30);//30
 }
