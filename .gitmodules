@@ -6,3 +6,6 @@
 	path = Electrobass/Source/sound_meter
 	url = git@github.com:SoundDevelopment/sound_meter.git
 	branch = main
+[submodule "Electrobass/Source/Electro_backend/MTS-ESP"]
+	path = Electrobass/Source/Electro_backend/MTS-ESP
+	url = git@github.com:ODDSound/MTS-ESP.git

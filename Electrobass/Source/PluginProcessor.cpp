@@ -1588,7 +1588,7 @@ void ElectroAudioProcessor::ctrlInput(int channel, int ctrl, int value)
     float v;
     
     // Take all channel CCs outside of MPE mode; only take ch1 in MPE Mode
-    if (!mpeMode || channel == stringChannels[0])
+    if (!mpeMode || channel == stringChannels[0] || channel == 2)
     {
         stringActivity[0] = stringActivityTimeout;
         
@@ -1598,17 +1598,14 @@ void ElectroAudioProcessor::ctrlInput(int channel, int ctrl, int value)
         {
             v = value * INV_127;
             vts.getParameter("M" + String(m+1))->setValueNotifyingHost(v);
+            ccSources.getUnchecked(m)->setValue(v);
         }
         else if (NUM_GENERIC_MACROS <= m && m < PEDAL_MACRO_ID)
         {
             v = value * INV_127;
             vts.getParameter(cUniqueMacroNames[m-NUM_GENERIC_MACROS])
             ->setValueNotifyingHost(v);
-        }
-        else if (m == PEDAL_MACRO_ID)
-        {
-            v = value * INV_127;
-            vts.getParameter("Ped")->setValueNotifyingHost(v);
+            ccSources.getUnchecked(m)->setValue(v);
         }
     }
 }
