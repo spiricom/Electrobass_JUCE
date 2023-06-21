@@ -454,6 +454,8 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     presetNameEditor.setTitle("Preset Name");
     presetNameEditor.onFocusLost = [this] {processor.setPresetName(presetNameEditor.getText());};
     presetNameEditor.setInputRestrictions(14);
+    presetNameEditor.setFont(Font(Font::getDefaultMonospacedFontName(), 12, true));
+    presetNameEditor.setMultiLine(true, true);
     presetNamelabel.setText("Name", dontSendNotification);
     presetNumberlabel.setText("Number", dontSendNotification);
     presetNumber.setRange(0, 99, 1);
@@ -761,10 +763,12 @@ void ElectroAudioProcessorEditor::resized()
     //versionLabel.setBounds(width*0.79f, 0, width * 0.05f, tabs.getTabBarDepth());
     //versionLabel.setFont(euphemia.withHeight(20*s));
     sendOutButton.setBounds(width*0.85f, -1, width*0.15f+2, tabs.getTabBarDepth());
-    presetNameEditor.setBounds(sendOutButton.getX() - width*0.08f+2, tabs.getTabBarDepth()/2, width*0.07f+1, tabs.getTabBarDepth()/2);
-    presetNumber.setBounds(presetNameEditor.getX(), -1, width*0.05f+2, tabs.getTabBarDepth() /2);
-    presetNamelabel.setBounds(presetNameEditor.getX()-  width*0.05f+2, tabs.getTabBarDepth()/2,width*0.05f+2, tabs.getTabBarDepth()/2);
-    presetNumberlabel.setBounds(presetNameEditor.getX()-  width*0.05f+2, -1,width*0.05f+2, tabs.getTabBarDepth()/2);
+    presetNumber.setBounds(sendOutButton.getX() - width*0.08f+2, -1, width*0.07f+1, tabs.getTabBarDepth()/2);
+    
+//    presetNamelabel.setBounds(presetNameEditor.getX()-  width*0.05f+2, tabs.getTabBarDepth()/2,width*0.05f+2, tabs.getTabBarDepth()/2);
+    presetNumberlabel.setBounds(presetNumber.getX()-  width*0.05f+2, -1,width*0.05f+2, tabs.getTabBarDepth()/2);
+    presetNameEditor.setBounds(presetNumberlabel.getX() - presetNumberlabel.getWidth() -10, -1, width*0.06f+2, tabs.getTabBarDepth());
+    presetNamelabel.setBounds(presetNameEditor.getX() - presetNameEditor.getWidth()/2 - 10, -1,width*0.05f+2, tabs.getTabBarDepth() /2);
     int logoLeft = tabs.getTabbedButtonBar().getTabButton(3)->getRight() + 60*s;
     Rectangle<float> logoArea (logoLeft, 0, 98*s, tabs.getTabBarDepth());
     logo->setTransformToFit (logoArea,
