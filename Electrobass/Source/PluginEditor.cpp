@@ -83,7 +83,6 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     currentMappingSource = nullptr;
     uniqueMacroComponent.setOutlineColour(Colours::darkgrey);
     tab1.addAndMakeVisible(uniqueMacroComponent);
-#ifdef ESTEEL
     for (int i = 0; i < NUM_MACROS; ++i)
     {
         String n = i < NUM_GENERIC_MACROS ? "M" + String(i+1) :
@@ -95,22 +94,8 @@ chooser("Select a .wav file to load...", {}, "*.wav")
         if (i < NUM_GENERIC_MACROS) tab1.addAndMakeVisible(macroDials[i]);
         else uniqueMacroComponent.addAndMakeVisible(macroDials[i]);
     }
-#endif
     
-#ifdef EBASS
-    for (int i = 0; i < NUM_MACROS - 10; ++i)
-    {
-        String n = i < NUM_GENERIC_MACROS ? "M" + String(i+1) :
-        cUniqueMacroNames[i-NUM_GENERIC_MACROS];
         
-        macroDials.add(new ElectroDial(*this, n, n, true, false));
-        sliderAttachments.add(new SliderAttachment(vts, n, macroDials[i]->getSlider()));
-        
-        if (i < NUM_GENERIC_MACROS) tab1.addAndMakeVisible(macroDials[i]);
-        else uniqueMacroComponent.addAndMakeVisible(macroDials[i]);
-    }
-#endif
-    
     // MIDI Key source
     midiKeyComponent.setOutlineColour(Colours::darkgrey);
     tab1.addAndMakeVisible(midiKeyComponent);
@@ -627,18 +612,6 @@ void ElectroAudioProcessorEditor::resized()
     }
     
     
-#ifdef EBASS
-    uniqueMacroComponent.setBounds(6*s + (knobSize+2)*NUM_GENERIC_MACROS + 3,
-                                   outputModule->getBottom()-1, 300, 69);
-    for (int i = NUM_GENERIC_MACROS; i < NUM_MACROS - 10; ++i)
-    {
-        macroDials[i]->setBounds(11*s + (knobSize+2)*(i-NUM_GENERIC_MACROS) - 3,
-                                 523*s - uniqueMacroComponent.getY(),
-                                 knobSize, knobSize*1.8f);
-    }
-#endif
-    
-#ifdef ESTEEL
     uniqueMacroComponent.setBounds(6*s + (knobSize+2)*NUM_GENERIC_MACROS + 3,
                                    outputModule->getBottom()-1, 700, 69);
     for (int i = NUM_GENERIC_MACROS; i < NUM_MACROS; ++i)
@@ -649,7 +622,6 @@ void ElectroAudioProcessorEditor::resized()
                                  knobSize*1.8f);
     }
     
-#endif
     
     int align = 78*s;
     int x = 900*s - 10*align;

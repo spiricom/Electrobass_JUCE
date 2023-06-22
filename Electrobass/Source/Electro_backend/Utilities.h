@@ -92,6 +92,8 @@ public:
     void setValueToRaw()
     {
         value = *raw;
+//        parameter->setValueNotifyingHost(parameter->convertFrom0to1(value));
+        
     }
    float* getValuePointer()
     {

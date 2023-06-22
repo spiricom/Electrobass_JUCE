@@ -1037,6 +1037,7 @@ ElectroModule(editor, vts, ac, 0.03f, 0.115f, 0.025f, 0.17f, 0.80f)
     comboBoxAttachments.add(new ComboBoxAttachment(vts, ac.getName() + " FXType", fxCB));
     fxCB.addListener(this);
     fxCB.addMouseListener(this, true);
+    setNamesAndDefaults((FXType)fxCB.getSelectedItemIndex());
 }
 
 FXModule::~FXModule()
@@ -1069,6 +1070,13 @@ void FXModule::comboBoxChanged(ComboBox *comboBox)
     if (comboBox == &fxCB)
     {
         setNamesAndDefaults((FXType)fxCB.getSelectedItemIndex());
+        if(fxCB.isVisible())
+        {
+            for (int i = 0; i < FXParam::Mix; i++)
+            {
+                getDial(i)->setValue(FXParamDefaults[(FXType)fxCB.getSelectedItemIndex()][i]);
+            }
+        }
     }
 }
 
@@ -1077,7 +1085,7 @@ void FXModule::setNamesAndDefaults(FXType effect)
     for (int i = 0; i < FXParam::Mix; i++)
     {
         getDial(i)->setText(FXParamNames[effect][i], dontSendNotification);
-        getDial(i)->setValue(FXParamDefaults[effect][i]);
+       
         
         if (FXParamNames[effect][i].isEmpty())
         {

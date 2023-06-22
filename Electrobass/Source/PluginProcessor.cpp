@@ -1940,18 +1940,8 @@ void ElectroAudioProcessor::setStateInformation (const void* data, int sizeInByt
         // Top level settings
         String presetPath = xml->getStringAttribute("path");
         editorScale = xml->getDoubleAttribute("editorScale", 1.05);
-#ifdef ESTEEL
-        setMPEMode(xml->getBoolAttribute("mpeMode", true)); //EB
-#endif
-#ifdef EBASS
-        setMPEMode(xml->getBoolAttribute("mpeMode", false)); //EB
-#endif
-#ifdef EBASS
-        setNumVoicesActive(xml->getIntAttribute("numVoices", 1));//EBSPECIFIC
-#endif
-#ifdef ESTEEL
-        setNumVoicesActive(xml->getIntAttribute("numVoices", 10));//EBSPECIFIC
-#endif
+        setMPEMode(xml->getBoolAttribute("mpeMode", false));
+        setNumVoicesActive(xml->getIntAttribute("numVoices", 1));
         midiKeyMin = xml->getIntAttribute("midiKeyMin", 21);
         midiKeyMax = xml->getIntAttribute("midiKeyMax", 108);
         for (int i = 0; i < NUM_MIDI_NOTES; ++i)
@@ -2007,6 +1997,7 @@ void ElectroAudioProcessor::setStateInformation (const void* data, int sizeInByt
         // Audio processor value tree state
         if (XmlElement* state = xml->getChildByName(vts.state.getType()))
             vts.replaceState (juce::ValueTree::fromXml (*state));
+        DBG("Effect1 PAram2 " + String(vts.getRawParameterValue("Effect1 Param2")->load(std::memory_order_relaxed)));
         for (int v = 0; v < numVoicesActive; v++)
         {
             for (int i = 0; i < NUM_OSCS; i++)
@@ -2025,6 +2016,10 @@ void ElectroAudioProcessor::setStateInformation (const void* data, int sizeInByt
             for (int i = 0; i < NUM_LFOS; i++)
             {
                 lfos[i]->loadAll(v);
+            }
+            for (int i = 0; i < NUM_FX; i++)
+            {
+                fx[i]->loadAll(v);
             }
         }
         

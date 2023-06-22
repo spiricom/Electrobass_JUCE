@@ -417,3 +417,14 @@ float Effect::VZbandrejectTick(float sample, float cutoff, float gain, float q, 
     tVZFilter_setFrequencyAndResonanceAndGain(&VZfilterBR[v], faster_mtof(cutoff * 127.f), scaleFilterResonance(q), dbtoa((gain * 50.f) - 25.f));
     return tVZFilter_tickEfficient(&VZfilterBR[v], sample);
 }
+
+void Effect::loadAll(int v)
+{
+    quickParams[Param1][v]->setValueToRaw();
+    quickParams[Param2][v]->setValueToRaw();
+    quickParams[Param3][v]->setValueToRaw();
+    quickParams[Param4][v]->setValueToRaw();
+    quickParams[Param5][v]->setValueToRaw();
+    quickParams[Mix][v]->setValueToRaw();
+    quickParams[PostGain][v]->setValueToRaw();
+}
