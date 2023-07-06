@@ -1,6 +1,6 @@
 /*
     ==============================================================================
-
+    
     This file is part of the sound_meter JUCE module
     Copyright (c) 2019 - 2021 Sound Development - Marcel Huibers
     All rights reserved.
@@ -30,289 +30,260 @@
     ==============================================================================
 */
 
-#include "sd_MeterLevel.h"
 
-namespace sd  // NOLINT
+namespace sd
 {
+
 namespace SoundMeter
 {
-Level::Level()
+
+//==============================================================================
+
+void Level::drawPeakValue (juce::Graphics& g, const juce::Colour& textValueColour) const
 {
-    setMeterSegments (m_segmentOptions);
+    if (! m_valueVisible) return;
+    if (m_valueBounds.isEmpty()) return;
+
+    // Draw PEAK value...
+    const auto peak = getPeakHoldLevel();
+    if (m_valueBounds.getHeight() == Constants::kDefaultHeaderHeight && peak > kMin99Db)  // If active, present and enough space is available.
+    {
+        const float peak_db   = juce::Decibels::gainToDecibels (peak);
+        const int   precision = peak_db <= -10.0f ? 1 : 2;  // Set precision depending on peak value. NOLINT
+
+        g.setColour (textValueColour);
+        g.drawFittedText (juce::String (peak_db, precision), m_valueBounds, juce::Justification::centred, 1);
+    }
 }
 //==============================================================================
 
-void Level::drawMeter (juce::Graphics& g, const MeterColours& meterColours)
+void Level::drawPeakHold (juce::Graphics& g, const juce::Colour& peakHoldColour) const
 {
-    for (auto& segment: m_segments)
-        segment.draw (g, meterColours);
+    using namespace Constants;
 
-    if (!m_valueBounds.isEmpty())
-        drawPeakValue (g, meterColours);
+    if (! m_options.showPeakHoldIndicator) return;
+
+    // Calculate peak hold y coordinate...
+    const int y = m_meterBounds.getY() + static_cast<int> (m_meterBounds.getHeight() * (1.0f - m_peakHoldLevel));
+
+    if (y + kPeakHoldHeight < m_meterBounds.getHeight())
+    {
+        g.setColour (peakHoldColour);
+        g.fillRect (m_meterBounds.getX(), y, m_meterBounds.getWidth(), kPeakHoldHeight);
+    }
 }
 //==============================================================================
 
-void Level::drawInactiveMeter (juce::Graphics& g, const MeterColours& meterColours) const
+void Level::drawMeter (juce::Graphics& g) const
+{
+    m_normalSegment.draw (g, m_options.useGradient);
+    m_warningSegment.draw (g, m_options.useGradient);
+    m_peakSegment.draw (g, m_options.useGradient);
+}
+//==============================================================================
+
+void Level::drawInactiveMeter (juce::Graphics& g, const juce::Colour& textColour) const
 {
     // Check if there is space enough to write the 'MUTE' text...
-    if (static_cast<float> (m_meterBounds.getWidth()) < (g.getCurrentFont().getHeight()))
-        return;
+    if (m_meterBounds.getWidth() < (g.getCurrentFont().getHeight())) return;
 
     g.saveState();
     g.addTransform (juce::AffineTransform::rotation (juce::MathConstants<float>::halfPi, static_cast<float> (m_meterBounds.getCentreX()),
                                                      static_cast<float> (m_meterBounds.getY() + (m_meterBounds.getWidth() / 2.0f))));  // NOLINT
-    g.setColour (meterColours.textColour.darker (0.7f));                                                                               // NOLINT
+    g.setColour (textColour);
 
     g.drawText (TRANS ("MUTE"), m_meterBounds.withWidth (m_meterBounds.getHeight()).withHeight (m_meterBounds.getWidth()), juce::Justification::centred);
     g.restoreState();
 }
 //==============================================================================
 
-void Level::drawPeakValue (juce::Graphics& g, const MeterColours& meterColours) const
+void Level::drawTickMarks (juce::Graphics& g, const juce::Colour& tickColour) const
 {
-    if (m_valueBounds.isEmpty())
-        return;
+    if (! m_tickMarksVisible || ! m_options.tickMarksEnabled) return;
 
-    // Draw PEAK value...
-    const auto peak_db = getPeakHoldLevel();
-    if (peak_db > m_meterRange.getStart())  // If active, present and enough space is available.
+    g.setColour (tickColour);
+
+    for (const auto& tick: m_tickMarks)  // Loop through all ticks.
     {
-        const int precision = peak_db <= -10.0f ? 1 : 2;  // Set precision depending on peak value. NOLINT
-        g.setColour (meterColours.textValueColour);
-        g.drawFittedText (juce::String (peak_db, precision), m_valueBounds, juce::Justification::centred, 1);
+        g.fillRect (m_meterBounds.getX(),
+                    m_meterBounds.getY() + static_cast<int> (round ((m_meterBounds.getHeight() * (1.0f - tick.gain)) - (Constants::kTickMarkHeight / 2.0f))),  // NOLINT
+                    m_meterBounds.getWidth(), Constants::kTickMarkHeight);
     }
 }
 //==============================================================================
 
-float Level::getInputLevel()
+void Level::drawLabels (juce::Graphics& g, const juce::Colour& textColour) const
 {
-    m_inputLevelRead.store (true);
-    return m_meterRange.clipValue (juce::Decibels::gainToDecibels (m_inputLevel.load()));
+    if (! m_tickMarksVisible) return;
+
+    g.setColour (textColour);
+    const float fontsize = juce::jlimit (1.0f, 15.0f, m_meterBounds.getHeight() / 4.0f);  // Set font size proportionally. NOLINT
+    g.setFont (fontsize);
+
+    for (const auto& tick: m_tickMarks)
+    {
+        const juce::Rectangle<int> labelrect (m_meterBounds.getX(),
+                                              m_meterBounds.getY() + static_cast<int> (round ((m_meterBounds.getHeight() * (1.0f - tick.gain)) - (fontsize / 2.0f))),  // NOLINT
+                                              m_meterBounds.getWidth(), static_cast<int> (fontsize));
+
+        g.drawFittedText (juce::String (std::abs (tick.decibels)), labelrect.reduced (Constants::kLabelStripTextPadding, 0), juce::Justification::topLeft, 1);
+    }
 }
 //==============================================================================
 
-void Level::setInputLevel (float newLevel)
+void Level::setTickMarks (const std::vector<float>& ticks) noexcept
+{
+    m_tickMarks.clear();
+    for (const auto& tick: ticks)
+        m_tickMarks.emplace_back (Tick (tick));
+}
+//==============================================================================
+
+[[nodiscard]] float Level::getInputLevel() noexcept
+{
+    m_inputLevelRead.store (true);
+    return juce::jlimit (-m_maxLevel, m_maxLevel, m_inputLevel.load());
+}
+//==============================================================================
+
+void Level::setInputLevel (float newLevel) noexcept
 {
     m_inputLevel.store (m_inputLevelRead.load() ? newLevel : std::max (m_inputLevel.load(), newLevel));
     m_inputLevelRead.store (false);
 }
 //==============================================================================
 
-float Level::getLinearDecayedLevel (float newLevel_db)
+void Level::setColours (const juce::Colour& normalColour, const juce::Colour& warningColour, const juce::Colour& peakColour) noexcept
 {
-    const auto currentTime = static_cast<int> (juce::Time::getMillisecondCounter());
-    const auto timePassed  = static_cast<float> (currentTime - static_cast<int> (m_previousRefreshTime));
-
-    m_previousRefreshTime = currentTime;
-
-    if (newLevel_db >= m_meterLevel_db)
-        return newLevel_db;
-
-    return std::max (newLevel_db, m_meterLevel_db - (timePassed * m_decayRate));
+    m_normalSegment.setColours (normalColour, warningColour);
+    m_warningSegment.setColours (warningColour, peakColour);
+    m_peakSegment.setColours (peakColour, peakColour.darker());
 }
 //==============================================================================
 
-float Level::getDecayedLevel (const float newLevel_db)
+[[nodiscard]] juce::Rectangle<int> Level::calculateMeterLevel (float newLevel) noexcept
 {
-    const auto currentTime = static_cast<int> (juce::Time::getMillisecondCounter());
-    const auto timePassed  = static_cast<float> (currentTime - static_cast<int> (m_previousRefreshTime));
+    m_meterLevel    = (newLevel > m_meterLevel ? newLevel : getDecayedLevel (newLevel));
+    m_peakHoldLevel = std::max<float> (m_peakHoldLevel, newLevel);
 
-    // A new frame is not needed yet, return the current value...
-    if (timePassed < m_refreshPeriod_ms)
-        return m_meterLevel_db;
+    m_normalSegment.setLevel (m_meterLevel);
+    m_warningSegment.setLevel (m_meterLevel);
+    m_peakSegment.setLevel (m_meterLevel);
 
-    m_previousRefreshTime = currentTime;
+    m_dirtyRect = {};
+    if (m_normalSegment.isDirty()) m_dirtyRect = m_normalSegment.getSegmentBounds();
+    if (m_warningSegment.isDirty()) m_dirtyRect = m_dirtyRect.getUnion (m_warningSegment.getSegmentBounds());
+    if (m_peakSegment.isDirty()) m_dirtyRect = m_dirtyRect.getUnion (m_peakSegment.getSegmentBounds());
 
-    if (newLevel_db >= m_meterLevel_db)
-        return newLevel_db;
-
-    // More time has passed then the meter decay. The meter has fully decayed...
-    if (timePassed > m_meterOptions.decayTime_ms)
-        return newLevel_db;
-
-    if (m_meterLevel_db == newLevel_db)
-        return newLevel_db;
-
-    // Convert that to refreshed frames...
-    auto numberOfFramePassed = static_cast<int> (std::round ((timePassed * m_meterOptions.refreshRate) / 1000.0f));  // NOLINT
-
-    auto level_db = m_meterLevel_db;
-    for (int frame = 0; frame < numberOfFramePassed; ++frame)
-        level_db = newLevel_db + (m_decayCoeff * (level_db - newLevel_db));
-
-    if (std::abs (level_db - newLevel_db) < Constants::kMinLevel_db)
-        level_db = newLevel_db;
-
-    return level_db;
+    return m_dirtyRect;
 }
 //==============================================================================
 
-void Level::refreshMeterLevel()
+void Level::setOptions (Options meterOptions)
 {
-    m_meterLevel_db = getLinearDecayedLevel (getInputLevel());
+    setDecay (meterOptions.decayTime_ms);
+    defineSegments (meterOptions.warningSegment_db, meterOptions.peakSegment_db);
+    setTickMarks (meterOptions.tickMarks);
+    enableTickMarks (meterOptions.tickMarksEnabled);
+    setDecay (meterOptions.decayTime_ms);
+    useGradients (meterOptions.useGradient);
+    setRefreshRate (meterOptions.refreshRate);
+    showPeakHold (meterOptions.showPeakHoldIndicator);
+    enableValue( meterOptions.valueEnabled);
 
-    if (m_meterLevel_db > getPeakHoldLevel())
-        m_peakHoldDirty = true;
-
-    for (auto& segment: m_segments)
-        segment.setLevel (m_meterLevel_db);
+    m_options = meterOptions;
 }
 //==============================================================================
 
-void Level::setMeterOptions (const Options& meterOptions)
+void Level::setRefreshRate (float refreshRate_hz) noexcept
 {
-    m_meterOptions = meterOptions;
+    if (refreshRate_hz <= 0.0f) return;
 
-    calculateDecayCoeff (meterOptions);
-    synchronizeMeterOptions();
+    m_options.refreshRate = refreshRate_hz;
+    m_refreshPeriod_ms    = (1.0f / refreshRate_hz) * 1000.0f;
+    calculateDecayCoeff();
 }
 //==============================================================================
 
-void Level::synchronizeMeterOptions()
+void Level::setDecay (float decay_ms) noexcept
 {
-    for (auto& segment: m_segments)
-    {
-        segment.setMeterOptions (m_meterOptions);
-        segment.setIsLabelStrip (m_isLabelStrip);
-        segment.setMinimalMode (m_minimalModeActive);
-    }
-
-    m_peakHoldDirty = true;
+    m_options.decayTime_ms = juce::jlimit (Constants::kMinDecay_ms, Constants::kMaxDecay_ms, decay_ms);
+    calculateDecayCoeff();
 }
 //==============================================================================
 
-void Level::setMeterSegments (const std::vector<SegmentOptions>& segmentsOptions)
+void Level::defineSegments (const float warningSegment_db, const float peakSegment_db)
 {
-    m_segments.clear();
-    for (const auto& segmentOptions: segmentsOptions)
-    {
-        m_segments.emplace_back (m_meterOptions, segmentOptions);
-        m_meterRange.setStart (std::min (m_meterRange.getStart(), segmentOptions.levelRange.getStart()));
-        m_meterRange.setEnd (std::max (m_meterRange.getEnd(), segmentOptions.levelRange.getEnd()));
-    }
+    jassert (peakSegment_db > warningSegment_db);  // NOLINT
+    if (peakSegment_db <= warningSegment_db) return;
 
-    synchronizeMeterOptions();
-    calculateDecayCoeff (m_meterOptions);
+    const auto warningSegmentLevel = juce::Decibels::decibelsToGain (warningSegment_db);
+    const auto peakSegmentLevel    = juce::Decibels::decibelsToGain (peakSegment_db);
+
+    m_normalSegment.setRange (0.0f, warningSegmentLevel);
+    m_warningSegment.setRange (warningSegmentLevel, peakSegmentLevel);
+    m_peakSegment.setRange (peakSegmentLevel, 1.0f);
 }
 //==============================================================================
 
-void Level::reset()
+void Level::reset() noexcept
 {
     m_inputLevel.store (0.0f);
-    m_meterLevel_db       = Constants::kMinLevel_db;
+    m_meterLevel          = 0.0f;
     m_previousRefreshTime = 0;
 }
 //==============================================================================
 
-void Level::setIsLabelStrip (bool isLabelStrip) noexcept
+[[nodiscard]] float Level::getDecayedLevel (const float callbackLevel)
 {
-    m_isLabelStrip = isLabelStrip;
-    synchronizeMeterOptions();
+    // Measure time passed...
+    const auto currentTime = static_cast<int> (juce::Time::getMillisecondCounter());
+    const auto timePassed  = static_cast<int> (juce::Time::getMillisecondCounter()) - m_previousRefreshTime;
+
+    // A new frame is not needed yet, return the current value...
+    if (timePassed < m_refreshPeriod_ms) return m_meterLevel;
+
+    m_previousRefreshTime = currentTime;
+
+    // More time has passed then the meter decay. The meter has fully decayed...
+    if (timePassed > m_options.decayTime_ms) return callbackLevel;
+
+    if (m_meterLevel == callbackLevel) return callbackLevel;
+
+    // Convert that to refreshed frames...
+    auto numberOfFramePassed = static_cast<int> (std::round ((timePassed * m_options.refreshRate) / 1000.0f));
+
+    auto level = m_meterLevel;
+    for (int frame = 0; frame < numberOfFramePassed; ++frame)
+        level = callbackLevel + (m_decayCoeff * (level - callbackLevel));
+
+    if (std::abs (level - callbackLevel) < kMinMeter_db) level = callbackLevel;
+
+    return level;
 }
 //==============================================================================
 
-void Level::setMinimalMode (bool minimalMode)
+void Level::setMeterBounds (juce::Rectangle<int> bounds) noexcept
 {
-    if (m_minimalModeActive == minimalMode)
-        return;
-
-    m_minimalModeActive = minimalMode;
-
-    setMeterBounds (m_meterBounds);
-    synchronizeMeterOptions();
-}
-//==============================================================================
-
-void Level::setRefreshRate (float refreshRate_hz)
-{
-    m_meterOptions.refreshRate = refreshRate_hz;
-    calculateDecayCoeff (m_meterOptions);
-    synchronizeMeterOptions();
-}
-//==============================================================================
-
-void Level::setDecay (float decay_ms)
-{
-    m_meterOptions.decayTime_ms = decay_ms;
-    calculateDecayCoeff (m_meterOptions);
-    synchronizeMeterOptions();
-}
-//==============================================================================
-
-void Level::resetPeakHold()
-{
-    for (auto& segment: m_segments)
-        segment.resetPeakHold();
-    m_peakHoldDirty = true;
-}
-//==============================================================================
-
-float Level::getPeakHoldLevel() const noexcept
-{
-    if (m_segments.empty())
-        return Constants::kMinLevel_db;
-
-    return m_segments[0].getPeakHold();
-}
-//==============================================================================
-
-void Level::setMeterBounds (const juce::Rectangle<int>& bounds)
-{
-    if (bounds == m_meterBounds)
-        return;
-
     m_meterBounds = bounds;
-    m_levelBounds = m_meterBounds;
-
-    // If the meter is in minimal mode, the value is not displayed...
-    if (m_meterOptions.valueEnabled && !m_minimalModeActive)
-        m_valueBounds = m_levelBounds.removeFromBottom (Constants::kDefaultHeaderHeight);
-    else
-        m_valueBounds = juce::Rectangle<int>();
-
-    for (auto& segment: m_segments)
-        segment.setMeterBounds (m_levelBounds);
-
-    m_peakHoldDirty = true;
+    m_normalSegment.setMeterBounds (bounds);
+    m_warningSegment.setMeterBounds (bounds);
+    m_peakSegment.setMeterBounds (bounds);
 }
 //==============================================================================
 
-juce::Rectangle<int> Level::getDirtyBounds()
+void Level::calculateDecayCoeff() noexcept
 {
-    juce::Rectangle<int> dirtyBounds {};
-    for (const auto& segment: m_segments)
-    {
-        if (segment.isDirty())
-            dirtyBounds = dirtyBounds.getUnion (segment.getSegmentBounds().toNearestIntEdges());
-    }
-
-    if (m_peakHoldDirty)
-    {
-        dirtyBounds     = dirtyBounds.getUnion (m_valueBounds);
-        m_peakHoldDirty = false;
-    }
-
-    return dirtyBounds;
-}
-//==============================================================================
-
-void Level::calculateDecayCoeff (const Options& meterOptions)
-{
-    m_meterOptions.decayTime_ms = juce::jlimit (Constants::kMinDecay_ms, Constants::kMaxDecay_ms, meterOptions.decayTime_ms);
-    m_meterOptions.refreshRate  = std::max (1.0f, meterOptions.refreshRate);
-    m_refreshPeriod_ms          = (1.0f / m_meterOptions.refreshRate) * 1000.0f;  // NOLINT
-
-    m_decayRate = m_meterRange.getLength() / m_meterOptions.decayTime_ms;
-
     // Rises to 99% of in value over duration of time constant.
-    m_decayCoeff = std::pow (0.01f, (1000.0f / (m_meterOptions.decayTime_ms * m_meterOptions.refreshRate)));  // NOLINT
+    m_decayCoeff = std::pow (0.01f, (1000.0f / (m_options.decayTime_ms * m_options.refreshRate)));  // NOLINT
 }
 //==============================================================================
 
-bool Level::isMouseOverValue (const int y)
+bool Level::isMouseOverValue (const int y) noexcept
 {
-    m_mouseOverValue = (y >= m_valueBounds.getY() && !m_valueBounds.isEmpty());
+    m_mouseOverValue = (y >= m_valueBounds.getY() && ! m_valueBounds.isEmpty());
     return m_mouseOverValue;
 }
+
 }  // namespace SoundMeter
 }  // namespace sd

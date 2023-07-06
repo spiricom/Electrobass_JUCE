@@ -30,9 +30,8 @@
     ==============================================================================
 */
 
-#include "sd_MeterHelpers.h"
 
-namespace sd  // NOLINT
+namespace sd
 {
 namespace SoundMeter
 {
@@ -40,23 +39,14 @@ namespace Helpers
 {
 
 //==============================================================================
-juce::Rectangle<int> applyPadding (const juce::Rectangle<int>& rectToPad, Padding paddingToApply) noexcept
+[[nodiscard]] juce::Rectangle<int> applyPadding (const juce::Rectangle<int>& rectToPad, Padding paddingToApply)
 {
     juce::Rectangle<int> result { rectToPad };
-    if (juce::isPositiveAndBelow (paddingToApply.left, result.getWidth()))
-        result.setLeft (rectToPad.getX() + paddingToApply.left);
-    if (juce::isPositiveAndBelow (paddingToApply.right, result.getWidth()))
-        result.setWidth (rectToPad.getWidth() - paddingToApply.right);
-    if (juce::isPositiveAndBelow (paddingToApply.bottom, result.getHeight()))
-        result.setHeight (rectToPad.getHeight() - paddingToApply.bottom);
+    if (juce::isPositiveAndBelow (paddingToApply.left, result.getWidth())) result.setLeft (rectToPad.getX() + paddingToApply.left);
+    if (juce::isPositiveAndBelow (paddingToApply.right, result.getWidth())) result.setWidth (rectToPad.getWidth() - paddingToApply.right);
+    if (juce::isPositiveAndBelow (paddingToApply.bottom, result.getHeight())) result.setHeight (rectToPad.getHeight() - paddingToApply.bottom);
 
     return result;
-}
-//==============================================================================
-
-[[nodiscard]] static constexpr bool containsUpTo (juce::Range<float> levelRange, float levelDb) noexcept
-{
-    return levelDb > levelRange.getStart() && levelDb <= levelRange.getEnd();
 }
 
 }  // namespace Helpers

@@ -30,14 +30,11 @@
     ==============================================================================
 */
 
-#pragma once
-
-#include <juce_audio_basics/juce_audio_basics.h>
-#include <juce_core/juce_core.h>
-#include <juce_gui_basics/juce_gui_basics.h>
+#ifndef SD_SOUND_METER_HEADER_H
+#define SD_SOUND_METER_HEADER_H
 
 
-namespace sd  // NOLINT
+namespace sd
 {
 namespace SoundMeter
 {
@@ -52,26 +49,21 @@ namespace SoundMeter
  * The 'header' also doubles as a button which can de-activate (mute) or 
  * activate the meter.
 */
-class Header final
+class Header
 {
-public:
+ public:
     /**
-    * @brief Constructor
-    * @param font The font to use in the header.
+    * @brief Default constructor
     */
-    explicit Header (juce::Font& font) noexcept : Header ({}, juce::AudioChannelSet::unknown, font) { }
+    Header() = default;
 
     /**
-    * @brief Constructor with channel identification.
+    * @brief Parameterized constructor.
     * 
     * @param name Channel name to display in the header.
-    * @param type Channel type to display in the header.  
-    * @param font The font to use in the header.
+    * @param type Channel type to display in the header.
     */
-    Header (juce::String name, const juce::AudioChannelSet::ChannelType& type, juce::Font& font) noexcept
-      : m_font (font), m_name (std::move (name)), m_type (type)
-    {
-    }
+    Header (const juce::String& name, const juce::AudioChannelSet::ChannelType& type) : m_name (name), m_type (type) { }
 
     /**
     * @brief Set the channel type.
@@ -93,7 +85,7 @@ public:
      * 
      * @see setType
     */
-    [[nodiscard]] const juce::AudioChannelSet::ChannelType& getType() const noexcept { return m_type; }
+    [[nodiscard]] const juce::AudioChannelSet::ChannelType& getType() const noexcept;
 
     /**
      * @brief Set the channel name.
@@ -104,7 +96,7 @@ public:
      * 
      * @see getName
     */
-    void setName (const juce::String& name);
+    void setName (const juce::String name);
 
     /**
      * @brief Get the channel name.
@@ -115,7 +107,7 @@ public:
      * 
      * @see setName
     */
-    [[nodiscard]] juce::String getName() const noexcept { return m_name; }
+    [[nodiscard]] juce::String getName() const noexcept;
 
     /**
     * @brief Get the width (in pixels) of the channel name.
@@ -123,7 +115,7 @@ public:
     * @return The width (in pixels) taken by the channel name.
     * @see getTypeWidth, textFits
     */
-    [[nodiscard]] float getNameWidth() const noexcept { return m_nameWidth; }
+    [[nodiscard]] float getNameWidth() const noexcept;
 
     /**
      * @brief Get the width (in pixels) of the channel description.
@@ -131,7 +123,7 @@ public:
      * @return The width (in pixels) taken by the channel description.
      * @see getNameWdith, textFits
     */
-    [[nodiscard]] float getTypeWidth() const noexcept { return m_typeWidth; }
+    [[nodiscard]] float getTypeWidth() const noexcept;
 
     /**
      * @brief Get the info text displayed in the 'header'
@@ -154,7 +146,7 @@ public:
      * 
      * @see getInfo, getTypeWidth, getNameWidth
     */
-    [[nodiscard]] bool textFits (const juce::String& text, int widthAvailable) const;
+    bool textFits (const juce::String& text, int widthAvailable) const;
 
     /**
     * @brief Set the font used to display the info (and other text in the meter).
@@ -164,7 +156,14 @@ public:
     * @param font The font to use.
     * @see getFont
     */
-    void setFont (const juce::Font& font);
+    void setFont (const juce::Font& font) noexcept;
+
+    /**
+     * @brief Get the font used to display the info.
+     * 
+     * @return The font used to display the info.
+    */
+    [[nodiscard]] const juce::Font& getFont() const noexcept;
 
     /**
     * @brief Set the bounds of the 'header' part of the meter.
@@ -172,7 +171,7 @@ public:
     * @param bounds The bounds to use for the 'header' part of the meter.
     * @see getBounds
    */
-    void setBounds (const juce::Rectangle<int>& bounds) noexcept { m_bounds = bounds; }
+    void setBounds (const juce::Rectangle<int>& bounds) noexcept;
 
     /**
      * @brief Get the bounds of the 'header' part of the meter.
@@ -180,7 +179,31 @@ public:
      * @return The bounds of the 'header' part of the meter.
      * @see setBounds
     */
-    [[nodiscard]] juce::Rectangle<int> getBounds() const noexcept { return m_bounds; }
+    [[nodiscard]] juce::Rectangle<int> getBounds() const noexcept;
+
+    /**
+     * @brief Check if the 'header' part of the meter is visible.
+     * 
+     * @return True, when the 'header' part is visible.
+     * @see setVisible, setEnabled
+    */
+    [[nodiscard]] bool isVisible() const noexcept { return m_visible && m_enabled; }
+
+    /**
+     * @brief Show the 'header' part of the meter.
+     * 
+     * @param visible When set to true, the 'header' part will be visible.
+     * @see isVisible, setEnabled
+    */
+    void setVisible (bool visible) noexcept { m_visible = visible; }
+
+    /**
+    * @brief Enable the 'header' part of the meter.
+    * 
+    * @param enable When set to true, the header part will be enabled.
+    * @see setVisible, isVisible
+   */
+    void setEnabled (bool enable) noexcept { m_enabled = enable; }
 
     /**
      * @brief Check if the mouse is over the 'header' part of the meter.
@@ -189,7 +212,7 @@ public:
      * @return  True, when the mouse is over the 'header' part of the meter, using the supplied y coordinate.
      * @see resetMouseOver
     */
-    [[nodiscard]] bool isMouseOver (int y) noexcept;
+    [[nodiscard]] bool isMouseOver (const int y) noexcept;
 
     /**
      * @brief Check if the mouse is over the 'header' part of the meter.
@@ -217,18 +240,26 @@ public:
     */
     void setReferredWidth (float referredWidth) noexcept { m_referredWidth = referredWidth; }
 
+
     /**
      * @brief Draw the 'header' part of the meter.
      * 
-     * @param[in,out] g    The juce graphics context to use.
-     * @param meterActive  True, when the meter is active (not muted).
-     * @param faderEnabled True, when the fader overlay is enabled.
-     * @param meterColours The colours to draw the header with.        
+     * @param[in,out] g           The juce graphics context to use.
+     * @param meterActive         When true, the meter is un-muted (activated).
+     * @param faderEnabled        When true, the fader overlay is enabled (so the header needs to display the muted button).
+     * @param muteColour          The colour to use when the meter is muted (in-active).
+     * @param muteMouseOverColour The colour to use when the mouse is over the meter and the meter is muted (in-active).
+     * @param textColour          The colour of the text in the header.
+     * @param inactiveColour      The colour to use when the meter is muted (in-active).
     */
-    void draw (juce::Graphics& g, bool meterActive, bool faderEnabled, const MeterColours& meterColours);
+    void draw (juce::Graphics& g, bool meterActive, bool faderEnabled, const juce::Colour& muteColour, const juce::Colour& muteMouseOverColour,
+               const juce::Colour& textColour, const juce::Colour& inactiveColour);
 
-private:
-    juce::Font& m_font;
+ private:
+    bool m_visible = true;
+    bool m_enabled = true;
+
+    juce::Font m_font;
 
     // Info
     juce::String                       m_name                 = "";
@@ -251,3 +282,5 @@ private:
 
 }  // namespace SoundMeter
 }  // namespace sd
+
+#endif /* SD_SOUND_METER_HEADER_H */

@@ -30,104 +30,102 @@
     ==============================================================================
 */
 
-#pragma once
+#ifndef SD_SOUND_METER_SEGMENT_H
+#define SD_SOUND_METER_SEGMENT_H
 
-#include "sd_MeterHelpers.h"
 
-#include <juce_core/juce_core.h>
-#include <juce_graphics/juce_graphics.h>
-
-namespace sd  // NOLINT
+namespace sd
 {
-
 namespace SoundMeter
 {
 
-
-class Segment final
+/**
+ * @brief Individual meter segment.
+*/
+class Segment
 {
-public:
-    /** @brief Construct a segment using the supplied options.*/
-    Segment (const Options& meterOptions, const SegmentOptions& segmentOptions);
-
-    /** @brief Set the level in decibels.*/
-    void setLevel (float level_db);
-
-    /** @brief Draw the segment.*/
-    void draw (juce::Graphics& g, const MeterColours& meterColours);
-
-    /** @brief Set the bounds of the total meter (all segments) */
-    void setMeterBounds (juce::Rectangle<int> meterBounds);
-
-    /** @brief Get the bounding box of this segment.*/
-    [[nodiscard]] juce::Rectangle<float> getSegmentBounds() const noexcept { return m_segmentBounds; }
-
-    /** @brief Reset the peak hold.*/
-    void resetPeakHold() noexcept;
-
-    /** @brief Get the peak hold level.*/
-    [[nodiscard]] float getPeakHold() const noexcept { return m_peakHoldLevel_db; }
-
-    /** @brief Check if the segment needs to be re-drawn (dirty). */
-    [[nodiscard]] bool isDirty() const noexcept { return m_isDirty; }
-
+ public:
     /**
-     * @brief Set whether this meter is a label strip.
-     *
-     * A label strip only draws the value labels (at the tick-marks),
-     * but does not display any level.
-     *
-     * @param isLabelStrip when set, this meter behave like a label strip.
+     * @brief Draw the segment.
+     * 
+     * @param[in,out] g   The juce graphics context.
+     * @param useGradient Set this to true when you want to use gradients for the meters.
     */
-    void setIsLabelStrip (bool isLabelStrip = false) noexcept { m_isLabelStrip = isLabelStrip; }
+    void draw (juce::Graphics& g, bool useGradient) const;
 
     /**
-     * @brief Set the meter in 'minimal' mode.
+     * @brief Set the level for the segment.
+     * 
+     * This also checks if the segment needs to be redrawn (is dirty).
+     * 
+     * @param level The meter level.
+    */
+    void setLevel (float level) noexcept;
+
+    /**
+     * @brief Set the range of the segment.
+     * 
+     * @param newStartLevel Start of the segment (in amp [0..1]).
+     * @param newStopLevel  End of the segment (in amp [0..1]).
+    */
+    void setRange (float newStartLevel, float newStopLevel) noexcept;
+
+    /**
+     * @brief Set the bounds of the full level part (all segments).
+     * 
+     * @param bounds The bounds of the level part (all segments).
+     * 
+     * @see getSegmentBounds
+    */
+    void setMeterBounds (juce::Rectangle<int> bounds) noexcept;
+
+    /**
+     * @brief Get the bounds of the segment.
+     * 
+     * @return The bounds of the segment.
      *
-     * In minimal mode, the meter is in it's cleanest state possible.
-     * This means no header, no tick-marks, no value, no faders and no indicator.
+     * @see setMeterBounds
+    */
+    [[nodiscard]] juce::Rectangle<int> getSegmentBounds() const noexcept { return m_segmentBounds; }
+
+    /**
+     * @brief Check if the segment needs to be redrawn (is dirty).
      *
-     * @param minimalMode When set to true, 'minimal' mode will be enabled.
-     * @see isMinimalModeActive, autoSetMinimalMode
-     */
-    void setMinimalMode (bool minimalMode) noexcept;
+     * @return True, if the segment needs to be redrawn.
+    */
+    [[nodiscard]] bool isDirty() const noexcept { return m_dirty; }
 
-    /** @brief Set the segment options, describing the range and colour of the segment. */
-    void setSegmentOptions (SegmentOptions segmentOptions);
+    /**
+     * @brief Set the segment colour (and next colour).
+     * 
+     * The 'next' colour is 2nd colour to use in the gradient.
+     * 
+     * @param segmentColour Segment colour.
+     * @param nextColour    Next colour (used for gradient).
+    */
+    void setColours (const juce::Colour& segmentColour, const juce::Colour& nextColour) noexcept;
 
-    /** @brief Get the segment options, describing the range and colour of the segment. */
-    [[nodiscard]] SegmentOptions getSegmentOptions() const noexcept { return m_segmentOptions; }
+ private:
+    float m_startLevel      = 0.0f;
+    float m_stopLevel       = 1.0f;
+    float m_currentLevel    = 0.0f;
+    int   m_currentLevel_px = 0;
+    float m_levelMultiplier = 0.0f;
+    bool  m_dirty           = false;
 
-    /** @brief Set meter options. */
-    void setMeterOptions (const Options& meterOptions);
+    juce::Colour         m_segmentColour = juce::Colours::red;
+    juce::Colour         m_nextColour    = m_segmentColour.brighter();
+    juce::ColourGradient m_gradientFill;
 
-    /** @brief Get segment options.*/
-    [[nodiscard]] Options getMeterOptions() const { return m_meterOptions; }
+    juce::Rectangle<int> m_meterBounds {};
+    juce::Rectangle<int> m_segmentBounds {};
 
-private:
-    SegmentOptions         m_segmentOptions {};
-    Options                m_meterOptions {};
-    std::vector<float>     m_tickMarks {};
-    juce::Rectangle<int>   m_meterBounds {};
-    juce::Rectangle<float> m_segmentBounds {};
-    juce::Rectangle<float> m_drawnBounds {};
-    juce::Rectangle<float> m_peakHoldBounds {};
-    juce::Rectangle<float> m_drawnPeakHoldBounds {};
-    juce::ColourGradient   m_gradientFill {};
-
-    float m_currentLevel_db   = Constants::kMinLevel_db;
-    float m_peakHoldLevel_db  = Constants::kMinLevel_db;
-    bool  m_isDirty           = false;
-    bool  m_minimalModeActive = false;
-    bool  m_isLabelStrip      = false;
-
-    void updateLevelBounds();
-    void updatePeakHoldBounds();
-    void drawTickMarks (juce::Graphics& g, const MeterColours& meterColours);
-    void drawLabels (juce::Graphics& g, const MeterColours& meterColours) const;
+    void calculateSegment() noexcept;
 
     JUCE_LEAK_DETECTOR (Segment)
 };
 
 }  // namespace SoundMeter
 }  // namespace sd
+
+#endif /* SD_SOUND_METER_SEGMENT_H */

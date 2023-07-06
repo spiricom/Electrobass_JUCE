@@ -1,6 +1,6 @@
 /*
     ==============================================================================
-
+    
     This file is part of the sound_meter JUCE module
     Copyright (c) 2019 - 2021 Sound Development - Marcel Huibers
     All rights reserved.
@@ -30,35 +30,37 @@
     ==============================================================================
 */
 
-#include "sd_MeterFader.h"
-
-namespace sd  // NOLINT
+namespace sd
 {
+
 namespace SoundMeter
 {
 //==============================================================================
 
 void Fader::flash() noexcept
 {
-    if (!m_enabled)
-        return;
+    if (! m_enabled) return;
 
     m_fadeStart = static_cast<int> (juce::Time::getMillisecondCounter());
     m_isFading  = true;
 }
 //==============================================================================
 
-void Fader::setVisible (bool visible /*= true*/) noexcept
+[[nodiscard]] bool Fader::isVisible() const noexcept
 {
-    if (!m_enabled)
-        return;
+    return m_visible && m_enabled;
+}
+//==============================================================================
+
+void Fader::setVisible (bool showFader /*= true*/) noexcept
+{
+    if (! m_enabled) return;
 
     // If fader needs to be HIDDEN...
-    if (!visible)
+    if (! showFader)
     {
         // If it was visible, FADE it out...
-        if (m_visible)
-            m_fadeStart = static_cast<int> (juce::Time::getMillisecondCounter());
+        if (m_visible) m_fadeStart = static_cast<int> (juce::Time::getMillisecondCounter());
 
         // Hide fader...
         m_visible = false;
@@ -73,69 +75,96 @@ void Fader::setVisible (bool visible /*= true*/) noexcept
 }
 //==============================================================================
 
-void Fader::draw (juce::Graphics& g, const MeterColours& meterColours)
+void Fader::setBounds (const juce::Rectangle<int>& bounds) noexcept
 {
+    m_bounds = bounds;
+}
+//==============================================================================
+
+[[nodiscard]] juce::Rectangle<int> Fader::getBounds() const noexcept
+{
+    return m_bounds;
+}
+//==============================================================================
+
+void Fader::draw (juce::Graphics& g, const juce::Colour& faderColour)
+{
+    using namespace Constants;
+
     m_isFading = false;
 
-    if (!m_enabled)
-        return;
+    if (! m_enabled) return;
 
     const auto timeSinceStartFade = getTimeSinceStartFade();
 
     // Return if the fader was already invisible and a new fade has not been started...
-    if (!m_visible && timeSinceStartFade >= Constants::kFaderFadeTime_ms)
-        return;
+    if (! m_visible && timeSinceStartFade >= kFaderFadeTime_ms) return;
 
     auto alpha = Constants::kFaderAlphaMax;
 
     // If it's fading, calculate it's alpha...
-    if (timeSinceStartFade < Constants::kFaderFadeTime_ms)
+    if (timeSinceStartFade < kFaderFadeTime_ms)
     {
-        constexpr float fadePortion = 2.0f;
-        alpha = juce::jlimit (0.0f, 1.0f, fadePortion - ((static_cast<float> (timeSinceStartFade) * fadePortion) / Constants::kFaderFadeTime_ms)) * Constants::kFaderAlphaMax;
+        const float fadePortion = 2.0f;
+        jassert (kFaderFadeTime_ms > 0.0f);
+        alpha      = juce::jlimit (0.0f, 1.0f, fadePortion - ((timeSinceStartFade * fadePortion) / kFaderFadeTime_ms)) * kFaderAlphaMax;
         m_isFading = alpha > 0.0f;
     }
 
     // If the fader is not fully transparent, draw it...
     if (alpha > 0.0f)
     {
-        g.setColour (meterColours.faderColour.withAlpha (alpha));
-        auto faderRect    = m_bounds;
-        m_drawnFaderValue = getValue();
-        auto value_db     = juce::Decibels::gainToDecibels (m_drawnFaderValue);
-        for (const auto& segment: m_segments)
+        bool lnfMethodFound = false;
+        if (m_parentMeter)
         {
-            if (Helpers::containsUpTo (segment.levelRange, value_db))
+            juce::LookAndFeel& lnf = m_parentMeter->getLookAndFeel();
+            if (MeterChannel::LookAndFeelMethods* lnfMethods = dynamic_cast<MeterChannel::LookAndFeelMethods*> (&lnf))
             {
-                const auto valueInSegment = std::clamp ((value_db - segment.levelRange.getStart()) / segment.levelRange.getLength(), 0.0f, 1.0f);
-                const auto convertedValue = juce::jmap (valueInSegment, segment.meterRange.getStart(), segment.meterRange.getEnd());
-                g.fillRect (faderRect.removeFromBottom (m_bounds.proportionOfHeight (convertedValue)));
-                break;
+                lnfMethods->drawFader (g, m_bounds, getValue(), faderColour.withAlpha (alpha));
+                lnfMethodFound = true;
             }
         }
+
+        if (! lnfMethodFound) drawFader (g, m_bounds, getValue(), faderColour.withAlpha (alpha));
     }
 }
 //==============================================================================
 
-void Fader::setMeterSegments (const std::vector<SegmentOptions>& segmentsOptions)
+void Fader::drawFader (juce::Graphics& g, juce::Rectangle<int> bounds, float value, juce::Colour faderColour)
 {
-    m_segments = segmentsOptions;
+    g.setColour (faderColour);
+    auto faderRect = bounds;
+    g.fillRect (faderRect.removeFromBottom (bounds.proportionOfHeight (value)));
 }
 //==============================================================================
 
-bool Fader::setValue (const float value, NotificationOptions notificationOption /*= NotificationOptions::Notify*/)  // NOLINT
+
+[[nodiscard]] bool Fader::isEnabled() const noexcept
 {
-    if (!m_enabled)
-        return false;
-    if (m_faderValue.load() == value)
-        return false;
+    return m_enabled;
+}
+//==============================================================================
+
+void Fader::enable (bool enabled /*= true*/) noexcept
+{
+    m_enabled = enabled;
+}
+//==============================================================================
+
+[[nodiscard]] float Fader::getValue() const noexcept
+{
+    return m_faderValue.load();
+}
+//==============================================================================
+
+bool Fader::setValue (float value, [[maybe_unused]] NotificationOptions notificationOption /*= NotificationOptions::Notify*/)
+{
+    if (! m_enabled) return false;
+    if (m_faderValue.load() == value) return false;
     m_faderValue.store (value);
 
 #if SDTK_ENABLE_FADER
-    if (notificationOption == NotificationOptions::notify && onFaderValueChanged)
-        onFaderValueChanged();
-#else
-    juce::ignoreUnused (notificationOption);
+    if (notificationOption == NotificationOptions::notify && m_parentMeter) m_parentMeter->notifyParent();
 #endif
 
     return true;
@@ -145,23 +174,18 @@ bool Fader::setValue (const float value, NotificationOptions notificationOption 
 void Fader::setValueFromPos (const int position, NotificationOptions notificationOption /*= NotificationOptions::Notify*/)
 {
     const auto height = static_cast<float> (m_bounds.getHeight());
-    if (height <= 0.0f)
-        return;
+    if (height <= 0.0f) return;
 
-    auto value = 1.0f - std::clamp ((static_cast<float> (position) - m_bounds.getY()) / height, 0.0f, 1.0f);
-    for (const auto& segment: m_segments)
-    {
-        if (Helpers::containsUpTo (segment.meterRange, value))
-        {
-            const auto valueInSegment = std::clamp ((value - segment.meterRange.getStart()) / segment.meterRange.getLength(), 0.0f, 1.0f);
-            const auto value_db       = juce::jmap (valueInSegment, segment.levelRange.getStart(), segment.levelRange.getEnd());
-            value                     = juce::Decibels::decibelsToGain (value_db);
-            break;
-        }
-    }
-
-    setValue (value, notificationOption);
+    setValue (1.0f - juce::jlimit (0.0f, 1.0f, static_cast<float> (position - m_bounds.getY()) / height), notificationOption);
 }
 //==============================================================================
+
+[[nodiscard]] int Fader::getTimeSinceStartFade() const noexcept
+{
+    return static_cast<int> (juce::Time::getMillisecondCounter()) - m_fadeStart;
+}
+
+//==============================================================================
+
 }  // namespace SoundMeter
 }  // namespace sd
