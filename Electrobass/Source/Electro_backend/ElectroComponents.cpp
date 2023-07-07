@@ -213,7 +213,11 @@ void MappingTarget::update(bool directChange, bool sendListenerNotif)
         sliderEnabled = true;
         String name = model.currentSource->name;
         setTextColour(model.currentSource->colour);
-        if (name.getTrailingIntValue() > 0) setText(String(name.getTrailingIntValue()));
+        if ((name.substring(0, 1)=="F") || (name.substring(0, 1)=="K"))
+        {
+            setText(name.substring(0, 2));
+        }
+        else if (name.getTrailingIntValue() > 0) setText(String(name.getTrailingIntValue()));
         else setText(name.substring(0, 1));
 
         setValue(model.end, sendListenerNotif ? sendNotificationAsync : dontSendNotification);

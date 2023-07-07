@@ -74,11 +74,11 @@ static const std::vector<std::string> cUniqueMacroNames = {
     "F3",
     "F4",
     "F5",
-    "cLKL",
-    "cLKV",
-    "cLKR",
-    "cRKL",
-    "cRKR"
+    "K1",
+    "K2",
+    "K3",
+    "K4",
+    "K5"
 };
 
 //==============================================================================

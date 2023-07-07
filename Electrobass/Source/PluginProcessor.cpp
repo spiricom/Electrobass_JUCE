@@ -730,7 +730,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         {
             //data.add((float)myCount++);
             //const NormalisableRange<float>& range = vts.getParameter(id)->getNormalisableRange();
-            std::regex e("^PitchBend[0-9]+$|^F[0-9]+$|^cLKL+$|^cLKV+$|^cLKR+$|^cRKL+$|^cRKR+$");
+            std::regex e("^PitchBend[0-9]+$|^F[0-9]+$|^K[0-9]+$");
             if (!std::regex_match(id.toStdString(), e))
             {
                 data.add(vts.getParameter(id)->getValue());
