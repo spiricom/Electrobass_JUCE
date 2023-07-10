@@ -66,6 +66,7 @@ private:
     float VZhighshelfTick(float sample, float cutoff, float gain, float q, float param4,float param5, int v);
     float VZpeakTick(float sample, float cutoff, float gain, float q, float param4,float param5, int v);
     float VZbandrejectTick(float sample, float cutoff, float gain, float q, float param4,float param5, int v);
+    float delayTick(float sample, float cutoff, float gain, float q, float param4,float param5, int v);
     float inv_oversample;
     float wfState[MAX_NUM_VOICES];
     float wfGainState[MAX_NUM_VOICES];
