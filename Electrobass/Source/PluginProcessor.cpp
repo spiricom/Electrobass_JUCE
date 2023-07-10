@@ -313,7 +313,7 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
     DBG("PARAMS//");
     for (int i = 0; i < paramIds.size(); ++i)
     {
-        DBG(paramIds[i]); //+ ": " + String(i));
+        DBG("\"" +paramIds[i]+ "\","); //+ ": " + String(i));
     }
     
     
@@ -721,12 +721,12 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         int count = 0;
        // int myCount = 0;
         //first send a count of the number of parameters that will be sent
-        data.add(paramIds.size() + 2 - 23); //plus midi key values, minus pitch bend
+        data.add(paramDestOrder.size() + 2); //plus midi key values
         data.add(midiKeyMax/127.0f);
         DBG(String(count++)+ ": Midi Key Max: "+ String(midiKeyMax/127.0f));
         data.add(midiKeyMin/127.0f);
         DBG(String(count++)+ ": Midi Key Min: "+ String(midiKeyMin/127.0f));
-        for (auto id : paramIds)
+        for (auto id : paramDestOrder)
         {
             //data.add((float)myCount++);
             //const NormalisableRange<float>& range = vts.getParameter(id)->getNormalisableRange();
@@ -754,7 +754,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         // Mappings
         DBG("Mappings");
         DBG("Name: sourceparamid, targetparamaid, scalarsource, range ");
-        for (auto id : paramIds)
+        for (auto id : paramDestOrder)
         {
             for (int t = 0; t < 3; ++t)
             {
@@ -765,14 +765,18 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
                     if (MappingSourceModel* source = target->currentSource)
                     {
                         tempData.add(sourceIds.indexOf(source->name));//SourceID
-                        float tempId = paramIds.indexOf(id)+2;
-                        if (tempId > 16)
-                        {
-                            tempId -= 23; //get rid of the extra pitch bend values, foot pedals, and knee levers
-                        }
-                        tempData.add(tempId);//TargetID
-                        //int jjjj = paramIds.indexOf(id);
-                        //don't need index anymore
+                        auto it = find(v.begin(), v.end(), K);
+                        int index = 0;
+                          // If element was found
+                          if (it != v.end())
+                          {
+                              
+                              // calculating the index
+                              // of K
+                            index = it - v.begin();
+                          }
+                       
+                        tempData.add(index);//TargetID
                         //scalarSource -- negative 1 if no source
                         float scalarsource = -1.0f;
                         if (target->currentScalarSource != nullptr)
@@ -1752,6 +1756,7 @@ void ElectroAudioProcessor::changeProgramName (int index, const juce::String& ne
 void ElectroAudioProcessor::addMappingSource(MappingSourceModel* source)
 {
     sourceMap.set(source->name, source);
+    DBG("\"" + source->name + "\",");
 }
 
 void ElectroAudioProcessor::addMappingTarget(MappingTargetModel* target)
