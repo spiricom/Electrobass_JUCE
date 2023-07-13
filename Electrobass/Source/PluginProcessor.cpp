@@ -765,19 +765,20 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
                     if (MappingSourceModel* source = target->currentSource)
                     {
                         tempData.add(sourceIds.indexOf(source->name));//SourceID
-                        auto it = find(v.begin(), v.end(), K);
+                        auto it = find(paramDestOrder.begin(), paramDestOrder.end(), id);
                         int index = 0;
                           // If element was found
-                          if (it != v.end())
+                          if (it != paramDestOrder.end())
                           {
                               
                               // calculating the index
                               // of K
-                            index = it - v.begin();
+                            index = it - paramDestOrder.begin();
                           }
-                       
-                        tempData.add(index);//TargetID
+                        float tempId = index + 2;
+                        tempData.add(index + 2);//TargetID
                         //scalarSource -- negative 1 if no source
+                        DBG("INdex of "  +  id  + " is " + String(tempId));
                         float scalarsource = -1.0f;
                         if (target->currentScalarSource != nullptr)
                         {
@@ -1942,6 +1943,13 @@ void ElectroAudioProcessor::setStateInformation (const void* data, int sizeInByt
     
     if (xml.get() != nullptr)
     {
+        for (int i = 0; i < knobsToSmooth.size(); i++)
+        {
+            SmoothedParameter* knob = knobsToSmooth.getUnchecked(i);
+            knob->setRemoveMe(false);
+            //knobsToSmooth.remove(i);
+        }
+        knobsToSmooth.clear();
         // Top level settings
         String presetPath = xml->getStringAttribute("path");
         editorScale = xml->getDoubleAttribute("editorScale", 1.05);
@@ -2104,9 +2112,124 @@ void ElectroAudioProcessor::setStateInformation (const void* data, int sizeInByt
     DBG("Post set state: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
 }
 
+void ElectroAudioProcessor::setStateEBP(const void *data, int sizeInBytes, int presetNumber)
+{
+    suspendProcessing(true);
+    
+    for (int i = 0; i < knobsToSmooth.size(); i++)
+    {
+        SmoothedParameter* knob = knobsToSmooth.getUnchecked(i);
+        knob->setRemoveMe(false);
+        //knobsToSmooth.remove(i);
+    }
+    for (auto target : targetMap)
+    {
+        if (target->currentSource != nullptr)
+        {
+            target->removeMapping(true);
+        }
+    }
+    knobsToSmooth.clear();
+    ElectroAudioProcessorEditor* editor = dynamic_cast<ElectroAudioProcessorEditor*>(getActiveEditor());
+    setPresetNumber(presetNumber);
+    uint16_t bufferIndex = 0;
+    char presetName[14];
+    //read first 14 items in buffer as the 14 character string that is the name of the preset
+    const char* newData = static_cast<const char*>(data);
+    for (int i = 0; i < 14; i++)
+    {
+        presetName[i] = newData[bufferIndex];
+        bufferIndex++;
+    }
+    setPresetName(CharPointer_UTF8(presetName));
+    
+    
+    for (int j = 0; j < 8; j++)
+    {
+        for (int k = 0; k < 14; k++)
+        {
+
+                presetName[k] = newData[bufferIndex];
+                bufferIndex++;
+        }
+            macroNames.set(j, String(CharPointer_UTF8(presetName)));
+        DBG(String(CharPointer_UTF8(presetName)));
+    }
+    //bufferIndex = bufferIndex + 1;
+    uint8_t y =newData[bufferIndex];
+    DBG(String(y));
+    y =newData[bufferIndex+1];
+    DBG(String(y));
+    uint8_t a = newData[bufferIndex+1];
+    uint8_t b = (newData[bufferIndex]);
+    uint16_t paramCount = ((b<<8) + a)-2;//(newData[bufferIndex] << 8) + newData[bufferIndex+1];
+    a = newData[(paramCount+2)*2+bufferIndex+5];
+    b = newData[(paramCount+2)*2+bufferIndex+4];
+    DBG(String(a));
+    DBG(String(b));
+    uint16_t mappingCount = (b<<8) + a;//(newData[paramCount*2+bufferIndex+4] << 8) + newData[paramCount*2+bufferIndex+5];
+
+    //20 is the 6 bytes plus the 14 characters
+        //paramCount is * 2 because they are 2 bytes per param, mappingCount * 5 because they are 5 bytes per mapping
+    uint16_t mappingEndLocation = (paramCount + 2 * 2) + (mappingCount * 5) + bufferIndex + 6;
+    
+    //move past the name characters (14 bytes) and paramcount position (2 bytes) in the buffer to start parsing the parameter data
+    bufferIndex = bufferIndex + 2;
+    bufferIndex = bufferIndex + 2; //move past midikeymin
+    bufferIndex = bufferIndex + 2; //move past midikeymax
+    int paramCountUsed = paramDestOrder.size() > paramCount ? paramDestOrder.size() : paramCount;
+    for (int i = 0; i < paramCountUsed - 1; i++)
+    {
+        a = newData[bufferIndex+1];
+        b = (newData[bufferIndex]);
+            vts.getParameter(paramDestOrder.at(i))->setValueNotifyingHost(INV_TWO_TO_16 * ((b << 8) + a));
+            bufferIndex += 2;
+        DBG(String(INV_TWO_TO_16 * ((b << 8) + a)));
+        DBG(paramDestOrder.at(i));
+    }
+    //move past the countcheck elements (already checked earlier)
+    a = newData[bufferIndex+1];
+    b = (newData[bufferIndex]);
+    DBG(String(((b << 8) + a)));
+    bufferIndex += 2;
+    //move past the countcheck elements (already checked earlier)
+    a = newData[bufferIndex+1];
+    b = (newData[bufferIndex]);
+    DBG(String(((b << 8) + a)));
+    //move past the mappingCount elements (already stored that value earlier)
+    bufferIndex += 2;
+  
+    bufferIndex += 2;
+    int destNumberToT[200] = {0};
+    for (int i = 0; i < mappingCount; i++)
+    {
+        uint8_t sourceNumber = newData[bufferIndex++];
+        uint8_t destNumber = newData[bufferIndex++]-2;
+        uint8_t scalarNumber = newData[bufferIndex++];
+        a = newData[bufferIndex+1];
+        b = (newData[bufferIndex]);
+        bufferIndex += 2;
+        float amount = (INV_TWO_TO_15 * ((b << 8) + a));
+        DBG(String(i) + " " + String(amount) + " " + String(sourceNumber) + " " + String(destNumber) + " ");
+        DBG(i);
+        DBG("mapping destination" + paramDestOrder.at(destNumber));
+        DBG("mapping source" + paramSourceOrder.at(sourceNumber));
+        DBG("destination T" + String(destNumberToT[destNumber]));
+        MappingSourceModel* source = sourceMap[paramSourceOrder.at(sourceNumber)];
+        MappingTargetModel* target = targetMap[paramDestOrder.at(destNumber) + " T" + String(destNumberToT[destNumber]++ +1)];
+        target->setMapping(source, amount, false);
+      }
+
+    if (ElectroAudioProcessorEditor* editor = dynamic_cast<ElectroAudioProcessorEditor*>(getActiveEditor()))
+    {
+        editor->update();
+    }
+    suspendProcessing(false);
+}
 
 void ElectroAudioProcessor::setPeakLevel (int channelIndex, float peakLevel)
 {
+    
    if (! juce::isPositiveAndBelow (channelIndex, m_peakLevels.size())) return;
 
    m_peakLevels[channelIndex].store (std::max (peakLevel, m_peakLevels[channelIndex].load()));

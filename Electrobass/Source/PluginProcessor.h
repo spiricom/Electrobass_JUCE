@@ -109,6 +109,7 @@ public:
     //==============================================================================
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
+    void setStateEBP(const void* data, int sizeInBytes, int presetNumber);
     
     void addToKnobsToSmoothArray(SmoothedParameter* param);
     //==============================================================================
@@ -253,10 +254,22 @@ public:
         presetName = name;
     }
     
+    String getPresetName()
+    {
+        return presetName;
+    }
+
+    
     void setPresetNumber(int number)
     {
         presetNumber = number;
     }
+    
+    double getPresetNumber()
+    {
+        return presetNumber;
+    }
+
     
     std::unique_ptr<SmoothedParameter> master;
     float oscAmpMult;

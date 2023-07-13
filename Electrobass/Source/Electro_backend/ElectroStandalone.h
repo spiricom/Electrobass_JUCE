@@ -228,6 +228,15 @@ public:
             setLastFile (fc);
 
             MemoryBlock data;
+            
+            if (fc.getResult().getFileExtension() == ".ebp")
+            {
+                
+                int presetNumber = fc.getResult().getFileName().substring(0,2).getIntValue();
+                if (fc.getResult().loadFileAsData (data))
+                    dynamic_cast<ElectroAudioProcessor*>(processor.get())->setStateEBP(data.getData(), (int) data.getSize(),presetNumber);
+                
+            }
 
             if (fc.getResult().loadFileAsData (data))
                 processor->setStateInformation (data.getData(), (int) data.getSize());

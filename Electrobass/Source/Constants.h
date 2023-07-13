@@ -13,7 +13,7 @@
 #include <JuceHeader.h>
 
 #include <float.h>
-#define EBASS 1
+#define ESTEEL 1
 #define EDITOR_WIDTH 900.0f
 #define EDITOR_HEIGHT 700.0f
 #define NUM_GENERIC_MACROS 8
@@ -478,6 +478,7 @@ static const std::vector<String> paramDestOrder
     "X",
     "Y",
     "Ped",
+    "Transpose",
     "PitchBendRange",
     "Noise",
     "Noise Tilt",
@@ -615,7 +616,8 @@ static const std::vector<String> paramDestOrder
     "LFO4 Sync",
     "Output Amp",
     "Output Tone",
-    "FX Order"
+    "FX Order",
+    
 };
 #define OSC_SOURCE_OFFSET 0
 #define NOISE_SOURCE_OFFSET 3
@@ -629,44 +631,44 @@ static const std::vector<String> paramDestOrder
 #define PEDAL_SOURCE_OFFSET 28
 static const std::vector<String> paramSourceOrder
 {
-    "Osc1",
-    "Osc2",
-    "Osc3",
-    "Noise",
-    "M1",
-    "M2",
-    "M3",
-    "M4",
-    "M5",
-    "M6",
-    "M7",
-    "M8",
-    "A",
-    "B",
-    "X",
-    "Y",
-    "Ped",
-    "MIDI Key In",
-    "Velocity In",
-    "Random on Attack",
-    "Envelope1",
-    "Envelope2",
-    "Envelope3",
-    "Envelope4",
-    "LFO1",
-    "LFO2",
-    "LFO3",
-    "LFO4",
-    "F1",
-    "F2",
-    "F3",
-    "F4",
-    "F5",
-    "cLKL",
-    "cLKV",
-    "cLKR",
-    "cRKL",
-    "cRKR"
+    "Osc1",//0
+    "Osc2",//1
+    "Osc3",//2
+    "Noise",//3
+    "M1",//4
+    "M2",//5
+    "M3",//6
+    "M4",//7
+    "M5",//8
+    "M6",//9
+    "M7",//10
+    "M8",//11
+    "A",//12
+    "B",//13
+    "X",//14
+    "Y",//15
+    "Ped",//16
+    "MIDI Key In",//17
+    "Velocity In",//18
+    "Random on Attack",//19
+    "Envelope1",//20
+    "Envelope2",//21
+    "Envelope3",//22
+    "Envelope4",//23
+    "LFO1",//24
+    "LFO2",//25
+    "LFO3",//26
+    "LFO4",//27
+    "F1",//0
+    "F2",//0//0
+    "F3",//0
+    "F4",//0
+    "F5",//0
+    "cLKL",//0
+    "cLKV",//0
+    "cLKR",//0
+    "cRKL",//0
+    "cRKR"//0
 };
 //enum ParamNames
 //{

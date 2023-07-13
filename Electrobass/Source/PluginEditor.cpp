@@ -935,6 +935,8 @@ void ElectroAudioProcessorEditor::update()
     {
         osc->updateShapeCB();
     }
+    presetNameEditor.setText(processor.getPresetName());
+    presetNumber.setValue(processor.getPresetNumber());
 }
 
 
