@@ -712,6 +712,58 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         handleMidiMessage(m);
     }
     midiMessages.clear();
+   
+    if(streamSend)
+    {
+        union uintfUnion fu;
+        Array<uint8_t> data7bitInt;
+        data7bitInt.add(3);
+        data7bitInt.add(0);
+        fu.f = (float)streamID1;
+        data7bitInt.add((fu.i >> 28) & 15);
+        data7bitInt.add((fu.i >> 21) & 127);
+        data7bitInt.add((fu.i >> 14) & 127);
+        data7bitInt.add((fu.i >> 7) & 127);
+        data7bitInt.add(fu.i & 127);
+        
+        fu.f = streamValue1;
+        data7bitInt.add((fu.i >> 28) & 15);
+        data7bitInt.add((fu.i >> 21) & 127);
+        data7bitInt.add((fu.i >> 14) & 127);
+        data7bitInt.add((fu.i >> 7) & 127);
+        data7bitInt.add(fu.i & 127);
+        
+        
+        midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+        data7bitInt.clear();
+        if (streamID2 != 0)
+        {
+            fu.f = (float)streamID2;
+            data7bitInt.add((fu.i >> 28) & 15);
+            data7bitInt.add((fu.i >> 21) & 127);
+            data7bitInt.add((fu.i >> 14) & 127);
+            data7bitInt.add((fu.i >> 7) & 127);
+            data7bitInt.add(fu.i & 127);
+            
+            fu.f = streamValue2;
+            data7bitInt.add((fu.i >> 28) & 15);
+            data7bitInt.add((fu.i >> 21) & 127);
+            data7bitInt.add((fu.i >> 14) & 127);
+            data7bitInt.add((fu.i >> 7) & 127);
+            data7bitInt.add(fu.i & 127);
+            midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+        }
+        data7bitInt.clear();
+        data7bitInt.add(126);
+        midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+        streamID1 = 0;
+        streamID2 = 0;
+        streamValue1 = 0.f;
+        streamValue2 = 0.f;
+        streamSend = false;
+        DBG("sent");
+    }
+    
     if (waitingToSendPreset)
     {
         Array<float> data;
@@ -831,7 +883,10 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         uint16_t currentDataPointer = 0;
         data7bitInt.add(0); // saying it's a preset
         data7bitInt.add(presetNumber); // which preset are we saving
-        
+//        data7bitInt.add(17);
+//        data7bitInt.add(18);
+//        data7bitInt.add(VERSION_NUMBER_MAJOR);
+//        data7bitInt.add(VERSION_NUMBER_MINOR);
         for (int i = 0; i < presetName.length(); i++)
         {
             data7bitInt.add((presetName.toUTF8()[i] & 127)); //printable characters are in the 0-127 range
@@ -1466,6 +1521,7 @@ void  ElectroAudioProcessor::removeKnobsToSmooth()
         SmoothedParameter* knob = knobsToSmooth.getUnchecked(i);
         if (knob->getRemoveMe())
         {
+            
             knob->setRemoveMe(false);
             knobsToSmooth.remove(i);
         }
@@ -2115,7 +2171,8 @@ void ElectroAudioProcessor::setStateInformation (const void* data, int sizeInByt
 void ElectroAudioProcessor::setStateEBP(const void *data, int sizeInBytes, int presetNumber)
 {
     suspendProcessing(true);
-    
+    uint16_t presetVersionNumber = 1;
+
     for (int i = 0; i < knobsToSmooth.size(); i++)
     {
         SmoothedParameter* knob = knobsToSmooth.getUnchecked(i);
@@ -2134,8 +2191,19 @@ void ElectroAudioProcessor::setStateEBP(const void *data, int sizeInBytes, int p
     setPresetNumber(presetNumber);
     uint16_t bufferIndex = 0;
     char presetName[14];
-    //read first 14 items in buffer as the 14 character string that is the name of the preset
     const char* newData = static_cast<const char*>(data);
+    if (newData[bufferIndex] == 17)
+    {
+        if (newData[bufferIndex + 1] == 18)
+        {
+            uint8_t a =newData[bufferIndex + 2];
+            uint8_t b =newData[bufferIndex + 3];
+            presetVersionNumber = ((a << 8) + b);
+        }
+        bufferIndex = 4;
+    }
+    //read first 14 items in buffer as the 14 character string that is the name of the preset
+    
     for (int i = 0; i < 14; i++)
     {
         presetName[i] = newData[bufferIndex];

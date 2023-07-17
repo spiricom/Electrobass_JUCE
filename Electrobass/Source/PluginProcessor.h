@@ -112,6 +112,17 @@ public:
     void setStateEBP(const void* data, int sizeInBytes, int presetNumber);
     
     void addToKnobsToSmoothArray(SmoothedParameter* param);
+    
+    void toggleStream()
+    {
+        stream = !stream;
+    }
+    bool stream = false;
+    float streamValue1 = 0.0f;
+    int streamID1 = 0;
+    float streamValue2 = 0.0f;
+    int streamID2 = 0;
+    bool streamSend = false;
     //==============================================================================
     float editorScale = 1.05f;
     String wavTableFolder;

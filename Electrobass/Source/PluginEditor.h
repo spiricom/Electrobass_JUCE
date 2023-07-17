@@ -32,7 +32,8 @@ class ElectroAudioProcessorEditor : public AudioProcessorEditor,
                                public KeyListener,
                                public Timer,
                                public DragAndDropContainer,
-                               public sd::SoundMeter::MetersComponent::FadersChangeListener
+                               public sd::SoundMeter::MetersComponent::FadersChangeListener,
+                               public ValueTree::Listener
 
 {
 public:
@@ -54,7 +55,7 @@ public:
     
     ElectroAudioProcessor& processor;
     AudioProcessorValueTreeState& vts;
-    
+    void  valueTreePropertyChanged (ValueTree &treeWhosePropertyHasChanged, const Identifier &property) override;
     
 private:
     LookAndFeel_V4 laf;
@@ -150,6 +151,7 @@ private:
     OwnedArray<Label> stringChannelLabels;
     
     TextButton sendOutButton;
+    ToggleButton streamChangesButton;
     Label versionLabel;
     std::unique_ptr<Drawable> logo;
     Label synderphonicsLabel;

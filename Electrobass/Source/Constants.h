@@ -13,6 +13,8 @@
 #include <JuceHeader.h>
 
 #include <float.h>
+#define VERSION_NUMBER_MAJOR 1
+#define VERSION_NUMBER_MINOR 1
 #define ESTEEL 1
 #define EDITOR_WIDTH 900.0f
 #define EDITOR_HEIGHT 700.0f

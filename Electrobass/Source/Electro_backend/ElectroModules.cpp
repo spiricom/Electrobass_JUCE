@@ -81,6 +81,7 @@ relDialHeight(relDialHeight)
             enabledToggle.setTooltip("Send to Filters On/Off");
         addAndMakeVisible(enabledToggle);
         buttonAttachments.add(new ButtonAttachment(vts, name, enabledToggle));
+        enabledToggle.setName(name);
     }
 }
 
@@ -130,10 +131,87 @@ void ElectroModule::sliderValueChanged(Slider* slider)
                 }
             
         }
+        if (ac.processor.stream)
+        {
+//            //slider->getRange().convertTo0to1(knob->read());
+//            for (int j = 0; j < ac.getParamArraySize(); j++)
+//            {
+//
+//                String name = slider->getName();
+//                String _name = ac.getParameterArray(j).getFirst()->getName();
+//                if(name == _name)
+//                {
+//                     ac.getParameterArray(j).getFirst()->getRange().convertTo0to1(slider->getValue());
+//                }
+//            }
+            ac.processor.streamValue1 = vts.getParameter(slider->getName())->getValue();
+            auto it = find(paramDestOrder.begin(), paramDestOrder.end(),slider->getName() );
+            int index = 0;
+              // If element was found
+              if (it != paramDestOrder.end())
+              {
+                  
+                  // calculating the index
+                  // of K
+                index = it - paramDestOrder.begin();
+              }
+            float tempId = index + 2;
+            ac.processor.streamID1 = tempId;
+            DBG("Send: " + slider->getName() +
+                "with id" + String(tempId) +
+                " as " + String(ac.processor.streamValue1) );
+            ac.processor.streamSend = true;
+        }
             
     }
     
 }
+
+void ElectroModule::buttonClicked(Button* button)
+{
+    if (ac.processor.stream)
+    {
+        ac.processor.streamValue1 = vts.getParameter(button->getName())->getValue();
+        auto it = find(paramDestOrder.begin(), paramDestOrder.end(),button->getName() );
+        int index = 0;
+          // If element was found
+          if (it != paramDestOrder.end())
+          {
+              
+              // calculating the index
+              // of K
+            index = it - paramDestOrder.begin();
+          }
+        float tempId = index + 2;
+        ac.processor.streamID1 = tempId;
+        //button->get
+        DBG("Send: " + button->getName() + " with ID"  + String(tempId) + " and value " + String(ac.processor.streamValue1));
+        ac.processor.streamSend = true;
+    }
+};
+            
+void ElectroModule::comboBoxChanged(ComboBox *comboBox){
+    if (ac.processor.stream)
+    {
+        ac.processor.streamValue1 = vts.getParameter(comboBox->getName())->getValue();
+        auto it = find(paramDestOrder.begin(), paramDestOrder.end(),comboBox->getName() );
+        int index = 0;
+          // If element was found
+          if (it != paramDestOrder.end())
+          {
+              
+              // calculating the index
+              // of K
+            index = it - paramDestOrder.begin();
+          }
+        float tempId = index + 2;
+        ac.processor.streamID1 = tempId;
+        //button->get
+        DBG("Send: " + comboBox->getName() + " with ID"  + String(tempId) + " and value " + String(ac.processor.streamValue1)/*String(streamValue)*/);
+        ac.processor.streamSend = true;
+    }
+};
+            
 
 void ElectroModule::setBounds (float x, float y, float w, float h)
 {
@@ -202,9 +280,14 @@ chooser(nullptr)
     displayPitch();
     
     buttonAttachments.add(new ButtonAttachment(vts, ac.getName() + " isHarmonic", pitchDialToggle));
+    pitchDialToggle.setName(ac.getName() + " isHarmonic");
     buttonAttachments.add(new ButtonAttachment(vts, ac.getName() + " isStepped", steppedToggle));
+    steppedToggle.setName(ac.getName() + " isStepped");
     buttonAttachments.add(new ButtonAttachment(vts, ac.getName() + " isSync", syncToggle));
+    syncToggle.setName(ac.getName() + " isSync");
     buttonAttachments.add(new ButtonAttachment(vts, ac.getName() + " syncType", syncType));
+    syncType.setName(ac.getName() + " syncType");
+
     
     harmonicsLabel.setEditable(true);
     harmonicsLabel.setJustificationType(Justification::centred);
@@ -232,7 +315,8 @@ chooser(nullptr)
     shapeCB.addListener(this);
     shapeCB.addMouseListener(this, true);
     addAndMakeVisible(shapeCB);
-//    comboBoxAttachments.add(new ComboBoxAttachment(vts, ac.getName() + " ShapeSet", shapeCB));
+    comboBoxAttachments.add(new ComboBoxAttachment(vts, ac.getName() + " ShapeSet", shapeCB));
+    shapeCB.setName(ac.getName() + " ShapeSet");
     
     sendSlider.setSliderStyle(Slider::SliderStyle::LinearVertical);
     sendSlider.setTextBoxStyle(Slider::TextEntryBoxPosition::NoTextBox, false, 10, 10);
@@ -388,8 +472,8 @@ void OscModule::buttonClicked(Button* button)
         else
             syncType.setButtonText("Soft");
     }
+    ElectroModule::buttonClicked(button);
 }
-
 void OscModule::labelTextChanged(Label* label)
 {
     if (label == &pitchLabel)
@@ -410,6 +494,7 @@ void OscModule::labelTextChanged(Label* label)
         auto value = harmonicsLabel.getText().getDoubleValue();
         getDial(OscHarm)->getSlider().setValue(value, sendNotificationAsync);
     }
+    
 }
 
 void OscModule::comboBoxChanged(ComboBox *comboBox)
@@ -491,6 +576,25 @@ void OscModule::comboBoxChanged(ComboBox *comboBox)
             syncType.setAlpha(1.0);
             syncType.setInterceptsMouseClicks(true,true);
         }
+    }
+    if (ac.processor.stream)
+    {
+        ac.processor.streamValue1 = (float)comboBox->getSelectedItemIndex()/ (float) oscShapeSetNames.size();
+        auto it = find(paramDestOrder.begin(), paramDestOrder.end(),comboBox->getName() );
+        int index = 0;
+          // If element was found
+          if (it != paramDestOrder.end())
+          {
+              
+              // calculating the index
+              // of K
+            index = it - paramDestOrder.begin();
+          }
+        float tempId = index + 2;
+        ac.processor.streamID1 = tempId;
+        //button->get
+        DBG("Send: " + comboBox->getName() + " with ID"  + String(tempId) + " and value " + String(ac.processor.streamValue1)/*String(streamValue)*/);
+        ac.processor.streamSend = true;
     }
 }
 
@@ -713,6 +817,7 @@ void NoiseModule::buttonClicked(Button* button)
         sendSlider.setEnabled(enabledToggle.getToggleState());
         sendSlider.setAlpha(enabledToggle.getToggleState() ? 1. : 0.5);
     }
+    ElectroModule::buttonClicked(button);
 }
 
 //==============================================================================
@@ -737,9 +842,9 @@ ElectroModule(editor, vts, ac, 0.04f, 0.215f, 0.05f, 0.18f, 0.8f) //0.05f, 0.132
     typeCB.setSelectedItemIndex(set->convertFrom0to1(set->getValue()), dontSendNotification);
     addAndMakeVisible(typeCB);
     comboBoxAttachments.add(new ComboBoxAttachment(vts, ac.getName() + " Type", typeCB));
-    
+    typeCB.setName(ac.getName() + " Type");
     typeCB.addMouseListener(this, true);
-    
+    typeCB.addListener(this);
 }
 
 FilterModule::~FilterModule()
@@ -800,6 +905,8 @@ ElectroModule(editor, vts, ac, 0.03f, 0.14f, 0.06f, 0.16f, 0.84f)
     velocityToggle.setButtonText("Scale to velocity");
     addAndMakeVisible(velocityToggle);
     buttonAttachments.add(new ButtonAttachment(vts, ac.getName() + " Velocity", velocityToggle));
+    velocityToggle.setName(ac.getName() + " Velocity");
+    velocityToggle.addListener(this);
 }
 
 EnvModule::~EnvModule()
@@ -840,10 +947,15 @@ chooser("Select wavetable file or folder...",
     shapeCB.setSelectedItemIndex(set->convertFrom0to1(set->getValue()), dontSendNotification);
     addAndMakeVisible(shapeCB);
     comboBoxAttachments.add(new ComboBoxAttachment(vts, ac.getName() + " ShapeSet", shapeCB));
+    shapeCB.setName( ac.getName() + " ShapeSet");
+    shapeCB.addListener(this);
+    shapeCB.addMouseListener(this, true);
     
     syncToggle.setButtonText("Sync to note-on");
+    syncToggle.addListener(this);
     addAndMakeVisible(syncToggle);
     buttonAttachments.add(new ButtonAttachment(vts, ac.getName() + " Sync", syncToggle));
+    syncToggle.setName(ac.getName() + " Sync");
 }
 
 LFOModule::~LFOModule()
@@ -904,6 +1016,25 @@ void LFOModule::comboBoxChanged(ComboBox *comboBox)
             getDial(LowFreqShape)->setAlpha(1.f);
             getDial(LowFreqShape)->setInterceptsMouseClicks(true, true);
         }
+    }
+    if (ac.processor.stream)
+    {
+        ac.processor.streamValue1 = (float)comboBox->getSelectedItemIndex()/ (float) lfoShapeSetNames.size();
+        auto it = find(paramDestOrder.begin(), paramDestOrder.end(),comboBox->getName() );
+        int index = 0;
+          // If element was found
+          if (it != paramDestOrder.end())
+          {
+              
+              // calculating the index
+              // of K
+            index = it - paramDestOrder.begin();
+          }
+        float tempId = index + 2;
+        ac.processor.streamID1 = tempId;
+        //button->get
+        DBG("Send: " + comboBox->getName() + " with ID"  + String(tempId) + " and value " + String(ac.processor.streamValue1)/*String(streamValue)*/);
+        ac.processor.streamSend = true;
     }
 }
 
@@ -1035,6 +1166,7 @@ ElectroModule(editor, vts, ac, 0.03f, 0.115f, 0.025f, 0.17f, 0.80f)
     fxCB.setSelectedItemIndex(set->convertFrom0to1(set->getValue()), dontSendNotification);
     addAndMakeVisible(fxCB);
     comboBoxAttachments.add(new ComboBoxAttachment(vts, ac.getName() + " FXType", fxCB));
+    fxCB.setName(ac.getName() + " FXType");
     fxCB.addListener(this);
     fxCB.addMouseListener(this, true);
     setNamesAndDefaults((FXType)fxCB.getSelectedItemIndex());
@@ -1078,6 +1210,26 @@ void FXModule::comboBoxChanged(ComboBox *comboBox)
             }
         }
     }
+    if (ac.processor.stream)
+    {
+        ac.processor.streamValue1 = (float)fxCB.getSelectedItemIndex()/ (float) FXTypeNames.size();
+        auto it = find(paramDestOrder.begin(), paramDestOrder.end(),comboBox->getName() );
+        int index = 0;
+          // If element was found
+          if (it != paramDestOrder.end())
+          {
+              
+              // calculating the index
+              // of K
+            index = it - paramDestOrder.begin();
+          }
+        float tempId = index + 2;
+        ac.processor.streamID1 = tempId;
+        //button->get
+        DBG("Send: " + comboBox->getName() + " with ID"  + String(tempId) + " and value " + String(ac.processor.streamValue1)/*String(streamValue)*/);
+        ac.processor.streamSend = true;
+    }
+//    ElectroModule::comboBoxChanged(comboBox);
 }
 
 void FXModule::setNamesAndDefaults(FXType effect)

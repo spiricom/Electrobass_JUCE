@@ -30,6 +30,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
 
 {
     
+    vts.state.addListener(this);
     LookAndFeel::setDefaultLookAndFeel(ElectroLookAndFeel::getInstance());
     tabs.getTabbedButtonBar().setLookAndFeel(&laf);
     meters.setChannelFormat(juce::AudioChannelSet::stereo());
@@ -431,8 +432,11 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     
     setSize(EDITOR_WIDTH * processor.editorScale, EDITOR_HEIGHT * processor.editorScale);
     
-    sendOutButton.setButtonText("Send preset via MIDI");
+    sendOutButton.setButtonText("Send to Device");
     sendOutButton.onClick = [this] { processor.sendPresetMidiMessage(); };
+    
+    streamChangesButton.setButtonText("Stream Changes");
+    streamChangesButton.onClick = [this] { processor.toggleStream(); };
     
     
     
@@ -466,6 +470,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     addAndMakeVisible(presetNumberlabel);
     addAndMakeVisible(presetNameEditor);
     addAndMakeVisible(sendOutButton);
+    addAndMakeVisible(streamChangesButton);
     
     constrain->setFixedAspectRatio(EDITOR_WIDTH / EDITOR_HEIGHT);
     
@@ -522,6 +527,7 @@ ElectroAudioProcessorEditor::~ElectroAudioProcessorEditor()
     envsAndLFOs.setLookAndFeel(nullptr);
     
     sendOutButton.setLookAndFeel(nullptr);
+    streamChangesButton.setLookAndFeel(nullptr);
     
     midiKeyRangeSlider.setLookAndFeel(nullptr);
     midiKeyMinLabel.setLookAndFeel(nullptr);
@@ -734,7 +740,8 @@ void ElectroAudioProcessorEditor::resized()
     
     //versionLabel.setBounds(width*0.79f, 0, width * 0.05f, tabs.getTabBarDepth());
     //versionLabel.setFont(euphemia.withHeight(20*s));
-    sendOutButton.setBounds(width*0.85f, -1, width*0.15f+2, tabs.getTabBarDepth());
+    sendOutButton.setBounds(width*0.82f, -1, width*0.08f+2, tabs.getTabBarDepth());
+    streamChangesButton.setBounds(width*0.90f, -1, width*0.1f+2, tabs.getTabBarDepth());
     presetNumber.setBounds(sendOutButton.getX() - width*0.08f+2, -1, width*0.07f+1, tabs.getTabBarDepth()/2);
     
 //    presetNamelabel.setBounds(presetNameEditor.getX()-  width*0.05f+2, tabs.getTabBarDepth()/2,width*0.05f+2, tabs.getTabBarDepth()/2);
@@ -783,6 +790,14 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
     {
         updateMidiKeyRangeSlider(midiKeyRangeSlider.getMinValue(),
                                  midiKeyRangeSlider.getMaxValue());
+        if(processor.stream)
+        {
+            processor.streamID1 = 0;
+            processor.streamID2 = 1;
+            processor.streamValue1 = midiKeyRangeSlider.getMinValue();
+            processor.streamValue2 = midiKeyRangeSlider.getMaxValue();
+            processor.streamSend = true;
+        }
     }
     else if (slider == &numVoicesSlider)
     {
@@ -796,6 +811,10 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
         processor.pitchBendRange->start = -rangeSlider.getValue();
         processor.pitchBendRange->setSkewForCentre(0.0f);
         //pitchBendSliders[0]->setRange(- (rangeDownSlider.getValue()), rangeUpSlider.getValue());
+    }
+    if (slider != &numVoicesSlider && processor.stream)
+    {
+        //STREAMDO
     }
 }
 
@@ -1056,4 +1075,9 @@ void ElectroAudioProcessorEditor::updateNumVoicesSlider(int numVoices)
 void ElectroAudioProcessorEditor::updateRandomValueLabel(float value)
 {
     randomValueLabel.setText(String(value, 3), dontSendNotification);
+}
+
+void   ElectroAudioProcessorEditor::valueTreePropertyChanged (ValueTree &treeWhosePropertyHasChanged, const Identifier &property)
+{
+   
 }
