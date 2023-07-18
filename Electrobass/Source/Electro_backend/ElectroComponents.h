@@ -1038,7 +1038,7 @@ private:
     ElectroAudioProcessor& processor;
     
     static const int numColumns = CopedentColumnNil;
-    static const int numRows = MAX_NUM_VOICES;        // Number of strings
+    static const int numRows = 10;        // Number of strings
     
     StringArray columnList;
     Array<Array<float>>& copedentArray;

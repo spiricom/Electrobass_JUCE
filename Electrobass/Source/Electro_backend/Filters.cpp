@@ -216,7 +216,7 @@ void Filter:: VZbandrejectTick(float& sample, int v, float cutoff, float q, floa
 {
     tVZFilter_setFreqFast(&VZfilterBR[v], cutoff);//, q, fasterdbtoa((gain * 50.f) - 25.f));
     sample = tVZFilter_tickEfficient(&VZfilterBR[v], sample);
-    //sample *= fasterdbtoa(gain);
+    sample *= G;
 }
 
 void Filter:: LadderLowpassTick(float& sample, int v, float cutoff, float q, float morph, float gain)
@@ -303,7 +303,8 @@ void Filter::setGain(float gain, int v)
             break;
             
         case VZBandrejectFilter:
-            tVZFilter_setGain(&VZfilterBR[v], fasterdbtoa((gain * 50.f) - 25.f));
+            //tVZFilter_setGain(&VZfilterBR[v], fasterdbtoa((gain * 50.f) - 25.f));
+            G = fasterdbtoa((gain * 24.0f) - 12.0f);
             break;
             
         case LadderLowpassFilter:

@@ -56,16 +56,17 @@ public:
     ElectroAudioProcessor& processor;
     AudioProcessorValueTreeState& vts;
     void  valueTreePropertyChanged (ValueTree &treeWhosePropertyHasChanged, const Identifier &property) override;
-    
+    void updateMPEToggle(bool state);
+    void updateNumVoicesSlider(int numVoices);
 private:
     LookAndFeel_V4 laf;
     // Updating things that don't have attachments to the vts
-    void updateMPEToggle(bool state);
+    
     void updateStringChannel(int string, int ch);
     void updateMacroControl(int macro, int ctrl);
     void updateMacroNames(int macro, String name);
     void updateMidiKeyRangeSlider(int min, int max);
-    void updateNumVoicesSlider(int numVoices);
+   
     void updateVelocityLabel(float velocity);
     void updateRandomValueLabel(float value);
     static void setVerticalRotatedWithBounds (Component& component, bool clockWiseRotation, Rectangle<int> verticalBounds)
@@ -118,6 +119,7 @@ private:
     MappingSource* currentMappingSource;
     ToggleButton mpeToggle;
     ToggleButton muteToggle;
+    ToggleButton pedalControlsMasterToggle;
     ElectroComponent seriesParallelComponent;
     Slider seriesParallelSlider;
     Label seriesLabel;

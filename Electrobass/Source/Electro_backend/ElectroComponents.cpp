@@ -258,7 +258,8 @@ void MappingTarget::setMappingRange(float end, bool directChange, bool sendListe
 
 void MappingTarget::setMappingScalar(MappingSource* source)
 {
-    model.setMappingScalar(&source->getModel(), true);
+    if(removable)
+        model.setMappingScalar(&source->getModel(), true);
     // The parent dial draw some stuff based on this so we'll repaint
     getParentComponent()->repaint();
 }

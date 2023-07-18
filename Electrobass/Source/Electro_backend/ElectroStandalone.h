@@ -30,6 +30,7 @@
 #endif
 
 #include "../PluginProcessor.h"
+#include "../PluginEditor.h"
 #include "ElectroLookAndFeel.h"
 
 
@@ -542,6 +543,42 @@ private:
                 shouldMuteLabel.attachToComponent (&shouldMuteButton, true);
             }
         }
+        
+        ~SettingsComponent()
+        {
+            for(auto inputs : MidiInput::getAvailableDevices())
+            {
+                if (inputs.name == "Electrosteel")
+                {
+                    if(deviceSelector.deviceManager.isMidiInputDeviceEnabled(inputs.identifier))
+                    {
+                        if (auto* editor = dynamic_cast<ElectroAudioProcessorEditor*>(owner.processor->getActiveEditor()))
+                        {
+                            editor->updateMPEToggle(true);
+                            editor->updateNumVoicesSlider(10);
+                        }
+                    }
+                }
+                
+                if (inputs.name == "Electrobass")
+                {
+                    if(deviceSelector.deviceManager.isMidiInputDeviceEnabled(inputs.identifier))
+                    {
+                        if (auto* editor = dynamic_cast<ElectroAudioProcessorEditor*>(owner.processor->getActiveEditor()))
+                        {
+                            editor->updateMPEToggle(false);
+                            editor->updateNumVoicesSlider(1);
+                        }
+                    }
+                }
+            }
+                
+            
+                
+
+                   
+                   
+        }
 
         void paint (Graphics& g) override
         {
@@ -666,13 +703,38 @@ private:
         if (newMidiDevices != lastMidiDevices)
         {
             for (auto& oldDevice : lastMidiDevices)
+            {
                 if (! newMidiDevices.contains (oldDevice))
+                {
                     deviceManager.setMidiInputDeviceEnabled (oldDevice.identifier, false);
-
+                }
+                
+            }
             for (auto& newDevice : newMidiDevices)
+            {
+                if (newDevice.identifier == "Electrobass")
+                {
+                    if (auto* editor = dynamic_cast<ElectroAudioProcessorEditor*>(processor->getActiveEditor()))
+                    {
+                        editor->updateMPEToggle(false);
+                        editor->updateNumVoicesSlider(1);
+                    }
+                }
+                
+                if (newDevice.identifier == "Electrosteel")
+                {
+                    if (auto* editor = dynamic_cast<ElectroAudioProcessorEditor*>(processor->getActiveEditor()))
+                    {
+                        editor->updateMPEToggle(true);
+                        editor->updateNumVoicesSlider(10);
+                    }
+                }
                 if (! lastMidiDevices.contains (newDevice))
+                {
                     deviceManager.setMidiInputDeviceEnabled (newDevice.identifier, true);
-
+                    
+                }
+            }
             lastMidiDevices = newMidiDevices;
         }
     }

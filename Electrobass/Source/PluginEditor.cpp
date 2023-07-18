@@ -92,7 +92,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
         
         macroDials.add(new ElectroDial(*this, n, n, true, false));
         sliderAttachments.add(new SliderAttachment(vts, n, macroDials[i]->getSlider()));
-        
+        macroDials[i]->getSlider().addListener(this);
         if (i < NUM_GENERIC_MACROS) tab1.addAndMakeVisible(macroDials[i]);
         else uniqueMacroComponent.addAndMakeVisible(macroDials[i]);
     }
@@ -245,7 +245,11 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     
     muteToggle.setButtonText("Mute");
     muteToggle.addListener(this);
+    pedalControlsMasterToggle.setButtonText("Pedal Volume Control");
+    pedalControlsMasterToggle.addListener(this);
+    buttonAttachments.add(new ButtonAttachment(vts, "PedalControlsMaster", pedalControlsMasterToggle));
     tab1.addAndMakeVisible(muteToggle);
+    tab1.addAndMakeVisible(pedalControlsMasterToggle);
     keyboard.setAvailableRange(21, 108);
     keyboard.setOctaveForMiddleC(4);
     //    tab1.addAndMakeVisible(&keyboard);
@@ -687,18 +691,19 @@ void ElectroAudioProcessorEditor::resized()
     {
         if( i < 6)
             stringActivityButtons[i]->setBounds(stringActivityButtons[i-1]->getRight(), y,
-                                            4 * align/12, 15*s);
+                                            4 * align/12, 18*s);
         else
             stringActivityButtons[i]->setBounds(stringActivityButtons[i-6]->getRight(), y+ 15*s,
-                                            4 * align/12, 15*s);
+                                            4 * align/12, 18*s);
     }
-    
+    muteToggle.setBounds(stringActivityButtons[5]->getRight(), stringActivityButtons[5]->getY(), 4 * align, 18*s);
+    //OSCILLOSCOPE.get
+    pedalControlsMasterToggle.setBounds(stringActivityButtons[10]->getRight(), stringActivityButtons[10]->getY(),4 * align,18*s);
     //    keyboard.setBoundsRelative(0.f, 0.86f, 1.0f, 0.14f);
     //    keyboard.setKeyWidth(width / 52.0f);
     
     OSCILLOSCOPE.setBoundsRelative(0.65,0.87,0.35, 0.13 );
-    muteToggle.setBounds(OSCILLOSCOPE.getX(), OSCILLOSCOPE.getY() - 100, x-w-5*s, 35*s);
-    //OSCILLOSCOPE.get
+    
     OSCILLOSCOPE.setBoundsRelative(0.85,0.87,0.15, 0.13 );
     //meters.setBounds(540*s-1, outputModule->getBottom()-1, 360*s+2, 114*s);
     setVerticalRotatedWithBounds(meters, true, Rectangle<int>(540*s+ 45, macroDials.getFirst()->getBottom() - 10, 190*s+2, 50*s));
@@ -828,18 +833,43 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
         updateNumVoicesSlider(numVoicesSlider.getValue()); //EBSPECIFIC
     }
     
-    if (slider == &rangeSlider)
+    else if (slider == &rangeSlider)
     {
         //vts.getParameter("PitchBendRange")->setValue(rangeSlider.getValue());
         processor.pitchBendRange->end = rangeSlider.getValue();
         processor.pitchBendRange->start = -rangeSlider.getValue();
         processor.pitchBendRange->setSkewForCentre(0.0f);
         //pitchBendSliders[0]->setRange(- (rangeDownSlider.getValue()), rangeUpSlider.getValue());
-    }
-    if (slider != &numVoicesSlider && processor.stream)
+        if(processor.stream)
+        {
+            processor.streamID1 = 0;
+            processor.streamID2 = 1;
+            processor.streamValue1 = midiKeyRangeSlider.getMinValue();
+            processor.streamValue2 = midiKeyRangeSlider.getMaxValue();
+            processor.streamSend = true;
+        }
+    } else if( processor.stream)
     {
-        //STREAMDO
+        processor.streamValue1 = slider->getValue();
+        auto it = find(paramDestOrder.begin(), paramDestOrder.end(), slider->getName());
+        int index = 0;
+          // If element was found
+          if (it != paramDestOrder.end())
+          {
+              
+              // calculating the index
+              // of K
+            index = it - paramDestOrder.begin();
+          }
+        float tempId = index + 2;
+        processor.streamID1 = tempId;
+        //button->get
+        DBG("Send: " + slider->getName() + " with ID"  + String(tempId) + " and value " + String(processor.streamValue1)/*String(streamValue)*/);
+        processor.streamSend = true;
+        
     }
+      
+   
 }
 
 void ElectroAudioProcessorEditor::fadersChanged (std::vector<float> faderValues)
@@ -861,6 +891,10 @@ void ElectroAudioProcessorEditor::buttonClicked(Button* button)
         if (tb == &muteToggle)
         {
             processor.setMute(tb->getToggleState());
+        }
+        if (tb == &pedalControlsMasterToggle)
+        {
+            processor.pedalControlsMaster =pedalControlsMasterToggle.getToggleState();
         }
     }
     

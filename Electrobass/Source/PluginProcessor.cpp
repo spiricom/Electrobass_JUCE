@@ -302,6 +302,10 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
     layout.add (std::make_unique<AudioParameterChoice> (ParameterID { n,  1 }, n, StringArray("Off", "On"), 0));
     paramIds.add(n);
     
+    n = "PedalControlsMaster";
+    layout.add (std::make_unique<AudioParameterChoice> (ParameterID { n,  2 }, n, StringArray("Off", "On"), 0));
+    paramIds.add(n);
+    
     //==============================================================================
     for (int i = 1; i < CopedentColumnNil; ++i)
     {
@@ -915,10 +919,10 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         uint16_t currentDataPointer = 0;
         data7bitInt.add(0); // saying it's a preset
         data7bitInt.add(presetNumber); // which preset are we saving
-//        data7bitInt.add(17);
-//        data7bitInt.add(18);
-//        data7bitInt.add(VERSION_NUMBER_MAJOR);
-//        data7bitInt.add(VERSION_NUMBER_MINOR);
+        data7bitInt.add(17);
+        data7bitInt.add(18);
+        data7bitInt.add(VERSION_NUMBER_MAJOR);
+        data7bitInt.add(VERSION_NUMBER_MINOR);
         for (int i = 0; i < presetName.length(); i++)
         {
             data7bitInt.add((presetName.toUTF8()[i] & 127)); //printable characters are in the 0-127 range
@@ -1489,21 +1493,24 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         }
         float mastergain = master->tickNoHooks();
         float pedGain = 1.f;
-#ifdef ESTEEL
+    
         // this is to clip the gain settings so all the way down on the pedal isn't actually
        // off, it let's a little signal through. Would be more efficient to fix the table to
        // span a better range.
-       float volumeSmoothed = ccParams.getUnchecked(12)->get();
-       float volIdx = LEAF_clip(47.0f, ((volumeSmoothed * 80.0f) + 47.0f), 127.0f);
-       
-       //then interpolate the value
-       int volIdxInt = (int) volIdx;
-       float alpha = volIdx-volIdxInt;
-       int volIdxIntPlus = (volIdxInt + 1) & 127;
-       float omAlpha = 1.0f - alpha;
-       pedGain = volumeAmps128[volIdxInt] * omAlpha;
-       pedGain += volumeAmps128[volIdxIntPlus] * alpha;
-#endif
+        if(pedalControlsMaster)
+        {
+        float volumeSmoothed = ccParams.getUnchecked(12)->get();
+        float volIdx = LEAF_clip(47.0f, ((volumeSmoothed * 80.0f) + 47.0f), 127.0f);
+        
+        //then interpolate the value
+        int volIdxInt = (int) volIdx;
+        float alpha = volIdx-volIdxInt;
+        int volIdxIntPlus = (volIdxInt + 1) & 127;
+        float omAlpha = 1.0f - alpha;
+        pedGain = volumeAmps128[volIdxInt] * omAlpha;
+        pedGain += volumeAmps128[volIdxIntPlus] * alpha;
+        }
+
         
        outputSamples[0] = sampleOutput * mastergain * pedGain * 0.98f; //drop a little bit to avoid touching clipping
         for (int channel = 0; channel < totalNumOutputChannels; ++channel)

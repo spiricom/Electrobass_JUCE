@@ -619,7 +619,7 @@ static const std::vector<String> paramDestOrder
     "Output Amp",
     "Output Tone",
     "FX Order",
-    
+    "PedalControlsMaster"
 };
 #define OSC_SOURCE_OFFSET 0
 #define NOISE_SOURCE_OFFSET 3

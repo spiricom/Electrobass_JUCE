@@ -144,7 +144,14 @@ void ElectroModule::sliderValueChanged(Slider* slider)
 //                     ac.getParameterArray(j).getFirst()->getRange().convertTo0to1(slider->getValue());
 //                }
 //            }
-            ac.processor.streamValue1 = vts.getParameter(slider->getName())->getValue();
+            if(slider->getName().substring(5) == "Harmonics" || slider->getName().substring(5) == "Pitch")
+            {
+                float end = slider->getRange().getEnd();
+                float start = slider->getRange().getStart();
+                ac.processor.streamValue1 = (slider->getValue() / ( end - start)) + 0.5;
+            } else {
+                ac.processor.streamValue1 = vts.getParameter(slider->getName())->getValue();
+            }
             auto it = find(paramDestOrder.begin(), paramDestOrder.end(),slider->getName() );
             int index = 0;
               // If element was found
@@ -340,7 +347,10 @@ chooser(nullptr)
     getDial(OscPitch)->setVisible(false);
     getDial(OscPitch)->setRange(-24.,24., 1.);
     getDial(OscHarm)->setRange(-16.,16., 1.);
-
+    f1Label.setAlpha(enabledToggle.getToggleState() ? 1. : 0.5);
+    f2Label.setAlpha(enabledToggle.getToggleState() ? 1. : 0.5);
+    sendSlider.setEnabled(enabledToggle.getToggleState());
+    sendSlider.setAlpha(enabledToggle.getToggleState() ? 1. : 0.5);
 }
 
 OscModule::~OscModule()
@@ -406,6 +416,7 @@ void OscModule::sliderValueChanged(Slider* slider)
 //        dynamic_cast<ElectroDial*>(mt->getParentComponent())->sliderValueChanged(slider);
 //        displayPitchMapping(mt);
 //    }
+    
     ElectroModule::sliderValueChanged(slider);
     //ElectroModule.sliderValueChanged(slider);
 }
