@@ -109,7 +109,7 @@ private:
     OwnedArray<ElectroDial> macroDials;
     OwnedArray<Slider> pitchBendSliders;
     MidiKeyboardComponent keyboard;
-    OwnedArray<TextButton> stringActivityButtons;
+    OwnedArray<Button> stringActivityButtons;
     OwnedArray<OscModule> oscModules;
     std::unique_ptr<NoiseModule> noiseModule;
     OwnedArray<FilterModule> filterModules;
@@ -130,7 +130,7 @@ private:
     
     Slider rangeSlider;
     
-    
+   
     
     
     Label rangeLabel;
@@ -167,5 +167,6 @@ private:
     Font euphemia;
     FileChooser chooser;
     OwnedArray<MappingSource> allSources;
+    std::unique_ptr<Drawable> white_circle_image;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ElectroAudioProcessorEditor)
 };

@@ -29,7 +29,8 @@ resizer(new ResizableCornerComponent (this, constrain.get())),
 chooser("Select a .wav file to load...", {}, "*.wav")
 
 {
-    
+    white_circle_image = Drawable::createFromImageData(BinaryData::White_Circle_svg_png,
+                                                       BinaryData::White_Circle_svg_pngSize);
     vts.state.addListener(this);
     LookAndFeel::setDefaultLookAndFeel(ElectroLookAndFeel::getInstance());
     tabs.getTabbedButtonBar().setLookAndFeel(&laf);
@@ -179,15 +180,30 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
-        String n = "Str" + String(i);
-        if (i == 0) n = "PB+CCs";
-        stringActivityButtons.add(new TextButton(n));
-        stringActivityButtons[i]->setConnectedEdges(Button::ConnectedOnLeft &
-                                                     Button::ConnectedOnRight);
-        stringActivityButtons[i]->setInterceptsMouseClicks(false, false);
-        stringActivityButtons[i]->setClickingTogglesState(false);//(true);
-        stringActivityButtons[i]->addListener(this);
-        tab1.addAndMakeVisible(stringActivityButtons[i]);
+      
+        if (i == 0)
+        {
+            
+            stringActivityButtons.add(new TextButton("PB+CCs"));
+            stringActivityButtons[i]->setConnectedEdges(Button::ConnectedOnLeft &
+                                                        Button::ConnectedOnRight);
+            stringActivityButtons[i]->setInterceptsMouseClicks(false, false);
+            stringActivityButtons[i]->setClickingTogglesState(false);//(true);
+            stringActivityButtons[i]->addListener(this);
+            tab1.addAndMakeVisible(stringActivityButtons[i]);
+        } else
+        {
+            DrawableButton *dbutton = new DrawableButton("", DrawableButton::ButtonStyle::ImageFitted);
+            dbutton->setImages(white_circle_image.get());
+            stringActivityButtons.add(dbutton);
+            stringActivityButtons[i]->setConnectedEdges(Button::ConnectedOnLeft &
+                                                        Button::ConnectedOnRight);
+            stringActivityButtons[i]->setInterceptsMouseClicks(false, false);
+            stringActivityButtons[i]->setClickingTogglesState(false);//(true);
+            stringActivityButtons[i]->addListener(this);
+            tab1.addAndMakeVisible(stringActivityButtons[i]);
+        }
+        
        if (i == 0) { //EBSPECIFIC
             pitchBendSliders.add(new Slider());
             pitchBendSliders[i]->setSliderStyle(Slider::SliderStyle::LinearBar);
@@ -202,6 +218,8 @@ chooser("Select a .wav file to load...", {}, "*.wav")
             sliderAttachments.add(new SliderAttachment(vts, "PitchBend" + String(i),
                                                        *pitchBendSliders[i]));
         }
+        
+    
     }
     
     rangeSlider.setSliderStyle(Slider::SliderStyle::LinearBar);
@@ -665,10 +683,14 @@ void ElectroAudioProcessorEditor::resized()
     randomComponent.setBounds(velocityComponent.getRight() - 1, midiKeyComponent.getBottom()-1, x + 60, 33);
     randomSource->setBounds(5, 7, x+2, 22*s - 4);
     randomValueLabel.setBounds(randomSource->getRight()+4, 7, 40, 22*s - 4);
-    for (int i = 1; i < NUM_CHANNELS; ++i)
+    for (int i = 1; i < 11; ++i)
     {
-        stringActivityButtons[i]->setBounds(stringActivityButtons[i-1]->getRight(), y,
-                                           w + (r-- > 0 ? 1 : 0), 35*s);
+        if( i < 6)
+            stringActivityButtons[i]->setBounds(stringActivityButtons[i-1]->getRight(), y,
+                                            4 * align/12, 15*s);
+        else
+            stringActivityButtons[i]->setBounds(stringActivityButtons[i-6]->getRight(), y+ 15*s,
+                                            4 * align/12, 15*s);
     }
     
     //    keyboard.setBoundsRelative(0.f, 0.86f, 1.0f, 0.14f);
