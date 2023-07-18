@@ -123,6 +123,91 @@ public:
     float streamValue2 = 0.0f;
     int streamID2 = 0;
     bool streamSend = false;
+    bool streamMapping = false;
+    float streamMappingValue = 0.0f;
+    float streamMappingTargetId = 0.f;
+    uint8_t streamMappingIdentifier = 0;
+    uint8_t streamMappingTargetSlot = 0;
+    int idFromName(String name)
+    {
+        auto it = find(paramDestOrder.begin(), paramDestOrder.end(), name);
+        int index = 0;
+          // If element was found
+          if (it != paramDestOrder.end())
+          {
+              
+              // calculating the index
+              // of K
+            index = it - paramDestOrder.begin();
+          }
+        float tempId = index + 2;
+        return tempId;
+    }
+    
+    void setStreamMappingValuesAdd(MappingTargetModel *target, MappingSourceModel* source)
+    {
+        DBG("Stream target " + target->name.substring(0, target->name.length() - 3));
+        DBG("Stream source " + source->name);
+        streamMappingTargetId = idFromName(target->name.substring(0, target->name.length() - 3));
+        streamMappingValue = sourceIds.indexOf(source->name);
+        streamMappingTargetSlot = target->name.getTrailingIntValue();
+        streamMappingIdentifier = 0;
+        streamMapping = true;
+    }
+    
+    void setStreamMappingValuesAddRange(MappingTargetModel *target)
+    {
+        DBG("Stream target " + target->name.substring(0, target->name.length() - 3));
+        streamMappingTargetId = idFromName(target->name.substring(0, target->name.length() - 3));
+     
+        streamMappingTargetSlot = target->name.getTrailingIntValue();
+        //determine range
+        float multiplier = 1.0f;
+        const NormalisableRange<float>& range = vts.getParameter(target->name.substring(0, target->name.length() - 3))->getNormalisableRange();
+        float tempRange = target->end;
+        if (tempRange < 0.0f)
+        {
+            multiplier = -1.0f;
+            tempRange = fabsf(target->end);
+        }
+        tempRange = ((tempRange) / (range.end - range.start));
+        float finalRange = tempRange * multiplier;
+        streamMappingValue = finalRange;
+        streamMappingIdentifier = 1;
+        streamMapping = true;
+        
+    }
+    
+    void setStreamMappingValuesRemove(MappingTargetModel *target)
+    {
+        DBG("Stream target " + target->name.substring(0, target->name.length() - 3));
+        streamMappingTargetId = idFromName(target->name.substring(0, target->name.length() - 3));
+        streamMappingValue = 255;
+        streamMappingTargetSlot = target->name.getTrailingIntValue();
+        streamMappingIdentifier = 0;
+        streamMapping = true;
+    }
+    
+    void setStreamMappingValuesAddScalar(MappingTargetModel* target, MappingSourceModel* source)
+    {
+        DBG("Stream target " + target->name.substring(0, target->name.length() - 3));
+        streamMappingTargetId = idFromName(target->name.substring(0, target->name.length() - 3));
+        streamMappingValue = sourceIds.indexOf(source->name);
+        streamMappingTargetSlot = target->name.getTrailingIntValue();
+        streamMappingIdentifier = 2;
+        streamMapping = true;
+    }
+    
+    void setStreamMappingValuesRemoveScalar(MappingTargetModel* target)
+    {
+        DBG("Stream target " + target->name.substring(0, target->name.length() - 3));
+        streamMappingTargetId = idFromName(target->name.substring(0, target->name.length() - 3));
+        streamMappingValue = 255;
+        streamMappingTargetSlot = target->name.getTrailingIntValue();
+        streamMappingIdentifier = 2;
+        streamMapping = true;
+    }
+
     //==============================================================================
     float editorScale = 1.05f;
     String wavTableFolder;
@@ -170,7 +255,7 @@ public:
     OwnedArray<SmoothedParameter> params;
     
     HashMap<String, MappingSourceModel*> sourceMap;
-    HashMap<String, MappingTargetModel*> targetMap;
+    
     
     struct Mapping
     {
@@ -297,7 +382,7 @@ public:
     }
     void sendOpenStringMidiMessage();
 private:
-    
+    HashMap<String, MappingTargetModel*> targetMap;
     float openStrings[4] = {28, 33, 38, 43};
     String tuningName;
     int tuningNumber;

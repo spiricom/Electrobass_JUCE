@@ -1201,39 +1201,63 @@ void FXModule::comboBoxChanged(ComboBox *comboBox)
 {
     if (comboBox == &fxCB)
     {
+        if (ac.processor.stream)
+        {
+            ac.processor.streamValue1 = (float)fxCB.getSelectedItemIndex()/ (float) FXTypeNames.size();
+            auto it = find(paramDestOrder.begin(), paramDestOrder.end(),comboBox->getName() );
+            int index = 0;
+              // If element was found
+              if (it != paramDestOrder.end())
+              {
+                  
+                  // calculating the index
+                  // of K
+                index = it - paramDestOrder.begin();
+              }
+            float tempId = index + 2;
+            ac.processor.streamID1 = tempId;
+            //button->get
+            DBG("Send: " + comboBox->getName() + " with ID"  + String(tempId) + " and value " + String(ac.processor.streamValue1)/*String(streamValue)*/);
+            ac.processor.streamSend = true;
+        }
         setNamesAndDefaults((FXType)fxCB.getSelectedItemIndex());
         if(fxCB.isVisible())
         {
             for (int i = 0; i < FXParam::Mix; i++)
             {
-                getDial(i)->setValue(FXParamDefaults[(FXType)fxCB.getSelectedItemIndex()][i]);
+                getDial(i)->setValueWithoutNotifyingHost(FXParamDefaults[(FXType)fxCB.getSelectedItemIndex()][i]);
+                if (ac.processor.stream)
+                {
+                    ac.processor.streamValue1 = FXParamDefaults[(FXType)fxCB.getSelectedItemIndex()][i];
+                    auto it = find(paramDestOrder.begin(), paramDestOrder.end(),getDial(i)->getName() );
+                    int index = 0;
+                      // If element was found
+                      if (it != paramDestOrder.end())
+                      {
+                          
+                          // calculating the index
+                          // of K
+                        index = it - paramDestOrder.begin();
+                      }
+                    float tempId = index + 2;
+                    ac.processor.streamID1 = tempId;
+                    //button->get
+                    DBG("Send: " + comboBox->getName() + " with ID"  + String(tempId) + " and value " + String(ac.processor.streamValue1) + getDial(i)->getName()/*String(streamValue)*/);
+                    ac.processor.streamSend = true;
+                }
+                if(ac.processor.streamSend)
+                    while(ac.processor.streamSend);
             }
         }
     }
-    if (ac.processor.stream)
-    {
-        ac.processor.streamValue1 = (float)fxCB.getSelectedItemIndex()/ (float) FXTypeNames.size();
-        auto it = find(paramDestOrder.begin(), paramDestOrder.end(),comboBox->getName() );
-        int index = 0;
-          // If element was found
-          if (it != paramDestOrder.end())
-          {
-              
-              // calculating the index
-              // of K
-            index = it - paramDestOrder.begin();
-          }
-        float tempId = index + 2;
-        ac.processor.streamID1 = tempId;
-        //button->get
-        DBG("Send: " + comboBox->getName() + " with ID"  + String(tempId) + " and value " + String(ac.processor.streamValue1)/*String(streamValue)*/);
-        ac.processor.streamSend = true;
-    }
+    
 //    ElectroModule::comboBoxChanged(comboBox);
 }
 
 void FXModule::setNamesAndDefaults(FXType effect)
 {
+    if (ac.processor.stream)
+        while(ac.processor.streamSend);
     for (int i = 0; i < FXParam::Mix; i++)
     {
         getDial(i)->setText(FXParamNames[effect][i], dontSendNotification);

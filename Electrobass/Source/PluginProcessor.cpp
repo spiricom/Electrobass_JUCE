@@ -386,7 +386,7 @@ prompt("","",AlertWindow::AlertIconType::NoIcon)
     
     for (int i = 0; i < MAX_NUM_VOICES; ++i)
     {
-        tOversampler_init(&os[i], OVERSAMPLE, 1, &leaf);
+        tOversampler_init(&os[i], OVERSAMPLE, 0, &leaf);
     }
     for (int i = 0; i < NUM_FX; i++)
     {
@@ -712,57 +712,89 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         handleMidiMessage(m);
     }
     midiMessages.clear();
-   
-    if(streamSend)
-    {
-        union uintfUnion fu;
-        Array<uint8_t> data7bitInt;
-        data7bitInt.add(3);
-        data7bitInt.add(0);
-        fu.f = (float)streamID1;
-        data7bitInt.add((fu.i >> 28) & 15);
-        data7bitInt.add((fu.i >> 21) & 127);
-        data7bitInt.add((fu.i >> 14) & 127);
-        data7bitInt.add((fu.i >> 7) & 127);
-        data7bitInt.add(fu.i & 127);
-        
-        fu.f = streamValue1;
-        data7bitInt.add((fu.i >> 28) & 15);
-        data7bitInt.add((fu.i >> 21) & 127);
-        data7bitInt.add((fu.i >> 14) & 127);
-        data7bitInt.add((fu.i >> 7) & 127);
-        data7bitInt.add(fu.i & 127);
-        
-        
-        midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
-        data7bitInt.clear();
-        if (streamID2 != 0)
-        {
-            fu.f = (float)streamID2;
-            data7bitInt.add((fu.i >> 28) & 15);
-            data7bitInt.add((fu.i >> 21) & 127);
-            data7bitInt.add((fu.i >> 14) & 127);
-            data7bitInt.add((fu.i >> 7) & 127);
-            data7bitInt.add(fu.i & 127);
-            
-            fu.f = streamValue2;
-            data7bitInt.add((fu.i >> 28) & 15);
-            data7bitInt.add((fu.i >> 21) & 127);
-            data7bitInt.add((fu.i >> 14) & 127);
-            data7bitInt.add((fu.i >> 7) & 127);
-            data7bitInt.add(fu.i & 127);
-            midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
-        }
-        data7bitInt.clear();
-        data7bitInt.add(126);
-        midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
-        streamID1 = 0;
-        streamID2 = 0;
-        streamValue1 = 0.f;
-        streamValue2 = 0.f;
-        streamSend = false;
-        DBG("sent");
-    }
+   if(stream)
+   {
+       if(streamSend)
+       {
+           union uintfUnion fu;
+           Array<uint8_t> data7bitInt;
+           data7bitInt.add(3);
+           data7bitInt.add(0);
+           fu.f = (float)streamID1;
+           data7bitInt.add((fu.i >> 28) & 15);
+           data7bitInt.add((fu.i >> 21) & 127);
+           data7bitInt.add((fu.i >> 14) & 127);
+           data7bitInt.add((fu.i >> 7) & 127);
+           data7bitInt.add(fu.i & 127);
+           
+           fu.f = streamValue1;
+           data7bitInt.add((fu.i >> 28) & 15);
+           data7bitInt.add((fu.i >> 21) & 127);
+           data7bitInt.add((fu.i >> 14) & 127);
+           data7bitInt.add((fu.i >> 7) & 127);
+           data7bitInt.add(fu.i & 127);
+           
+           
+           midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+           data7bitInt.clear();
+           if (streamID2 != 0)
+           {
+               fu.f = (float)streamID2;
+               data7bitInt.add((fu.i >> 28) & 15);
+               data7bitInt.add((fu.i >> 21) & 127);
+               data7bitInt.add((fu.i >> 14) & 127);
+               data7bitInt.add((fu.i >> 7) & 127);
+               data7bitInt.add(fu.i & 127);
+               
+               fu.f = streamValue2;
+               data7bitInt.add((fu.i >> 28) & 15);
+               data7bitInt.add((fu.i >> 21) & 127);
+               data7bitInt.add((fu.i >> 14) & 127);
+               data7bitInt.add((fu.i >> 7) & 127);
+               data7bitInt.add(fu.i & 127);
+               midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+           }
+           data7bitInt.clear();
+           data7bitInt.add(126);
+           midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+           streamID1 = 0;
+           streamID2 = 0;
+           streamValue1 = 0.f;
+           streamValue2 = 0.f;
+           streamSend = false;
+           DBG("sent");
+       }
+       
+       if (streamMapping)
+       {
+           DBG("Streaming Mapping: TargetID" + String(streamMappingTargetId) + "  slot  "  + String(streamMappingTargetSlot) + " type " + String(streamMappingIdentifier) +  " value " + String(streamMappingValue));
+           union uintfUnion fu;
+           Array<uint8_t> data7bitInt;
+           data7bitInt.add(4);
+           data7bitInt.add(0);
+           
+           fu.f = (float)streamMappingTargetId;
+           data7bitInt.add((fu.i >> 28) & 15);
+           data7bitInt.add((fu.i >> 21) & 127);
+           data7bitInt.add((fu.i >> 14) & 127);
+           data7bitInt.add((fu.i >> 7) & 127);
+           data7bitInt.add(fu.i & 127);
+           
+           data7bitInt.add(streamMappingTargetSlot);
+           data7bitInt.add(streamMappingIdentifier);
+           
+           fu.f = (float)streamMappingValue;
+           data7bitInt.add((fu.i >> 28) & 15);
+           data7bitInt.add((fu.i >> 21) & 127);
+           data7bitInt.add((fu.i >> 14) & 127);
+           data7bitInt.add((fu.i >> 7) & 127);
+           data7bitInt.add(fu.i & 127);
+           
+           midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+           data7bitInt.clear();
+           streamMapping = false;
+       }
+   }
     
     if (waitingToSendPreset)
     {

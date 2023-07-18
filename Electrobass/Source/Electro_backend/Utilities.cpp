@@ -276,7 +276,8 @@ void MappingTargetModel::setMapping(MappingSourceModel* source, float e, bool se
         DBG(source->name);
         processor.addToKnobsToSmoothArray(param);
     }
-    
+    if(processor.stream)
+        processor.setStreamMappingValuesAdd(this, source);
     if (onMappingChange != nullptr) onMappingChange(true, sendChangeEvent);
 }
 
@@ -301,7 +302,8 @@ void MappingTargetModel::setMappingRange(float e, bool sendChangeEvent,
         param->setHookRange(index, start, end);
     }
     DBG(String(start) + " " + String(end));
-    
+    if(processor.stream)
+        processor.setStreamMappingValuesAddRange(this);
     if (onMappingChange != nullptr && sendChangeEvent) onMappingChange(directChange, sendListenerNotif);
 }
 
@@ -326,7 +328,8 @@ void MappingTargetModel::setMappingScalar(MappingSourceModel* source, bool sendC
         param->setHookScalar(source->name, index, &sourceArray[i%n]);
         i++;
     }
-    
+    if(processor.stream)
+        processor.setStreamMappingValuesAddScalar(this, source);
     if (onMappingChange != nullptr) onMappingChange(true, sendChangeEvent);
 }
 
@@ -343,7 +346,8 @@ void MappingTargetModel::removeMapping(bool sendChangeEvent)
     {
         param->resetHook(index);
     }
-    
+    if(processor.stream)
+        processor.setStreamMappingValuesRemove(this);
     if (onMappingChange != nullptr) onMappingChange(true, sendChangeEvent);
 }
 
@@ -361,7 +365,8 @@ void MappingTargetModel::removeScalar(bool sendChangeEvent)
     {
         param->resetHookScalar(index);
     }
-    
+    if(processor.stream)
+        processor.setStreamMappingValuesRemoveScalar(this);
     if (onMappingChange != nullptr) onMappingChange(true, sendChangeEvent);
 }
 

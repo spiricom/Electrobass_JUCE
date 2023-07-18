@@ -436,7 +436,9 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     sendOutButton.onClick = [this] { processor.sendPresetMidiMessage(); };
     
     streamChangesButton.setButtonText("Stream Changes");
-    streamChangesButton.onClick = [this] { processor.toggleStream(); };
+    streamChangesButton.onClick = [this] { processor.streamSend = false;
+        processor.streamMapping = false;
+        processor.toggleStream(); };
     
     
     

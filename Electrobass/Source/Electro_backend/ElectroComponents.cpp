@@ -322,6 +322,7 @@ label(displayName, displayName),
 paramName(paramName),
 editor(editor)
 {
+    setName(paramName);
     slider.setSliderStyle(Slider::RotaryVerticalDrag);
     slider.setTextBoxStyle(Slider::NoTextBox, false, 4, 4);
     slider.setRange(0., 1.);
@@ -583,6 +584,11 @@ void ElectroDial::setRange(double newMin, double newMax, double newInt)
 void ElectroDial::setValue(double val)
 {
     slider.setValue(val);
+}
+
+void ElectroDial::setValueWithoutNotifyingHost(double val)
+{
+    slider.setValue(val,dontSendNotification);
 }
 void ElectroDial::setText (const String& newText, NotificationType notification)
 {
