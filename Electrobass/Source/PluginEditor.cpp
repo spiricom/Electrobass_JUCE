@@ -277,10 +277,11 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     
     seriesParallelSlider.setSliderStyle(Slider::SliderStyle::LinearHorizontal);
     seriesParallelSlider.setTextBoxStyle(Slider::TextEntryBoxPosition::NoTextBox, true, 10, 10);
+
     seriesParallelComponent.addAndMakeVisible(seriesParallelSlider);
     sliderAttachments.add(new SliderAttachment(vts, "Filter Series-Parallel Mix",
                                                seriesParallelSlider));
-    
+    seriesParallelSlider.addListener(this);
     seriesLabel.setText("Ser.", dontSendNotification);
     seriesParallelComponent.addAndMakeVisible(seriesLabel);
     
@@ -851,8 +852,9 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
     } else if( processor.stream)
     {
         processor.streamValue1 = slider->getValue();
+        String tempString = slider->getName();
         auto it = find(paramDestOrder.begin(), paramDestOrder.end(), slider->getName());
-        int index = 0;
+        int index = -1;
           // If element was found
           if (it != paramDestOrder.end())
           {
@@ -861,12 +863,14 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
               // of K
             index = it - paramDestOrder.begin();
           }
-        float tempId = index + 2;
-        processor.streamID1 = tempId;
-        //button->get
-        DBG("Send: " + slider->getName() + " with ID"  + String(tempId) + " and value " + String(processor.streamValue1)/*String(streamValue)*/);
-        processor.streamSend = true;
-        
+        if (index != -1) // to avoid sending things not in the dest array (like foot pedals and knee levers)
+        {
+            float tempId = index + 2;
+            processor.streamID1 = tempId;
+            //button->get
+            DBG("Send: " + slider->getName() + " with ID"  + String(tempId) + " and value " + String(processor.streamValue1)/*String(streamValue)*/);
+            processor.streamSend = true;
+        }
     }
       
    

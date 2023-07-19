@@ -148,7 +148,7 @@ void ElectroModule::sliderValueChanged(Slider* slider)
             {
                 float end = slider->getRange().getEnd();
                 float start = slider->getRange().getStart();
-                ac.processor.streamValue1 = (slider->getValue() / ( end - start)) + 0.5;
+                ac.processor.streamValue1 = (slider->getValue() / ( end - start)) + 0.5f;
             } else {
                 ac.processor.streamValue1 = vts.getParameter(slider->getName())->getValue();
             }
@@ -195,7 +195,7 @@ void ElectroModule::buttonClicked(Button* button)
         DBG("Send: " + button->getName() + " with ID"  + String(tempId) + " and value " + String(ac.processor.streamValue1));
         ac.processor.streamSend = true;
     }
-};
+}
             
 void ElectroModule::comboBoxChanged(ComboBox *comboBox){
     if (ac.processor.stream)
@@ -217,7 +217,7 @@ void ElectroModule::comboBoxChanged(ComboBox *comboBox){
         DBG("Send: " + comboBox->getName() + " with ID"  + String(tempId) + " and value " + String(ac.processor.streamValue1)/*String(streamValue)*/);
         ac.processor.streamSend = true;
     }
-};
+}
             
 
 void ElectroModule::setBounds (float x, float y, float w, float h)
@@ -590,7 +590,7 @@ void OscModule::comboBoxChanged(ComboBox *comboBox)
     }
     if (ac.processor.stream)
     {
-        ac.processor.streamValue1 = (float)comboBox->getSelectedItemIndex()/ (float) oscShapeSetNames.size();
+        ac.processor.streamValue1 = (float)comboBox->getSelectedItemIndex()/ ((float) (oscShapeSetNames.size()-1));
         auto it = find(paramDestOrder.begin(), paramDestOrder.end(),comboBox->getName() );
         int index = 0;
           // If element was found
@@ -1030,7 +1030,7 @@ void LFOModule::comboBoxChanged(ComboBox *comboBox)
     }
     if (ac.processor.stream)
     {
-        ac.processor.streamValue1 = (float)comboBox->getSelectedItemIndex()/ (float) lfoShapeSetNames.size();
+        ac.processor.streamValue1 = (float)comboBox->getSelectedItemIndex()/ ((float) (lfoShapeSetNames.size()-1));
         auto it = find(paramDestOrder.begin(), paramDestOrder.end(),comboBox->getName() );
         int index = 0;
           // If element was found
@@ -1214,7 +1214,7 @@ void FXModule::comboBoxChanged(ComboBox *comboBox)
     {
         if (ac.processor.stream)
         {
-            ac.processor.streamValue1 = (float)fxCB.getSelectedItemIndex()/ (float) FXTypeNames.size();
+            ac.processor.streamValue1 = (float)fxCB.getSelectedItemIndex()/ ((float) (FXTypeNames.size()-1));
             auto it = find(paramDestOrder.begin(), paramDestOrder.end(),comboBox->getName() );
             int index = 0;
               // If element was found

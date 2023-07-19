@@ -175,7 +175,7 @@ public:
     {
         if (ac.processor.stream)
         {
-            ac.processor.streamValue1 = (float)comboBox->getSelectedItemIndex()/ (float) filterTypeNames.size();
+            ac.processor.streamValue1 = (float)comboBox->getSelectedItemIndex()/ ((float) (filterTypeNames.size()-1));
             auto it = find(paramDestOrder.begin(), paramDestOrder.end(),comboBox->getName() );
             int index = 0;
               // If element was found
