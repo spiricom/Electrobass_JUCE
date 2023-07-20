@@ -691,7 +691,7 @@ void ElectroAudioProcessorEditor::resized()
     }
     muteToggle.setBounds(stringActivityButtons[5]->getRight(), stringActivityButtons[5]->getY(), 4 * align, 18*s);
    
-    pedalControlsMasterToggle.setBounds(stringActivityButtons[10]->getRight(), stringActivityButtons[10]->getY(),1.5f align,18*s);
+    pedalControlsMasterToggle.setBounds(stringActivityButtons[10]->getRight(), stringActivityButtons[10]->getY(),1.5f *align,18*s);
     mpeToggle.setBounds(pedalControlsMasterToggle.getRight(), pedalControlsMasterToggle.getY(),4 * align, 18*s );
     //OSCILLOSCOPE.get
     //    keyboard.setBoundsRelative(0.f, 0.86f, 1.0f, 0.14f);
@@ -801,7 +801,7 @@ void ElectroAudioProcessorEditor::resized()
   
     // TAB5
     
-    copedentTable.setBoundsRelative(0.02f, 0.04f, 0.8f, 0.8f);
+    copedentTable.setBoundsRelative(0.02f, 0.04f, 0.9f, 0.9f);
     
    
 }
@@ -893,9 +893,9 @@ void ElectroAudioProcessorEditor::buttonClicked(Button* button)
         if (tb == &pedalControlsMasterToggle)
         {
             processor.pedalControlsMaster =pedalControlsMasterToggle.getToggleState();
-            if (ac.processor.stream)
+            if (processor.stream)
             {
-                ac.processor.streamValue1 = vts.getParameter(button->getName())->getValue();
+                processor.streamValue1 = vts.getParameter(button->getName())->getValue();
                 auto it = find(paramDestOrder.begin(), paramDestOrder.end(),button->getName() );
                 int index = 0;
                   // If element was found
@@ -907,10 +907,10 @@ void ElectroAudioProcessorEditor::buttonClicked(Button* button)
                     index = it - paramDestOrder.begin();
                   }
                 float tempId = index + 2;
-                ac.processor.streamID1 = tempId;
+                processor.streamID1 = tempId;
                 //button->get
-                DBG("Send: " + button->getName() + " with ID"  + String(tempId) + " and value " + String(ac.processor.streamValue1));
-               ac.processor.streamSend = true;
+                DBG("Send: " + button->getName() + " with ID"  + String(tempId) + " and value " + String(processor.streamValue1));
+               processor.streamSend = true;
             }
         }
     }

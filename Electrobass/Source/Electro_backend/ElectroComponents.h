@@ -599,10 +599,17 @@ public:
         addAndMakeVisible(clearButton);
         clearButton.setButtonText("Clear");
         clearButton.onClick = [this] {
-            for (auto table : copedentArray)
+            for (int i = 0; i < CopedentColumnNil; ++i)
             {
-                table.clear();
+                for (int v = 0; v < MAX_NUM_VOICES; ++v)
+                {
+                    copedentArray.getReference(i).set(v, cCopedentArrayInit[i][v]);
+                    //refreshComponentForCell(i,v, false, nullptr);
+                }
             }
+            fundamental = 21.f;
+            resized();
+            
         };
     }
     TextButton clearButton;
@@ -942,7 +949,7 @@ public:
         numberLabel.setBounds(upperBottomArea.removeFromRight(w*0.7).reduced(0.f, h*0.01f));
         
         sendOutButton.setBounds(bottomArea.removeFromRight(w*8));
-        clearButton.setBounds(sendOutButton.getRight(), sendOutButton.getY(), sendOutButton.getWidth()/4, sendOutButton.getHeight());
+        clearButton.setBounds(sendOutButton.getRight() + 40, sendOutButton.getY(), sendOutButton.getWidth()/4, sendOutButton.getHeight());
         stringTable.setBounds(area.removeFromLeft(w*2+r));
         area.removeFromLeft(w);
         leftTable.setBounds(area.removeFromLeft(w*6));
