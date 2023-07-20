@@ -556,6 +556,7 @@ private:
                         {
                             editor->updateMPEToggle(true);
                             editor->updateNumVoicesSlider(10);
+                            
                         }
                     }
                 }
