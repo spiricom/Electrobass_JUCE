@@ -596,8 +596,16 @@ public:
         sendOutButton.setButtonText("Send copedent via MIDI");
         sendOutButton.onClick = [this] { processor.sendCopedentMidiMessage(); };
         addAndMakeVisible(sendOutButton);
+        addAndMakeVisible(clearButton);
+        clearButton.setButtonText("Clear");
+        clearButton.onClick = [this] {
+            for (auto table : copedentArray)
+            {
+                table.clear();
+            }
+        };
     }
-    
+    TextButton clearButton;
     ~CopedentTable()
     {
         stringTable.setLookAndFeel(nullptr);
@@ -934,7 +942,7 @@ public:
         numberLabel.setBounds(upperBottomArea.removeFromRight(w*0.7).reduced(0.f, h*0.01f));
         
         sendOutButton.setBounds(bottomArea.removeFromRight(w*8));
-
+        clearButton.setBounds(sendOutButton.getRight(), sendOutButton.getY(), sendOutButton.getWidth()/4, sendOutButton.getHeight());
         stringTable.setBounds(area.removeFromLeft(w*2+r));
         area.removeFromLeft(w);
         leftTable.setBounds(area.removeFromLeft(w*6));

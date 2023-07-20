@@ -2318,17 +2318,31 @@ void ElectroAudioProcessor::setStateEBP(const void *data, int sizeInBytes, int p
         uint8_t sourceNumber = newData[bufferIndex++];
         uint8_t destNumber = newData[bufferIndex++]-2;
         uint8_t scalarNumber = newData[bufferIndex++];
+        uint8_t slotIndex;
+        
         a = newData[bufferIndex+1];
         b = (newData[bufferIndex]);
         bufferIndex += 2;
         float amount = (INV_TWO_TO_15 * ((b << 8) + a));
+        if (presetVersionNumber != 0)
+        {
+            slotIndex = newData[bufferIndex++];
+        }
         DBG(String(i) + " " + String(amount) + " " + String(sourceNumber) + " " + String(destNumber) + " ");
         DBG(i);
         DBG("mapping destination" + paramDestOrder.at(destNumber));
         DBG("mapping source" + paramSourceOrder.at(sourceNumber));
         DBG("destination T" + String(destNumberToT[destNumber]));
+        DBG(" slotindex" + String(slotIndex));
         MappingSourceModel* source = sourceMap[paramSourceOrder.at(sourceNumber)];
-        MappingTargetModel* target = targetMap[paramDestOrder.at(destNumber) + " T" + String(destNumberToT[destNumber]++ +1)];
+        if (presetVersionNumber != 0)
+        {
+            MappingTargetModel* target = targetMap[paramDestOrder.at(destNumber) + " T" + String(slotIndex)];
+        }
+        else
+        {
+            MappingTargetModel* target = targetMap[paramDestOrder.at(destNumber) + " T" + String(destNumberToT[destNumber]++ +1)];
+        }
         target->setMapping(source, amount, false);
       }
 

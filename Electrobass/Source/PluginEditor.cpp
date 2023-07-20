@@ -415,14 +415,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     //==============================================================================
     
     
-    // TAB5 ========================================================================
-//    addAndMakeVisible(tab5);
-//    copedentTable.setBoundsRelative(0.02f, 0.04f, 0.45f, 0.55f);
-//    mpeToggle.setBoundsRelative(0.02f, 0.6f, 0.2f, 0.2f);
-//    mpeToggle.setButtonText("MPE mode");
-//    tab5.addAndMakeVisible(copedentTable);
-//    mpeToggle.addListener(this);
-//    tab5.addAndMakeVisible(mpeToggle);
+
 
 
     
@@ -437,20 +430,18 @@ chooser("Select a .wav file to load...", {}, "*.wav")
    
     tabs.getTabbedButtonBar().getTabButton(2)->addListener(this);
   
-#ifdef EBASS
+
     tabs.addTab("Tuning", Colours::black, &tab3, false);
     tabs.getTabbedButtonBar().getTabButton(3)->addListener(this);
-#endif
-    
-#ifdef ESTEEL
+
+
     addAndMakeVisible(tab5);
     mpeToggle.setButtonText("MPE mode");
     tab5.addAndMakeVisible(copedentTable);
     mpeToggle.addListener(this);
-    tab5.addAndMakeVisible(mpeToggle);
+    tab1.addAndMakeVisible(mpeToggle);
     tabs.addTab("Copedent", Colours::black, &tab5, false);
-    tabs.getTabbedButtonBar().getTabButton(3)->addListener(this);
-#endif
+    tabs.getTabbedButtonBar().getTabButton(4)->addListener(this);
     addAndMakeVisible(&tabs);
    
     
@@ -671,8 +662,7 @@ void ElectroAudioProcessorEditor::resized()
     int r = (10*align) % 12;
     int w = (10*align) / 12;
     y = height-35*s+2;//
-    //mpeToggle.setBounds(6*s, y, x-w-5*s, 35*s); //EBSPECIFIC
-    //pitchBendSliders[0]->setBounds(0, midiKeyComponent.getBottom()-1, x, 27*s);
+    
     stringActivityButtons[0]->setBounds(0, y, w, 35*s);
     pitchBendSliders[0]->setBounds(0,
                                    midiKeyComponent.getBottom()-1,
@@ -700,8 +690,10 @@ void ElectroAudioProcessorEditor::resized()
                                             4 * align/12, 18*s);
     }
     muteToggle.setBounds(stringActivityButtons[5]->getRight(), stringActivityButtons[5]->getY(), 4 * align, 18*s);
+   
+    pedalControlsMasterToggle.setBounds(stringActivityButtons[10]->getRight(), stringActivityButtons[10]->getY(),1.5f align,18*s);
+    mpeToggle.setBounds(pedalControlsMasterToggle.getRight(), pedalControlsMasterToggle.getY(),4 * align, 18*s );
     //OSCILLOSCOPE.get
-    pedalControlsMasterToggle.setBounds(stringActivityButtons[10]->getRight(), stringActivityButtons[10]->getY(),4 * align,18*s);
     //    keyboard.setBoundsRelative(0.f, 0.86f, 1.0f, 0.14f);
     //    keyboard.setKeyWidth(width / 52.0f);
     
@@ -780,7 +772,7 @@ void ElectroAudioProcessorEditor::resized()
     presetNumberlabel.setBounds(presetNumber.getX()-  width*0.05f+2, -1,width*0.05f+2, tabs.getTabBarDepth()/2);
     presetNameEditor.setBounds(presetNumberlabel.getX() - presetNumberlabel.getWidth() -10, -1, width*0.06f+2, tabs.getTabBarDepth());
     presetNamelabel.setBounds(presetNameEditor.getX() - presetNameEditor.getWidth()/2 - 10, -1,width*0.05f+2, tabs.getTabBarDepth() /2);
-    int logoLeft = tabs.getTabbedButtonBar().getTabButton(3)->getRight() + 60*s;
+    int logoLeft = tabs.getTabbedButtonBar().getTabButton(4)->getRight();
     Rectangle<float> logoArea (logoLeft, 0, 98*s, tabs.getTabBarDepth());
     logo->setTransformToFit (logoArea,
                              RectanglePlacement::xLeft +
@@ -810,7 +802,7 @@ void ElectroAudioProcessorEditor::resized()
     // TAB5
     
     copedentTable.setBoundsRelative(0.02f, 0.04f, 0.8f, 0.8f);
-    mpeToggle.setBoundsRelative(0.02f, 0.9f, 0.2f, 0.1f);
+    
    
 }
 
@@ -901,6 +893,25 @@ void ElectroAudioProcessorEditor::buttonClicked(Button* button)
         if (tb == &pedalControlsMasterToggle)
         {
             processor.pedalControlsMaster =pedalControlsMasterToggle.getToggleState();
+            if (ac.processor.stream)
+            {
+                ac.processor.streamValue1 = vts.getParameter(button->getName())->getValue();
+                auto it = find(paramDestOrder.begin(), paramDestOrder.end(),button->getName() );
+                int index = 0;
+                  // If element was found
+                  if (it != paramDestOrder.end())
+                  {
+                      
+                      // calculating the index
+                      // of K
+                    index = it - paramDestOrder.begin();
+                  }
+                float tempId = index + 2;
+                ac.processor.streamID1 = tempId;
+                //button->get
+                DBG("Send: " + button->getName() + " with ID"  + String(tempId) + " and value " + String(ac.processor.streamValue1));
+               ac.processor.streamSend = true;
+            }
         }
     }
     
@@ -927,7 +938,7 @@ void ElectroAudioProcessorEditor::buttonClicked(Button* button)
     }
     else if (button == tabs.getTabbedButtonBar().getTabButton(4))
     {
-        tab5.addAndMakeVisible(mpeToggle);
+        //tab5.addAndMakeVisible(mpeToggle);
     }
 }
 
