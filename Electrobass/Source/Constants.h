@@ -321,7 +321,7 @@ static const std::vector<std::string> cCopedentColumnNames = {
 };
 
 static const std::vector<std::vector<float>> cCopedentArrayInit = {
-    { 66.f, 63.f, 56.f, 52.f, 47.f, 44.f, 42.f, 40.f, 35.f, 32.f, 28.f, 23.f },
+    { 66.f, 63.f, 56.f, 52.f, 47.f, 44.f, 42.f, 40.f, 38.f, 35.f, 28.f, 23.f },
     
     { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f },
     { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f },
@@ -666,11 +666,11 @@ static const std::vector<String> paramSourceOrder
     "F3",//0
     "F4",//0
     "F5",//0
-    "cLKL",//0
-    "cLKV",//0
-    "cLKR",//0
-    "cRKL",//0
-    "cRKR"//0
+    "K1",//0
+    "K2",//0
+    "K3",//0
+    "K4",//0
+    "K5"//0
 };
 //enum ParamNames
 //{
