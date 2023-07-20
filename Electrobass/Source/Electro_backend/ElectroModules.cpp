@@ -1164,7 +1164,6 @@ ElectroModule(editor, vts, ac, 0.07f, 0.22f, 0.07f, 0.07f, 0.78f)
     fxPostButton.setClickingTogglesState(true);
     //addAndMakeVisible(fxPreButton);
     addAndMakeVisible(fxPostButton);
-    
     addAndMakeVisible(fxPreButton);
     fxPreButton.onClick = [this] {updateFXOrder(&fxPreButton);};
     fxPostButton.onClick = [this] {updateFXOrder(&fxPostButton);};
@@ -1181,10 +1180,30 @@ void OutputModule::updateFXOrder(TextButton *button)
     if(button == &fxPreButton)
     {
         vts.getParameter("FX Order")->setValueNotifyingHost(!button->getToggleState());
+        
     }
     else if(button == &fxPostButton)
     {
         vts.getParameter("FX Order")->setValueNotifyingHost(button->getToggleState());
+    }
+    if (ac.processor.stream)
+    {
+        ac.processor.streamValue1 = vts.getParameter("FX Order")->getValue();
+        auto it = find(paramDestOrder.begin(), paramDestOrder.end(), "FX Order");
+        int index = 0;
+          // If element was found
+          if (it != paramDestOrder.end())
+          {
+              
+              // calculating the index
+              // of K
+            index = it - paramDestOrder.begin();
+          }
+        float tempId = index + 2;
+        ac.processor.streamID1 = tempId;
+        //button->get
+        DBG("Send:  FXORder with ID"  + String(tempId) + " and value " + String(ac.processor.streamValue1));
+       ac.processor.streamSend = true;
     }
 }
 

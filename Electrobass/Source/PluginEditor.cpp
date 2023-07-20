@@ -249,6 +249,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     muteToggle.addListener(this);
     pedalControlsMasterToggle.setButtonText("Pedal Volume Control");
     pedalControlsMasterToggle.addListener(this);
+      
     buttonAttachments.add(new ButtonAttachment(vts, "PedalControlsMaster", pedalControlsMasterToggle));
     pedalControlsMasterToggle.setName("PedalControlsMaster");
     tab1.addAndMakeVisible(muteToggle);
