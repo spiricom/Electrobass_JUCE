@@ -796,6 +796,8 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
            
            midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
            data7bitInt.clear();
+           data7bitInt.add(126);
+           midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
            streamMapping = false;
        }
    }
@@ -841,7 +843,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         int mapCount = 0;
         // Mappings
         DBG("Mappings");
-        DBG("Name: sourceparamid, targetparamaid, scalarsource, range ");
+        DBG("Name: sourceparamid, targetparamaid, scalarsource, range, slot#");
         for (auto id : paramDestOrder)
         {
             for (int t = 0; t < 3; ++t)
@@ -884,7 +886,9 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
                         }
                         tempRange = ((tempRange) / (range.end - range.start));
                         tempData.add(tempRange * multiplier);//Mapping range length
-                        DBG(tn +": " + String(sourceIds.indexOf(source->name))+ ", " + String(tempId)+", " + String(scalarsource)+ ", " +String(tempRange * multiplier));
+                        tempData.add(t);//Mapping slot
+                        DBG(tn +": " + String(sourceIds.indexOf(source->name))+ ", " + String(tempId)+", " + String(scalarsource)+ ", " +String(tempRange * multiplier)+
+                            ", " +String(t));
                         mapCount++;
                     }
                 }

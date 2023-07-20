@@ -150,7 +150,7 @@ public:
         DBG("Stream source " + source->name);
         streamMappingTargetId = idFromName(target->name.substring(0, target->name.length() - 3));
         streamMappingValue = sourceIds.indexOf(source->name);
-        streamMappingTargetSlot = target->name.getTrailingIntValue();
+        streamMappingTargetSlot = target->name.getTrailingIntValue()-1;
         streamMappingIdentifier = 0;
         streamMapping = true;
     }
@@ -160,7 +160,7 @@ public:
         DBG("Stream target " + target->name.substring(0, target->name.length() - 3));
         streamMappingTargetId = idFromName(target->name.substring(0, target->name.length() - 3));
      
-        streamMappingTargetSlot = target->name.getTrailingIntValue();
+        streamMappingTargetSlot = target->name.getTrailingIntValue()-1;
         //determine range
         float multiplier = 1.0f;
         const NormalisableRange<float>& range = vts.getParameter(target->name.substring(0, target->name.length() - 3))->getNormalisableRange();
@@ -183,7 +183,7 @@ public:
         DBG("Stream target " + target->name.substring(0, target->name.length() - 3));
         streamMappingTargetId = idFromName(target->name.substring(0, target->name.length() - 3));
         streamMappingValue = 255;
-        streamMappingTargetSlot = target->name.getTrailingIntValue();
+        streamMappingTargetSlot = target->name.getTrailingIntValue()-1;
         streamMappingIdentifier = 0;
         streamMapping = true;
     }
@@ -193,7 +193,7 @@ public:
         DBG("Stream target " + target->name.substring(0, target->name.length() - 3));
         streamMappingTargetId = idFromName(target->name.substring(0, target->name.length() - 3));
         streamMappingValue = sourceIds.indexOf(source->name);
-        streamMappingTargetSlot = target->name.getTrailingIntValue();
+        streamMappingTargetSlot = target->name.getTrailingIntValue()-1;
         streamMappingIdentifier = 2;
         streamMapping = true;
     }
@@ -203,7 +203,7 @@ public:
         DBG("Stream target " + target->name.substring(0, target->name.length() - 3));
         streamMappingTargetId = idFromName(target->name.substring(0, target->name.length() - 3));
         streamMappingValue = 255;
-        streamMappingTargetSlot = target->name.getTrailingIntValue();
+        streamMappingTargetSlot = target->name.getTrailingIntValue()-1;
         streamMappingIdentifier = 2;
         streamMapping = true;
     }

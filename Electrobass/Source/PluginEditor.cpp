@@ -852,7 +852,7 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
     } else if( processor.stream)
     {
         processor.streamValue1 = slider->getValue();
-        String tempString = slider->getName();
+       String tempString = slider->getName();
         auto it = find(paramDestOrder.begin(), paramDestOrder.end(), slider->getName());
         int index = -1;
           // If element was found
