@@ -250,6 +250,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     pedalControlsMasterToggle.setButtonText("Pedal Volume Control");
     pedalControlsMasterToggle.addListener(this);
     buttonAttachments.add(new ButtonAttachment(vts, "PedalControlsMaster", pedalControlsMasterToggle));
+    pedalControlsMasterToggle.setName("PedalControlsMaster");
     tab1.addAndMakeVisible(muteToggle);
     tab1.addAndMakeVisible(pedalControlsMasterToggle);
     keyboard.setAvailableRange(21, 108);
@@ -863,7 +864,7 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
             processor.streamID1 = tempId;
             //button->get
             DBG("Send: " + slider->getName() + " with ID"  + String(tempId) + " and value " + String(processor.streamValue1)/*String(streamValue)*/);
-            //processor.streamSend = true;
+            processor.streamSend = true;
         }
     }
       
