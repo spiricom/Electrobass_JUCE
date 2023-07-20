@@ -144,14 +144,22 @@ void ElectroModule::sliderValueChanged(Slider* slider)
 //                     ac.getParameterArray(j).getFirst()->getRange().convertTo0to1(slider->getValue());
 //                }
 //            }
-            if(slider->getName().substring(5) == "Harmonics" || slider->getName().substring(5) == "Pitch")
+//            if(slider->getName().substring(5) == "Harmonics" || slider->getName().substring(5) == "Pitch")
+//            {
+//                float end = slider->getRange().getEnd();
+//                float start = slider->getRange().getStart();
+//                ac.processor.streamValue1 = (slider->getValue() / ( end - start)) + 0.5f;
+//            } else {
+//                ac.processor.streamValue1 = vts.getParameter(slider->getName())->getValue();
+//            }
+            float end = slider->getRange().getEnd();
+            float start = slider->getRange().getStart();
+            float val = (slider->getValue() / ( end - start));
+            if ( start < 0.f )
             {
-                float end = slider->getRange().getEnd();
-                float start = slider->getRange().getStart();
-                ac.processor.streamValue1 = (slider->getValue() / ( end - start)) + 0.5f;
-            } else {
-                ac.processor.streamValue1 = vts.getParameter(slider->getName())->getValue();
+                val += 0.5f;
             }
+            ac.processor.streamValue1 = val;
             auto it = find(paramDestOrder.begin(), paramDestOrder.end(),slider->getName() );
             int index = 0;
               // If element was found
@@ -167,7 +175,7 @@ void ElectroModule::sliderValueChanged(Slider* slider)
             DBG("Send: " + slider->getName() +
                 "with id" + String(tempId) +
                 " as " + String(ac.processor.streamValue1) );
-            ac.processor.streamSend = true;
+           ac.processor.streamSend = true;
         }
             
     }
@@ -193,7 +201,7 @@ void ElectroModule::buttonClicked(Button* button)
         ac.processor.streamID1 = tempId;
         //button->get
         DBG("Send: " + button->getName() + " with ID"  + String(tempId) + " and value " + String(ac.processor.streamValue1));
-        ac.processor.streamSend = true;
+       ac.processor.streamSend = true;
     }
 }
             
@@ -330,7 +338,8 @@ chooser(nullptr)
     
     addAndMakeVisible(sendSlider);
     sliderAttachments.add(new SliderAttachment(vts, ac.getName() + " FilterSend", sendSlider));
-    
+    sendSlider.setName(ac.getName() + " FilterSend");
+    sendSlider.addListener(this);
     f1Label.setText("F1", dontSendNotification);
     f1Label.setJustificationType(Justification::bottomRight);
     addAndMakeVisible(f1Label);
@@ -416,10 +425,40 @@ void OscModule::sliderValueChanged(Slider* slider)
 //        dynamic_cast<ElectroDial*>(mt->getParentComponent())->sliderValueChanged(slider);
 //        displayPitchMapping(mt);
 //    }
-    
-    ElectroModule::sliderValueChanged(slider);
-    //ElectroModule.sliderValueChanged(slider);
+    if (ac.processor.stream)
+    {
+        float end = slider->getRange().getEnd();
+        float start = slider->getRange().getStart();
+        float val = (slider->getValue() / ( end - start));
+        if ( start < 0.f )
+        {
+            val += 0.5f;
+        }
+        ac.processor.streamValue1 = val;
+        auto it = find(paramDestOrder.begin(), paramDestOrder.end(),slider->getName() );
+        int index = 0;
+          // If element was found
+          if (it != paramDestOrder.end())
+          {
+              
+              // calculating the index
+              // of K
+            index = it - paramDestOrder.begin();
+          }
+        float tempId = index + 2;
+        ac.processor.streamID1 = tempId;
+        DBG("Send: " + slider->getName() +
+            "with id" + String(tempId) +
+            " as " + String(ac.processor.streamValue1) );
+        ac.processor.streamSend = true;
+        if (labelTextChange)
+            ac.processor.streamSend = true;
+    }
+        
 }
+    //ElectroModule::sliderValueChanged(slider);
+    //ElectroModule.sliderValueChanged(slider);
+
 
 void OscModule::buttonClicked(Button* button)
 {
@@ -487,23 +526,27 @@ void OscModule::buttonClicked(Button* button)
 }
 void OscModule::labelTextChanged(Label* label)
 {
+    if (ac.processor.stream)
+    {
+        labelTextChange = true;
+    }
     if (label == &pitchLabel)
     {
         auto value = pitchLabel.getText().getDoubleValue();
         int i = (int)value;
         double f = value-i;
         //getDial(OscPitch)->getSlider().setValue(i, sendNotificationAsync);
-        getDial(OscFine)->getSlider().setValue(f*100.0f, sendNotificationAsync);
+        getDial(OscFine)->getSlider().setValue(f*100.0f, sendNotificationSync);
     }
     else if (label == &freqLabel)
     {
         auto value = freqLabel.getText().getDoubleValue();
-        getDial(OscFreq)->getSlider().setValue(value, sendNotificationAsync);
+        getDial(OscFreq)->getSlider().setValue(value, sendNotificationSync);
     }
     else if (label == &harmonicsLabel)
     {
         auto value = harmonicsLabel.getText().getDoubleValue();
-        getDial(OscHarm)->getSlider().setValue(value, sendNotificationAsync);
+        getDial(OscHarm)->getSlider().setValue(value, sendNotificationSync);
     }
     
 }
@@ -780,7 +823,8 @@ ElectroModule(editor, vts, ac, 0.01f, 0.2f, 0.02f, 0.18f, 0.8f)
     sendSlider.setTextBoxStyle(Slider::TextEntryBoxPosition::NoTextBox, false, 10, 10);
     addAndMakeVisible(sendSlider);
     sliderAttachments.add(new SliderAttachment(vts, ac.getName() + " FilterSend", sendSlider));
-    
+    sendSlider.addListener(this);
+    sendSlider.setName(ac.getName() + " FilterSend");
     f1Label.setText("F1", dontSendNotification);
     f1Label.setJustificationType(Justification::bottomRight);
     addAndMakeVisible(f1Label);

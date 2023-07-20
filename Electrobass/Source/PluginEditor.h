@@ -34,6 +34,7 @@ class ElectroAudioProcessorEditor : public AudioProcessorEditor,
                                public DragAndDropContainer,
                                public sd::SoundMeter::MetersComponent::FadersChangeListener,
                                public ValueTree::Listener
+                              
 
 {
 public:

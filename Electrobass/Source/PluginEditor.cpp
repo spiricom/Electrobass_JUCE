@@ -29,6 +29,7 @@ resizer(new ResizableCornerComponent (this, constrain.get())),
 chooser("Select a .wav file to load...", {}, "*.wav")
 
 {
+    addMouseListener(this, true);
     white_circle_image = Drawable::createFromImageData(BinaryData::White_Circle_svg_png,
                                                        BinaryData::White_Circle_svg_pngSize);
     vts.state.addListener(this);
@@ -168,10 +169,11 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     transposeLabel.setText("Transpose", dontSendNotification);
     transposeLabel.setJustificationType(Justification::centred);
     tab1.addAndMakeVisible(transposeLabel);
-    
+    transposeSlider.setName("Transpose");
     transposeSlider.setSliderStyle(Slider::SliderStyle::LinearBarVertical);
     transposeSlider.setSliderSnapsToMousePosition(false);
     transposeSlider.setMouseDragSensitivity(400);
+    transposeSlider.addListener(this);
     transposeSlider.setColour(Slider::backgroundColourId, Colours::darkgrey.withBrightness(0.2f));
     transposeSlider.setColour(Slider::textBoxOutlineColourId, Colours::transparentBlack);
     transposeSlider.setColour(Slider::textBoxTextColourId, Colours::gold.withBrightness(0.95f));
@@ -277,7 +279,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     
     seriesParallelSlider.setSliderStyle(Slider::SliderStyle::LinearHorizontal);
     seriesParallelSlider.setTextBoxStyle(Slider::TextEntryBoxPosition::NoTextBox, true, 10, 10);
-
+    seriesParallelSlider.setName("Filter Series-Parallel Mix");
     seriesParallelComponent.addAndMakeVisible(seriesParallelSlider);
     sliderAttachments.add(new SliderAttachment(vts, "Filter Series-Parallel Mix",
                                                seriesParallelSlider));
@@ -826,7 +828,7 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
             processor.streamID2 = 1;
             processor.streamValue1 = midiKeyRangeSlider.getMinValue();
             processor.streamValue2 = midiKeyRangeSlider.getMaxValue();
-            processor.streamSend = true;
+            //processor.streamSend = true;
         }
     }
     else if (slider == &numVoicesSlider)
@@ -869,7 +871,7 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
             processor.streamID1 = tempId;
             //button->get
             DBG("Send: " + slider->getName() + " with ID"  + String(tempId) + " and value " + String(processor.streamValue1)/*String(streamValue)*/);
-            processor.streamSend = true;
+            //processor.streamSend = true;
         }
     }
       
@@ -970,6 +972,8 @@ void ElectroAudioProcessorEditor::mouseDown (const MouseEvent &event)
         startDragging(ms->getName(), ms);
     }
 }
+
+
 
 bool ElectroAudioProcessorEditor::keyPressed (const KeyPress &key, Component *originatingComponent)
 {
