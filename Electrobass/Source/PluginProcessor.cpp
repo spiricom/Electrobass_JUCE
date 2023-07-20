@@ -761,12 +761,13 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
            data7bitInt.clear();
            data7bitInt.add(126);
            midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
-           streamID1 = 0;
-           streamID2 = 0;
-           streamValue1 = 0.f;
-           streamValue2 = 0.f;
+           DBG("sent ID " +  String(streamID1) + " with value" +  String(streamValue1));
+           streamID1 = -1;
+           streamID2 = -1;
+           streamValue1 = -2.f;
+           streamValue2 = -2.f;
            streamSend = false;
-           DBG("sent");
+           
        }
        
        if (streamMapping)

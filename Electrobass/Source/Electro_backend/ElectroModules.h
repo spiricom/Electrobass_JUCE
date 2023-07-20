@@ -113,6 +113,8 @@ public:
     void displayPitchMapping(MappingTarget* mt);
     
 private:
+    bool labelTextChange = false;
+    
     Label harmonicsLabel;
     TextButton pitchDialToggle;
     TextButton steppedToggle;
