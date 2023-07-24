@@ -591,6 +591,11 @@ void ElectroDial::setValueWithoutNotifyingHost(double val)
 {
     slider.setValue(val,dontSendNotification);
 }
+
+void ElectroDial::setValueNotif(double val, NotificationType notif)
+{
+    slider.setValue(val,notif);
+}
 void ElectroDial::setText (const String& newText, NotificationType notification)
 {
     label.setText(newText, notification);

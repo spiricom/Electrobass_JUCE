@@ -131,6 +131,7 @@ public:
     
     void setRange(double newMin, double newMax, double newInt);
     void setValue(double val);
+    void setValueNotif(double val, NotificationType notification);
     void setValueWithoutNotifyingHost(double val);
     void setText (const String& newText, NotificationType notification);
     void setFont (const Font& newFont);

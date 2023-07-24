@@ -1253,9 +1253,10 @@ void FXModule::comboBoxChanged(ComboBox *comboBox)
         {
             for (int i = 0; i < FXParam::Mix; i++)
             {
-                getDial(i)->setValueWithoutNotifyingHost(FXParamDefaults[(FXType)fxCB.getSelectedItemIndex()][i]);
+                getDial(i)->setValueNotif(FXParamDefaults[(FXType)fxCB.getSelectedItemIndex()][i], sendNotificationSync);
                 if (ac.processor.stream)
                 {
+                    getDial(i)->setValueWithoutNotifyingHost(FXParamDefaults[(FXType)fxCB.getSelectedItemIndex()][i]);
                     ac.processor.streamValue1 = FXParamDefaults[(FXType)fxCB.getSelectedItemIndex()][i];
                     auto it = find(paramDestOrder.begin(), paramDestOrder.end(),getDial(i)->getName() );
                     int index = 0;

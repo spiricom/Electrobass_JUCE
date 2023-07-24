@@ -932,11 +932,11 @@ void ElectroAudioProcessorEditor::buttonClicked(Button* button)
     }
     else if (button == tabs.getTabbedButtonBar().getTabButton(2))
     {
-        
+        tab4.addAndMakeVisible(OSCILLOSCOPE);
     }
     else if (button == tabs.getTabbedButtonBar().getTabButton(3))
     {
-        tab4.addAndMakeVisible(OSCILLOSCOPE);
+        
     }
     else if (button == tabs.getTabbedButtonBar().getTabButton(4))
     {
