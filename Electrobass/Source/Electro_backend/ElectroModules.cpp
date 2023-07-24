@@ -115,14 +115,24 @@ void ElectroModule::sliderValueChanged(Slider* slider)
     {
         if (ac.processor.stream)
         {
-
-            float end = slider->getRange().getEnd();
-            float start = slider->getRange().getStart();
-            float val = (slider->getValue() / ( end - start));
-            if ( start < 0.f )
+            float val;
+            if (slider->getName().substring(10) != "Decay" && slider->getName().substring(5) != "Rate" && slider->getName().substring(10) != "Attack" && slider->getName().substring(10) != "Release" && slider->getName().substring(8) != "Resonance")
             {
-                val += 0.5f;
+                float end = slider->getRange().getEnd();
+                float start = slider->getRange().getStart();
+                val = (slider->getValue() / ( end - start));
+                if ( start < 0.f )
+                {
+                    val += 0.5f;
+                }
             }
+            else
+            {
+                DBG("unsym");
+                val = vts.getParameter(slider->getName())->getValue();
+            }
+                
+            
             ac.processor.streamValue1 = val;
             auto it = find(paramDestOrder.begin(), paramDestOrder.end(),slider->getName() );
             int index = 0;
