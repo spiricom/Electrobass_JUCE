@@ -133,7 +133,7 @@ void Envelope::tick()
         
         
 
-        float value = tADSRT_tick(&envs[v]);
+        float value = tADSRT_tickNoInterp(&envs[v]);
         
         source[v] = value;
         if (isAmpEnv)
@@ -142,7 +142,7 @@ void Envelope::tick()
                 {
                     if (envs[v]->whichStage == env_idle)
                     {
-                        tSimplePoly_deactivateVoice(&processor.strings[0], v);
+                        tSimplePoly_deactivateVoice(&processor.strings[0], (uint8_t) v);
                         processor.voiceIsSounding[v] = false;
                     }
                 }

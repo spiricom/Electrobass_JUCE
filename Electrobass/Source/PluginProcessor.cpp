@@ -731,7 +731,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
            data7bitInt.add((fu.i >> 7) & 127);
            data7bitInt.add(fu.i & 127);
            
-           fu.f = streamValue1;
+           fu.f = LEAF_clip(0.0f, streamValue1, 1.0f);
            data7bitInt.add((fu.i >> 28) & 15);
            data7bitInt.add((fu.i >> 21) & 127);
            data7bitInt.add((fu.i >> 14) & 127);
@@ -750,7 +750,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
                data7bitInt.add((fu.i >> 7) & 127);
                data7bitInt.add(fu.i & 127);
                
-               fu.f = streamValue2;
+               fu.f = LEAF_clip(0.0f, streamValue2, 1.0f);
                data7bitInt.add((fu.i >> 28) & 15);
                data7bitInt.add((fu.i >> 21) & 127);
                data7bitInt.add((fu.i >> 14) & 127);

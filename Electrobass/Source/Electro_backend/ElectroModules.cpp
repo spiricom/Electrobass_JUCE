@@ -113,45 +113,9 @@ void ElectroModule::sliderValueChanged(Slider* slider)
         dynamic_cast<ElectroDial*>(mt->getParentComponent())->sliderValueChanged(slider);
     } else
     {
-       
-        //SmoothedParameter* param = ac->processor->(slider->getName()
-        for (int j = 0; j < ac.getParamArraySize(); j++)
-        {
-            
-                String name = slider->getName();
-                String _name = ac.getParameterArray(j).getFirst()->getName();
-                if(name == _name)
-                {
-                    //TODO: This is a problem because if you change number of voices after changing some parameters, then the new voices don't update. Could make this always do all voices, but I tested that and it tanks performance. Probably best to update all parameters when number of voices changes... -JS
-                    for (int i = 0; i < ac.processor.numVoicesActive; i++)
-                    {
-                            ac.processor.addToKnobsToSmoothArray( ac.getParameterArray(j)[i]);
-                    }
-                    break;
-                }
-            
-        }
         if (ac.processor.stream)
         {
-//            //slider->getRange().convertTo0to1(knob->read());
-//            for (int j = 0; j < ac.getParamArraySize(); j++)
-//            {
-//
-//                String name = slider->getName();
-//                String _name = ac.getParameterArray(j).getFirst()->getName();
-//                if(name == _name)
-//                {
-//                     ac.getParameterArray(j).getFirst()->getRange().convertTo0to1(slider->getValue());
-//                }
-//            }
-//            if(slider->getName().substring(5) == "Harmonics" || slider->getName().substring(5) == "Pitch")
-//            {
-//                float end = slider->getRange().getEnd();
-//                float start = slider->getRange().getStart();
-//                ac.processor.streamValue1 = (slider->getValue() / ( end - start)) + 0.5f;
-//            } else {
-//                ac.processor.streamValue1 = vts.getParameter(slider->getName())->getValue();
-//            }
+
             float end = slider->getRange().getEnd();
             float start = slider->getRange().getStart();
             float val = (slider->getValue() / ( end - start));
@@ -178,6 +142,24 @@ void ElectroModule::sliderValueChanged(Slider* slider)
            ac.processor.streamSend = true;
         }
             
+        //SmoothedParameter* param = ac->processor->(slider->getName()
+        for (int j = 0; j < ac.getParamArraySize(); j++)
+        {
+            
+                String name = slider->getName();
+                String _name = ac.getParameterArray(j).getFirst()->getName();
+                if(name == _name)
+                {
+                    //TODO: This is a problem because if you change number of voices after changing some parameters, then the new voices don't update. Could make this always do all voices, but I tested that and it tanks performance. Probably best to update all parameters when number of voices changes... -JS
+                    for (int i = 0; i < ac.processor.numVoicesActive; i++)
+                    {
+                            ac.processor.addToKnobsToSmoothArray( ac.getParameterArray(j)[i]);
+                    }
+                    break;
+                }
+            
+        }
+        
     }
     
 }
@@ -425,36 +407,8 @@ void OscModule::sliderValueChanged(Slider* slider)
 //        dynamic_cast<ElectroDial*>(mt->getParentComponent())->sliderValueChanged(slider);
 //        displayPitchMapping(mt);
 //    }
-    if (ac.processor.stream)
-    {
-        float end = slider->getRange().getEnd();
-        float start = slider->getRange().getStart();
-        float val = (slider->getValue() / ( end - start));
-        if ( start < 0.f )
-        {
-            val += 0.5f;
-        }
-        ac.processor.streamValue1 = val;
-        auto it = find(paramDestOrder.begin(), paramDestOrder.end(),slider->getName() );
-        int index = 0;
-          // If element was found
-          if (it != paramDestOrder.end())
-          {
-              
-              // calculating the index
-              // of K
-            index = it - paramDestOrder.begin();
-          }
-        float tempId = index + 2;
-        ac.processor.streamID1 = tempId;
-        DBG("Send: " + slider->getName() +
-            "with id" + String(tempId) +
-            " as " + String(ac.processor.streamValue1) );
-        ac.processor.streamSend = true;
-        if (labelTextChange)
-            ac.processor.streamSend = true;
-    }
-        
+    
+    ElectroModule::sliderValueChanged(slider);
 }
     //ElectroModule::sliderValueChanged(slider);
     //ElectroModule.sliderValueChanged(slider);

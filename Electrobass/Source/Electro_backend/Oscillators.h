@@ -59,14 +59,14 @@ private:
     void triTick(float& sample, int v, float freq, float shape);
     void userTick(float& sample, int v, float freq, float shape);
     
-    tMBSaw saw[MAX_NUM_VOICES];
-    tMBPulse pulse[MAX_NUM_VOICES];
+    tPBSaw saw[MAX_NUM_VOICES];
+    tPBPulse pulse[MAX_NUM_VOICES];
     tCycle sine[MAX_NUM_VOICES];
-    tMBTriangle tri[MAX_NUM_VOICES];
+    tPBTriangle tri[MAX_NUM_VOICES];
     
     // Using seperate objects for pairs to easily maintain phase relation
-    tMBSawPulse sawPaired[MAX_NUM_VOICES];
-    tMBSineTri sinePaired[MAX_NUM_VOICES];
+    tPBSaw sawPaired[MAX_NUM_VOICES];
+    tCycle sinePaired[MAX_NUM_VOICES];
     
     
     tWaveOscS wave[MAX_NUM_VOICES];
