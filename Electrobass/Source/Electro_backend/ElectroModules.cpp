@@ -133,25 +133,7 @@ void ElectroModule::sliderValueChanged(Slider* slider)
         }
         if (ac.processor.stream)
         {
-//            //slider->getRange().convertTo0to1(knob->read());
-//            for (int j = 0; j < ac.getParamArraySize(); j++)
-//            {
-//
-//                String name = slider->getName();
-//                String _name = ac.getParameterArray(j).getFirst()->getName();
-//                if(name == _name)
-//                {
-//                     ac.getParameterArray(j).getFirst()->getRange().convertTo0to1(slider->getValue());
-//                }
-//            }
-//            if(slider->getName().substring(5) == "Harmonics" || slider->getName().substring(5) == "Pitch")
-//            {
-//                float end = slider->getRange().getEnd();
-//                float start = slider->getRange().getStart();
-//                ac.processor.streamValue1 = (slider->getValue() / ( end - start)) + 0.5f;
-//            } else {
-//                ac.processor.streamValue1 = vts.getParameter(slider->getName())->getValue();
-//            }
+
             float end = slider->getRange().getEnd();
             float start = slider->getRange().getStart();
             float val = (slider->getValue() / ( end - start));
