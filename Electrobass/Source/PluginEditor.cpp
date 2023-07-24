@@ -112,7 +112,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     midiKeyRangeSlider.setRange(0, 127, 1);
     midiKeyRangeSlider.addListener(this);
     midiKeyComponent.addAndMakeVisible(midiKeyRangeSlider);
-    
+    midiKeyRangeSlider.setName("Midi Key range");
     midiKeyMinLabel.setEditable(true);
     midiKeyMinLabel.setJustificationType(Justification::centred);
     midiKeyMinLabel.setColour(Label::backgroundColourId, Colours::darkgrey.withBrightness(0.2f));
@@ -811,7 +811,7 @@ void ElectroAudioProcessorEditor::resized()
 void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
 {
     if (slider == nullptr) return;
-    
+   
     if (slider == &midiKeyRangeSlider)
     {
         updateMidiKeyRangeSlider(midiKeyRangeSlider.getMinValue(),
@@ -867,6 +867,28 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
             DBG("Send: " + slider->getName() + " with ID"  + String(tempId) + " and value " + String(processor.streamValue1)/*String(streamValue)*/);
             processor.streamSend = true;
         }
+    }else
+    {
+        DBG(String(vts.getParameter(slider->getName())->getValue()));
+        if(std::count(cUniqueMacroNames.begin(), cUniqueMacroNames.end(),slider->getName()))
+        {
+            auto it = find(cUniqueMacroNames.begin(), cUniqueMacroNames.end(),slider->getName() );
+            int index = 0;
+              // If element was found
+              if (it != cUniqueMacroNames.end())
+              {
+                  
+                  // calculating the index
+                  // of K
+                index = it - cUniqueMacroNames.begin();
+              }
+            DBG(String(index + (NUM_GENERIC_MACROS -1)));
+            processor.ccSources.getUnchecked(index + (NUM_GENERIC_MACROS ))->setValue(slider->getValue());
+        } else
+        {
+            processor.ccSources.getUnchecked(slider->getName().substring(1).getIntValue() - 1)->setValue(slider->getValue());
+        }
+        
     }
       
    
