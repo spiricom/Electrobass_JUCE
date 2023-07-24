@@ -284,7 +284,7 @@ public:
         tuningNameEditor.setInputRestrictions(14);
         tuningNamelabel.setText("Name", dontSendNotification);
         tuningNumberlabel.setText("Number", dontSendNotification);
-        tuningNumber.setRange(1, 99, 1);
+        tuningNumber.setRange(1, 60, 1);
         //tuningNumber.setMouseDragSensitivity(12000);
         tuningNumber.setSliderSnapsToMousePosition(false);
         //tuningNumber.onValueChange = [this] {processor.setTuningNumber(tuningNumber.getValue());};

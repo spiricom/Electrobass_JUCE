@@ -409,7 +409,7 @@ private:
     int stringActivityTimeout;
     
     String presetName;
-    int presetNumber;
+    int presetNumber = 0;
     tOversampler os[MAX_NUM_VOICES];
     float oversamplerArray[OVERSAMPLE];
     AlertWindow prompt;

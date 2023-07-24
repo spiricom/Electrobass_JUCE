@@ -467,7 +467,8 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     presetNameEditor.setMultiLine(true, true);
     presetNamelabel.setText("Name", dontSendNotification);
     presetNumberlabel.setText("Number", dontSendNotification);
-    presetNumber.setRange(0, 99, 1);
+    presetNumber.setRange(0, 60, 1);
+    
     //presetNumber.setMouseDragSensitivity(12000);
     presetNumber.setSliderSnapsToMousePosition(false);
     presetNumber.onValueChange = [this] {processor.setPresetNumber(presetNumber.getValue());};
@@ -505,6 +506,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     
     update();
     startTimerHz(30);//30
+    presetNumber.setValue(0);
 }
 
 
@@ -1019,8 +1021,10 @@ void ElectroAudioProcessorEditor::timerCallback()
 {
     for (int i = 0; i < MAX_NUM_VOICES+1; ++i)
     {
-        stringActivityButtons[i]->setToggleState(processor.stringIsActive(i),
-                                                 dontSendNotification);
+//        stringActivityButtons[i]->setToggleState(processor.stringIsActive(i),
+//
+            stringActivityButtons[i]->setAlpha(processor.stringIsActive(i) ?1.f :  0.5f  );
+        
     }
     updateRandomValueLabel(processor.lastRandomValue);
     // Loop through all meters (channels)...
@@ -1152,7 +1156,7 @@ void ElectroAudioProcessorEditor::updateNumVoicesSlider(int numVoices)
     numVoicesSlider.setValue(numVoices, dontSendNotification);
     for (int i = 0; i < MAX_NUM_VOICES; ++i)
     {
-        stringActivityButtons[i+1]->setAlpha(i+1 > processor.numVoicesActive ? 0.5f : 1.f);
+        //stringActivityButtons[i+1]->setAlpha(i+1 > processor.numVoicesActive ? 0.5f : 1.f);
     }
     for (int i = 0; i < NUM_OSCS; i++)
     {
