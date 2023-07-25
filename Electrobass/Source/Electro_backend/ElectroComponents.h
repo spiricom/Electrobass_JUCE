@@ -131,6 +131,7 @@ public:
     
     void setRange(double newMin, double newMax, double newInt);
     void setValue(double val);
+    void setValueNotif(double val, NotificationType notification);
     void setValueWithoutNotifyingHost(double val);
     void setText (const String& newText, NotificationType notification);
     void setFont (const Font& newFont);
@@ -283,7 +284,7 @@ public:
         tuningNameEditor.setInputRestrictions(14);
         tuningNamelabel.setText("Name", dontSendNotification);
         tuningNumberlabel.setText("Number", dontSendNotification);
-        tuningNumber.setRange(1, 99, 1);
+        tuningNumber.setRange(1, 60, 1);
         //tuningNumber.setMouseDragSensitivity(12000);
         tuningNumber.setSliderSnapsToMousePosition(false);
         //tuningNumber.onValueChange = [this] {processor.setTuningNumber(tuningNumber.getValue());};

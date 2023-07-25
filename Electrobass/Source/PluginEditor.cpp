@@ -112,7 +112,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     midiKeyRangeSlider.setRange(0, 127, 1);
     midiKeyRangeSlider.addListener(this);
     midiKeyComponent.addAndMakeVisible(midiKeyRangeSlider);
-    
+    midiKeyRangeSlider.setName("Midi Key range");
     midiKeyMinLabel.setEditable(true);
     midiKeyMinLabel.setJustificationType(Justification::centred);
     midiKeyMinLabel.setColour(Label::backgroundColourId, Colours::darkgrey.withBrightness(0.2f));
@@ -467,7 +467,8 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     presetNameEditor.setMultiLine(true, true);
     presetNamelabel.setText("Name", dontSendNotification);
     presetNumberlabel.setText("Number", dontSendNotification);
-    presetNumber.setRange(0, 99, 1);
+    presetNumber.setRange(0, 60, 1);
+    
     //presetNumber.setMouseDragSensitivity(12000);
     presetNumber.setSliderSnapsToMousePosition(false);
     presetNumber.onValueChange = [this] {processor.setPresetNumber(presetNumber.getValue());};
@@ -505,6 +506,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     
     update();
     startTimerHz(30);//30
+    presetNumber.setValue(0);
 }
 
 
@@ -811,7 +813,7 @@ void ElectroAudioProcessorEditor::resized()
 void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
 {
     if (slider == nullptr) return;
-    
+   
     if (slider == &midiKeyRangeSlider)
     {
         updateMidiKeyRangeSlider(midiKeyRangeSlider.getMinValue(),
@@ -867,6 +869,28 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
             DBG("Send: " + slider->getName() + " with ID"  + String(tempId) + " and value " + String(processor.streamValue1)/*String(streamValue)*/);
             processor.streamSend = true;
         }
+    }else
+    {
+        DBG(String(vts.getParameter(slider->getName())->getValue()));
+        if(std::count(cUniqueMacroNames.begin(), cUniqueMacroNames.end(),slider->getName()))
+        {
+            auto it = find(cUniqueMacroNames.begin(), cUniqueMacroNames.end(),slider->getName() );
+            int index = 0;
+              // If element was found
+              if (it != cUniqueMacroNames.end())
+              {
+                  
+                  // calculating the index
+                  // of K
+                index = it - cUniqueMacroNames.begin();
+              }
+            DBG(String(index + (NUM_GENERIC_MACROS -1)));
+            processor.ccSources.getUnchecked(index + (NUM_GENERIC_MACROS ))->setValue(slider->getValue());
+        } else
+        {
+            processor.ccSources.getUnchecked(slider->getName().substring(1).getIntValue() - 1)->setValue(slider->getValue());
+        }
+        
     }
       
    
@@ -932,11 +956,11 @@ void ElectroAudioProcessorEditor::buttonClicked(Button* button)
     }
     else if (button == tabs.getTabbedButtonBar().getTabButton(2))
     {
-        
+        tab4.addAndMakeVisible(OSCILLOSCOPE);
     }
     else if (button == tabs.getTabbedButtonBar().getTabButton(3))
     {
-        tab4.addAndMakeVisible(OSCILLOSCOPE);
+        
     }
     else if (button == tabs.getTabbedButtonBar().getTabButton(4))
     {
@@ -997,8 +1021,10 @@ void ElectroAudioProcessorEditor::timerCallback()
 {
     for (int i = 0; i < MAX_NUM_VOICES+1; ++i)
     {
-        stringActivityButtons[i]->setToggleState(processor.stringIsActive(i),
-                                                 dontSendNotification);
+//        stringActivityButtons[i]->setToggleState(processor.stringIsActive(i),
+//
+            stringActivityButtons[i]->setAlpha(processor.stringIsActive(i) ?1.f :  0.5f  );
+        
     }
     updateRandomValueLabel(processor.lastRandomValue);
     // Loop through all meters (channels)...
@@ -1130,7 +1156,7 @@ void ElectroAudioProcessorEditor::updateNumVoicesSlider(int numVoices)
     numVoicesSlider.setValue(numVoices, dontSendNotification);
     for (int i = 0; i < MAX_NUM_VOICES; ++i)
     {
-        stringActivityButtons[i+1]->setAlpha(i+1 > processor.numVoicesActive ? 0.5f : 1.f);
+        //stringActivityButtons[i+1]->setAlpha(i+1 > processor.numVoicesActive ? 0.5f : 1.f);
     }
     for (int i = 0; i < NUM_OSCS; i++)
     {

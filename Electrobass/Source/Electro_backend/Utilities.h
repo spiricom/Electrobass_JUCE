@@ -114,7 +114,7 @@ protected:
     int smoothedHooks[3];
     int nonSmoothedHooks[3];
     SmoothedValue<float, ValueSmoothingTypes::Linear> smoothed;
-
+    bool isSkewed;
     float value0 = 0.0f;
     float value1 = 1.0f;
 };
@@ -126,7 +126,7 @@ public:
                  String paramId, float start, float end, float center)
     : SmoothedParameter(processor, vts, paramId)
     {
-
+        isSkewed = true;
          LEAF_generate_table_skew_non_sym(skewTable, start, end, center, 2048);
     }
     
@@ -136,13 +136,14 @@ public:
         // Well defined inter-thread behavior PROBABLY shouldn't be an issue here, so
         // the atomic is just slowing us down. memory_order_relaxed seems fastest, marginally
         removeMe = false;
-        float target = raw->load(std::memory_order_relaxed);
+        float target = parameter->getValue();
         //bool isSmoothed = false;
         for (int i = 0; i < numSmoothedHooks; ++i)
         {
-            target += scale(hooks[smoothedHooks[i]].getValue());
+            target += hooks[smoothedHooks[i]].getValue();
         }
-        smoothed.setTargetValue(target);
+        //DBG("Target" + String(target));
+        smoothed.setTargetValue(scale(target) );
         value = smoothed.getNextValue();
         for (int i = 0; i < numNonSmoothedHooks; ++i)
         {
@@ -172,7 +173,7 @@ private:
         int nextPos = LEAF_clip(0, inputInt + 1, 2047);
         return (skewTable[inputInt] * (1.0f - inputFloat)) + (skewTable[nextPos] * inputFloat);
 
-        //return
+        //return input;
     }
 };
 //==============================================================================

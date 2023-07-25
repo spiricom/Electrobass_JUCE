@@ -172,17 +172,19 @@ void Oscillator::tick(float output[][MAX_NUM_VOICES])
 
     for (int v = 0; v < processor.numVoicesActive; ++v)
     {
+        float shape = quickParams[OscShape][v]->read();
+        if(processor.knobsToSmooth.contains(quickParams[OscShape][v]))
+        {
+            setShape(v, shape);
+        }
         if (!processor.voiceIsSounding[v]) continue;
         
         float pitch = quickParams[OscPitch][v]->read();
         float harm = quickParams[OscHarm][v]->read();
         float fine = quickParams[OscFine][v]->read();
         float freq = quickParams[OscFreq][v]->read();
-        float shape = quickParams[OscShape][v]->read();
-        if(processor.knobsToSmooth.contains(quickParams[OscShape][v]))
-        {
-            setShape(v, shape);
-        }
+       
+       
         float amp = quickParams[OscAmp][v]->read();
         float harm_pitch = harm + pitch;
         amp = amp < 0.f ? 0.f : amp;
@@ -749,7 +751,8 @@ void NoiseGenerator::tick(float output[][MAX_NUM_VOICES])
         }
         if(processor.knobsToSmooth.contains(quickParams[NoiseFreq][v]))
         {
-            tVZFilter_setFreqFast(&bell1[v], faster_mtof(freq * 77.0f + 42.0f));
+            
+            tVZFilter_setFreqFast(&bell1[v], LEAF_clip(0.0f, (freq * 77.0f + 26.0f) * 35.929824561403509f, 4095.0f));
         }
         
         if(processor.knobsToSmooth.contains(quickParams[NoiseGain][v]))

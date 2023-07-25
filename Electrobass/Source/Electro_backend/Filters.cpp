@@ -229,6 +229,7 @@ void Filter:: LadderLowpassTick(float& sample, int v, float cutoff, float q, flo
 
 void Filter::setQ(float q, int v)
 {
+    q = LEAF_clip(0.01f, q, 10.0f);
     switch (currentFilterType) {
         case LowpassFilter:
             tSVF_setQ(&lowpass[v], q);
