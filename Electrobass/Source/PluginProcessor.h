@@ -170,8 +170,10 @@ public:
             multiplier = -1.0f;
             tempRange = fabsf(target->end);
         }
+        DBG("Stream target " + target->name.substring(0, target->name.length() - 3));
         tempRange = ((tempRange) / (range.end - range.start));
         float finalRange = tempRange * multiplier;
+        DBG("Final Range" + String(finalRange));
         streamMappingValue = finalRange;
         streamMappingIdentifier = 1;
         streamMapping = true;

@@ -213,7 +213,7 @@ static const StringArray cFilterParams = {
 static const std::vector<std::vector<float>> vFilterInit = {
     { 0.0f, 127.f, 72.f, 63.5f },   //Cutoff
     { 0.0f, 1.f, 0.5f, 0.5f }, //Gain
-    { 0.01f, 10.f, 0.5f, 0.5f },   //Resonance
+    { 0.00000f, 10.f, 0.5000f, 0.50000f },   //Resonance
     { 0.0f, 1.f, 0.5f, 0.5f }  //KeyFollow
     
 };

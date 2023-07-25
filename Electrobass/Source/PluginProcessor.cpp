@@ -213,7 +213,7 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
         
         for (int j = 0; j < cFilterParams.size(); ++j)
         {
-            float min = vFilterInit[j][0];
+            float min = 0.0000000f;
             float max = vFilterInit[j][1];
             float def = vFilterInit[j][2];
             float center = vFilterInit[j][3];

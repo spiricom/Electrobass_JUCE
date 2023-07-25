@@ -20,7 +20,8 @@ parameter(vts.getParameter(paramId)),
 range(parameter->getNormalisableRange()),
 value(raw->load(std::memory_order_relaxed)),
 smoothed(value),
-removeMe(true)
+removeMe(true),
+isSkewed(false)
 {
     //DBG(paramId+" " + String(value));
     for (int i = 0; i < 3; ++i)
@@ -91,6 +92,8 @@ void SmoothedParameter::setHook(const String& sourceName, int index,
     hooks[index].hook = (float*)hook;
     hooks[index].min = min;
     hooks[index].length = max-min;
+    setHookRange(index, min, max);
+    DBG("Sethook " + String(max-min));
     if ((sourceName == "Osc1") || (sourceName == "Osc2") || (sourceName == "Osc3"))
     {
         if (numNonSmoothedHooks < 3) nonSmoothedHooks[numNonSmoothedHooks++] = index;
@@ -104,7 +107,46 @@ void SmoothedParameter::setHook(const String& sourceName, int index,
 void SmoothedParameter::setHookRange(int index, float min, float max)
 {
     hooks[index].min = min;
+    float difference = max-min;
     hooks[index].length = max-min;
+    float multiplier = 1.0f;
+    if (difference < 0)
+    {
+        multiplier = -1.0f;
+        difference *= -1.0f;
+    }
+    if (max < min)
+    {
+        multiplier = -1.0f;
+    }
+    //DBG("Difference " + String(difference));
+
+    if(isSkewed)
+    {
+        float newMin = min;
+//        DBG("value max " + String(max));
+//        DBG("value min " + String(min));
+//        DBG("slider at " + String(parameter->getValue()));
+        float val = parameter->getValue();
+        if (max < 0.f)
+        {
+            max = getRange().convertFrom0to1(parameter->getValue()) + max;
+        }
+        if(min != 0.f)
+        {
+            newMin = getRange().convertFrom0to1(parameter->getValue()) + min;
+
+            val = 0;
+        }
+       
+        float a = getRange().convertTo0to1(LEAF_clip(getRange().start, max, getRange().end));
+        float b = getRange().convertTo0to1(LEAF_clip(getRange().start, newMin, getRange().end));
+        hooks[index].length = (a - b - val);
+        b = b -  parameter->getValue();
+        hooks[index].min = b;
+    }
+    DBG("Sethook rage:   " + String(hooks[index].length));
+    DBG("Sethook min:   " + String(hooks[index].min));
 }
 
 void SmoothedParameter::setHookScalar(const String& scalarName, int index, float* scalar)
