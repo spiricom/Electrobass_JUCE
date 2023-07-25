@@ -28,9 +28,9 @@ syncSource(nullptr)
         tCycle_init(&sine[i], &processor.leaf);
         tPBTriangle_init(&tri[i], &processor.leaf);
         
-        tPBSaw_init(&sawPaired[i], &processor.leaf);
+        tPBSawSquare_init(&sawPaired[i], &processor.leaf);
         
-        tCycle_init(&sinePaired[i], &processor.leaf);
+        tPBSineTriangle_init(&sinePaired[i], &processor.leaf);
        
     }
     
@@ -51,8 +51,8 @@ Oscillator::~Oscillator()
         tPBPulse_free(&pulse[i]);
         tCycle_free(&sine[i]);
         tPBTriangle_free(&tri[i]);
-        tPBSaw_free(&sawPaired[i]);
-        tCycle_free(&sinePaired[i]);
+        tPBSawSquare_free(&sawPaired[i]);
+        tPBSineTriangle_free(&sinePaired[i]);
 
         
         if (waveTableFile.exists())
@@ -73,9 +73,9 @@ void Oscillator::prepareToPlay (double sampleRate, int samplesPerBlock)
         tCycle_setSampleRate(&sine[i], sampleRate);
         tPBTriangle_setSampleRate(&tri[i], sampleRate);
         
-        tPBSaw_setSampleRate(&sawPaired[i], sampleRate);
+        tPBSawSquare_setSampleRate(&sawPaired[i], sampleRate);
         
-        tCycle_setSampleRate(&sinePaired[i], sampleRate);
+        tPBSineTriangle_setSampleRate(&sinePaired[i], sampleRate);
        
         
         if (waveTableFile.exists())
@@ -133,11 +133,11 @@ void Oscillator::setShape(int v, float shape)
     currentShapeSet = OscShapeSet(int(*afpShapeSet));
     switch (currentShapeSet) {
         case SawPulseOscShapeSet:
-            //tMBSawPulse_setShape(&sawPaired[v], shape);
+            tPBSawSquare_setShape(&sawPaired[v], shape);
             break;
             
         case SineTriOscShapeSet:
-            //tMBSineTri_setShape(&sinePaired[v], shape);
+            tPBSineTriangle_setShape(&sinePaired[v], shape);
             break;
             
         case SawOscShapeSet:
@@ -153,7 +153,7 @@ void Oscillator::setShape(int v, float shape)
             break;
             
         case TriOscShapeSet:
-            //tPBTriangle_setWidth(&tri[v], shape);
+            tPBTriangle_setSkew(&tri[v], shape);
             break;
             
         case UserOscShapeSet:
@@ -239,8 +239,7 @@ void Oscillator::loadAll(int v)
 
 void Oscillator::sawSquareTick(float& sample, int v, float freq, float shape)
 {
-    tPBSaw_setFreq(&sawPaired[v], freq);
-    
+    tPBSawSquare_setFreq(&sawPaired[v], freq);
     //if (isSync_raw == nullptr || *isSync_raw > 0)
     {
         //if(syncType_raw != nullptr)
@@ -249,13 +248,13 @@ void Oscillator::sawSquareTick(float& sample, int v, float freq, float shape)
         }
         //tMBSawPulse_sync(&sawPaired[v], syncSource->syncOut[v]);
     }
-    sample += tPBSaw_tick(&sawPaired[v]);
+    sample += tPBSawSquare_tick(&sawPaired[v]);
 
 }
 
 void Oscillator::sineTriTick(float& sample, int v, float freq, float shape)
 {
-    tCycle_setFreq(&sinePaired[v], freq);
+    tPBSineTriangle_setFreq(&sinePaired[v], freq);
     
     //if (isSync_raw == nullptr || *isSync_raw > 0)
     {
@@ -265,7 +264,7 @@ void Oscillator::sineTriTick(float& sample, int v, float freq, float shape)
         }
         //tMBSineTri_sync(&sinePaired[v], syncSource->syncOut[v]);
     }
-    sample += tCycle_tick(&sinePaired[v]);
+    sample += tPBSineTriangle_tick(&sinePaired[v]);
 
 }
 

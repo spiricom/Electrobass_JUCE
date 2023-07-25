@@ -65,8 +65,8 @@ private:
     tPBTriangle tri[MAX_NUM_VOICES];
     
     // Using seperate objects for pairs to easily maintain phase relation
-    tPBSaw sawPaired[MAX_NUM_VOICES];
-    tCycle sinePaired[MAX_NUM_VOICES];
+    tPBSawSquare sawPaired[MAX_NUM_VOICES];
+    tPBSineTriangle sinePaired[MAX_NUM_VOICES];
     
     
     tWaveOscS wave[MAX_NUM_VOICES];
