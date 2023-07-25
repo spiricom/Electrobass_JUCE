@@ -172,6 +172,10 @@ void Oscillator::tick(float output[][MAX_NUM_VOICES])
 
     for (int v = 0; v < processor.numVoicesActive; ++v)
     {
+        if(processor.knobsToSmooth.contains(quickParams[OscShape][v]))
+        {
+            setShape(v, shape);
+        }
         if (!processor.voiceIsSounding[v]) continue;
         
         float pitch = quickParams[OscPitch][v]->read();
@@ -179,10 +183,7 @@ void Oscillator::tick(float output[][MAX_NUM_VOICES])
         float fine = quickParams[OscFine][v]->read();
         float freq = quickParams[OscFreq][v]->read();
         float shape = quickParams[OscShape][v]->read();
-        if(processor.knobsToSmooth.contains(quickParams[OscShape][v]))
-        {
-            setShape(v, shape);
-        }
+       
         float amp = quickParams[OscAmp][v]->read();
         float harm_pitch = harm + pitch;
         amp = amp < 0.f ? 0.f : amp;
