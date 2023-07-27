@@ -92,7 +92,15 @@ void SmoothedParameter::setHook(const String& sourceName, int index,
     hooks[index].hook = (float*)hook;
     hooks[index].min = min;
     hooks[index].length = max-min;
-    setHookRange(index, min, max);
+    bool isBipolar = false;
+    if ((sourceName == "Osc1") || (sourceName == "Osc2") || (sourceName == "Osc3") ||
+        (sourceName == "LFO1")  || (sourceName == "LFO2")
+        ||(sourceName == "LFO3")
+        ||(sourceName == "LFO4") )
+    {
+        isBipolar = true;
+    }
+    setHookRange(index, min, max, isBipolar);
     DBG("Sethook " + String(max-min));
     if ((sourceName == "Osc1") || (sourceName == "Osc2") || (sourceName == "Osc3"))
     {
@@ -104,12 +112,14 @@ void SmoothedParameter::setHook(const String& sourceName, int index,
     }
 }
 
-void SmoothedParameter::setHookRange(int index, float min, float max)
+void SmoothedParameter::setHookRange(int index, float min, float max, bool isBipolar)
 {
     hooks[index].min = min;
     float difference = max-min;
     hooks[index].length = max-min;
     float multiplier = 1.0f;
+    DBG("Sethook max:start   " + String(max));
+    DBG("Sethook min:start   " + String(min));
     if (difference < 0)
     {
         multiplier = -1.0f;
@@ -142,11 +152,15 @@ void SmoothedParameter::setHookRange(int index, float min, float max)
         float a = getRange().convertTo0to1(LEAF_clip(getRange().start, max, getRange().end));
         float b = getRange().convertTo0to1(LEAF_clip(getRange().start, newMin, getRange().end));
         hooks[index].length = (a - b - val);
-        b = b -  parameter->getValue();
+        DBG("b   " + String(b));
+        DBG("paramval " + String(parameter->getValue()));
+        if (isBipolar)
+            b = b -  parameter->getValue();
         hooks[index].min = b;
     }
     DBG("Sethook rage:   " + String(hooks[index].length));
     DBG("Sethook min:   " + String(hooks[index].min));
+    
 }
 
 void SmoothedParameter::setHookScalar(const String& scalarName, int index, float* scalar)
@@ -341,7 +355,7 @@ void MappingTargetModel::setMappingRange(float e, bool sendChangeEvent,
     
     for (auto param : targetParameters)
     {
-        param->setHookRange(index, start, end);
+        param->setHookRange(index, start, end, bipolar);
     }
     DBG(String(start) + " " + String(end));
     if(processor.stream)
