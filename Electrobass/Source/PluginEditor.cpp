@@ -1180,27 +1180,32 @@ void ElectroAudioProcessorEditor::updateNumVoicesSlider(int numVoices)
     //processor.numVoicesActive = numVoices;
     processor.setNumVoicesActive(numVoices);
     numVoicesSlider.setValue(numVoices, dontSendNotification);
-    for (int i = 0; i < MAX_NUM_VOICES; ++i)
+    
+    for (int v = 0; v < numVoicesActive; v++)
     {
-        //stringActivityButtons[i+1]->setAlpha(i+1 > processor.numVoicesActive ? 0.5f : 1.f);
+        for (int i = 0; i < NUM_OSCS; i++)
+        {
+            oscs[i]->loadAll(v);
+        }
+        for (int i = 0; i < NUM_ENVS; i++)
+        {
+            envs[i]->loadAll(v);
+        }
+        noise->loadAll(v);
+        for (int i = 0; i < NUM_FILT; i++)
+        {
+            filt[i]->loadAll(v);
+        }
+        for (int i = 0; i < NUM_LFOS; i++)
+        {
+            lfos[i]->loadAll(v);
+        }
+        for (int i = 0; i < NUM_FX; i++)
+        {
+            fx[i]->loadAll(v);
+        }
     }
-    for (int i = 0; i < NUM_OSCS; i++)
-    {
-        processor.oscs[i]->loadAll(numVoices-1);
-    }
-    for (int i = 0; i < NUM_ENVS; i++)
-    {
-        processor.envs[i]->loadAll(numVoices-1);
-    }
-    processor.noise->loadAll(numVoices-1);
-    for (int i = 0; i < NUM_FILT; i++)
-    {
-        processor.filt[i]->loadAll(numVoices-1);
-    }
-    for (int i = 0; i < NUM_LFOS; i++)
-    {
-        processor.lfos[i]->loadAll(numVoices-1);
-    }
+    
 }
 
 void ElectroAudioProcessorEditor::updateRandomValueLabel(float value)
