@@ -847,7 +847,33 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
             processor.streamValue2 = midiKeyRangeSlider.getMaxValue();
             processor.streamSend = true;
         }
-    } else if( processor.stream)
+    } else if (slider == &seriesParallelSlider)
+    {
+        if(processor.stream)
+        {
+            processor.streamValue1 = slider->getValue();
+            String tempString = slider->getName();
+            auto it = find(paramDestOrder.begin(), paramDestOrder.end(), slider->getName());
+            int index = -1;
+            // If element was found
+            if (it != paramDestOrder.end())
+            {
+                
+                // calculating the index
+                // of K
+                index = it - paramDestOrder.begin();
+            }
+            if (index != -1) // to avoid sending things not in the dest array (like foot pedals and knee levers)
+            {
+                float tempId = index + 2;
+                processor.streamID1 = tempId;
+                //button->get
+                DBG("Send: " + slider->getName() + " with ID"  + String(tempId) + " and value " + String(processor.streamValue1)/*String(streamValue)*/);
+                processor.streamSend = true;
+            }
+        }
+    }
+    else if( processor.stream)
     {
         processor.streamValue1 = slider->getValue();
        String tempString = slider->getName();
