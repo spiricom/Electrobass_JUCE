@@ -177,7 +177,7 @@ void Envelope::setParams()
         for (int v = 0; v < MAX_NUM_VOICES; ++v)
         {
             
-            params[i]->add(new SkewedParameter(processor, vts, pn, 0.0f, 30.0f, 2.0f));
+            params[i]->add(new SkewedParameter(processor, vts, pn, 0.0f, 20000.0f, 4000.0f));
             quickParams[i][v] = params[i]->getUnchecked(v);
         }
         for (int t = 0; t < 3; ++t)
