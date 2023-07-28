@@ -1181,28 +1181,28 @@ void ElectroAudioProcessorEditor::updateNumVoicesSlider(int numVoices)
     processor.setNumVoicesActive(numVoices);
     numVoicesSlider.setValue(numVoices, dontSendNotification);
     
-    for (int v = 0; v < numVoicesActive; v++)
+    for (int v = 0; v < processor.numVoicesActive; v++)
     {
         for (int i = 0; i < NUM_OSCS; i++)
         {
-            oscs[i]->loadAll(v);
+            processor.oscs[i]->loadAll(v);
         }
         for (int i = 0; i < NUM_ENVS; i++)
         {
-            envs[i]->loadAll(v);
+            processor.envs[i]->loadAll(v);
         }
-        noise->loadAll(v);
+        processor.noise->loadAll(v);
         for (int i = 0; i < NUM_FILT; i++)
         {
-            filt[i]->loadAll(v);
+            processor.filt[i]->loadAll(v);
         }
         for (int i = 0; i < NUM_LFOS; i++)
         {
-            lfos[i]->loadAll(v);
+            processor.lfos[i]->loadAll(v);
         }
         for (int i = 0; i < NUM_FX; i++)
         {
-            fx[i]->loadAll(v);
+            processor.fx[i]->loadAll(v);
         }
     }
     
