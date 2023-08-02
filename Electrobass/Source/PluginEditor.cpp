@@ -813,7 +813,7 @@ void ElectroAudioProcessorEditor::resized()
 void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
 {
     if (slider == nullptr) return;
-   
+
     if (slider == &midiKeyRangeSlider)
     {
         updateMidiKeyRangeSlider(midiKeyRangeSlider.getMinValue(),
@@ -895,6 +895,9 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
             DBG("Send: " + slider->getName() + " with ID"  + String(tempId) + " and value " + String(processor.streamValue1)/*String(streamValue)*/);
             processor.streamSend = true;
         }
+    }else if (pitchBendSliders.contains(slider))
+    {
+        
     }else
     {
         DBG(String(vts.getParameter(slider->getName())->getValue()));
