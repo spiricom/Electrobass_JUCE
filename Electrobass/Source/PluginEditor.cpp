@@ -358,7 +358,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
         macroControlEntries.getLast()->addListener(this);
         tab2.addAndMakeVisible(macroControlEntries.getLast());
         
-        if (i < NUM_GENERIC_MACROS)
+        if (i < NUM_GENERIC_MACROS + 4)
         {
             macroControlNameLabels.add(new Label());
             macroControlNameLabels.getLast()->setText("Name", dontSendNotification);
@@ -376,7 +376,10 @@ chooser("Select a .wav file to load...", {}, "*.wav")
         
     }
    
-
+    for ( int i = 0 ; i < 4; i++)
+    {
+        
+    }
     for (int i = 0; i < MAX_NUM_VOICES+1; ++i)
     {
         String n = "String " + String(i);
@@ -716,37 +719,55 @@ void ElectroAudioProcessorEditor::resized()
     int h = 30;
     int pad = 4;
     
-    for (int i = 0; i < NUM_GENERIC_MACROS; ++i)
+    for (int i = 0; i < NUM_MACROS; ++i)
     {
-        int padx = (i/4) < 3 ? 0 : 2;
-        macroControlLabels[i]->setBounds(x + 216*(i/4) + padx, y+(h+pad)*(i%4)*2, 100, h);
+        int padx = (i/6) < 3 ? 0 : 2;
+        macroControlLabels[i]->setBounds(x + 216*(i/6) + padx, y+(h+pad)*(i%6)*2, 100, h);
         macroControlEntries[i]->setBounds(macroControlLabels[i]->getRight(),
                                           macroControlLabels[i]->getY(), 100, h);
-        macroControlNameLabels[i]->setBounds(x + 216*(i/4) + padx,
-                                             y+(h+pad)+(h+pad)*(i%4)*2, 70, h);
-        macroControlNames[i]->setBounds(macroControlNameLabels[i]->getRight(),
-                                        macroControlNameLabels[i]->getY(), 130, h);
+        if (i < (NUM_GENERIC_MACROS + 4))
+        {
+            macroControlNameLabels[i]->setBounds(x + 216*(i/6) + padx,
+                                                 y+(h+pad)+(h+pad)*(i%6)*2, 70, h);
+            macroControlNames[i]->setBounds(macroControlNameLabels[i]->getRight(),
+                                            macroControlNameLabels[i]->getY(), 130, h);
+        }
     }
-    DBG(macroControlEntries[NUM_GENERIC_MACROS-1]->getRight());
     
-    y = 300;
-    for (int i = NUM_GENERIC_MACROS; i < NUM_MACROS; ++i)
-    {
-        int j = i - NUM_GENERIC_MACROS;
-        macroControlLabels[i]->setBounds(x + 216*(j/2), y+(h+pad)+(h+pad)*(j%2), 100, h);
-        macroControlEntries[i]->setBounds(macroControlLabels[i]->getRight(),
-                                          macroControlLabels[i]->getY(), 100, h);
-//        if (i == NUM_MACROS - 1)
+//    y = 40;
+//    for (int i = NUM_GENERIC_MACROS; i < NUM_MACROS; ++i)
+//    {
+//        int padx = (i/4) < 3 ? 0 : 2;
+//        int j = i - NUM_GENERIC_MACROS;
+//        macroControlLabels[i]->setBounds(x + 216*(i/6) + padx, y+(h+pad)*(i%4)*2, 100, h);
+//        macroControlEntries[i]->setBounds(macroControlLabels[i]->getRight(),
+//                                          macroControlLabels[i]->getY(), 100, h);
+//        if (i < (NUM_GENERIC_MACROS + 4))
 //        {
-//            macroControlLabels[i]->setBounds(x + 216*(j/2),
-//                                             y+(h+pad)+(h+pad)*((j%2)+0.5f),
-//                                             100, h);
-//            macroControlEntries[NUM_MACROS]->setBounds(macroControlLabels[i]->getRight(),
-//                                                       y+(h+pad)+(h+pad)*((j%2)+1), 100, h);
-//        }
-    }
+//            macroControlNameLabels[i]->setBounds(x + 216*(i/4) + padx,
+//                                                 y+(h+pad)+(h+pad)*(i%4)*2, 70, h);
+//            macroControlNames[i]->setBounds(macroControlNameLabels[i]->getRight(),
+//                                            macroControlNameLabels[i]->getY(), 130, h);}
+//
+//    }
+    y = 300;
+//    for (int i = NUM_GENERIC_MACROS + 4; i < NUM_MACROS; ++i)
+//    {
+//        int j = i - (NUM_GENERIC_MACROS + 4);
+//        macroControlLabels[i]->setBounds(x + 216*(j/2), y+(h+pad)+(h+pad)*(j%2), 100, h);
+//        macroControlEntries[i]->setBounds(macroControlLabels[i]->getRight(),
+//                                          macroControlLabels[i]->getY(), 100, h);
+////        if (i == NUM_MACROS - 1)
+////        {
+////            macroControlLabels[i]->setBounds(x + 216*(j/2),
+////                                             y+(h+pad)+(h+pad)*((j%2)+0.5f),
+////                                             100, h);
+////            macroControlEntries[NUM_MACROS]->setBounds(macroControlLabels[i]->getRight(),
+////                                                       y+(h+pad)+(h+pad)*((j%2)+1), 100, h);
+////        }
+//    }
     
-    y = 430;
+    y = 460;
     stringChannelLabels[0]->setBounds(x, y, 300, h);
     stringChannelEntries[0]->setBounds(stringChannelLabels[0]->getRight(),
                                        stringChannelLabels[0]->getY(), 100, h);
@@ -757,7 +778,7 @@ void ElectroAudioProcessorEditor::resized()
         stringChannelEntries[i]->setBounds(stringChannelLabels[i]->getRight(),
                                            stringChannelLabels[i]->getY(), 100, h);
     }
-    DBG(stringChannelEntries.getLast()->getRight());
+ 
     
     //==============================================================================
     // TAB3 ========================================================================
@@ -1077,7 +1098,7 @@ void ElectroAudioProcessorEditor::update()
     {
         updateMacroControl(i, processor.macroCCNumbers[i]);
     }
-    for (int i = 0; i < NUM_GENERIC_MACROS; ++i)
+    for (int i = 0; i < NUM_GENERIC_MACROS + 4; ++i)
     {
         updateMacroNames(i, processor.macroNames[i]);
     }

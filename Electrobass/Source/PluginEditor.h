@@ -182,6 +182,9 @@ private:
     OwnedArray<Label> macroControlNames;
     OwnedArray<Label> macroControlLabels;
     OwnedArray<Label> macroControlNameLabels;
+    OwnedArray<Label> abxyControlNames;
+    OwnedArray<Label> abxyControlLabels;
+    OwnedArray<Label> abxyControlNameLabels;
     OwnedArray<Label> stringChannelEntries;
     OwnedArray<Label> stringChannelLabels;
     

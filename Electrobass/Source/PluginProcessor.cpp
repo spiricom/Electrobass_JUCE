@@ -424,6 +424,10 @@ prompt("","",AlertWindow::AlertIconType::NoIcon)
             sourceIds.add(n);
         }
     }
+    macroNames.add("A");
+    macroNames.add("B");
+    macroNames.add("X");
+    macroNames.add("Y");
     for (int i = 1; i <= 127; ++i) ccNumberToMacroMap.set(i, -1);
     for (int i = 0; i < NUM_MACROS+1; ++i)
     {
@@ -952,8 +956,8 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
             data7bitInt.add(presetNumber); // which preset are we saving
         
             //clip macro names to 14 letters if they are longer
-            int myLength = 14;
-            if (macroNames[i].length() < 14)
+            int myLength = 9;
+            if (macroNames[i].length() < 9)
             {
                 myLength = macroNames[i].length();
             }
@@ -961,7 +965,33 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
             {
                 data7bitInt.add((macroNames[i].toUTF8()[j] & 127)); //printable characters are in the 0-127 range
             }
-            remainingBlanks = 14 - myLength;
+            remainingBlanks = 9 - myLength;
+            for (int  j = 0; j < remainingBlanks; j++)
+            {
+                data7bitInt.add(32);
+            }
+            //MidiMessage presetMessage = ;
+        
+//            midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+            
+        }
+        for (int i = NUM_GENERIC_MACROS; i < NUM_GENERIC_MACROS + 4; i++)
+        {
+            data7bitInt.clear();
+            data7bitInt.add(0); // saying it's a preset
+            data7bitInt.add(presetNumber); // which preset are we saving
+        
+            //clip macro names to 14 letters if they are longer
+            int myLength = 10;
+            if (macroNames[i].length() < 10)
+            {
+                myLength = macroNames[i].length();
+            }
+            for (int j = 0; j < myLength; j++)
+            {
+                data7bitInt.add((macroNames[i].toUTF8()[j] & 127)); //printable characters are in the 0-127 range
+            }
+            remainingBlanks = 10 - myLength;
             for (int  j = 0; j < remainingBlanks; j++)
             {
                 data7bitInt.add(32);
