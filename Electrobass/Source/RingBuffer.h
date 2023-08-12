@@ -58,13 +58,13 @@ public:
 
     void process(const Type* data, size_t numSamples) {
         size_t index = 0;
-        size_t numSamplesdiv4 =numSamples/4;
+        size_t numSamplesdiv8 =numSamples/8;
         // If the sample hits a trigger threshold:
         if (state == State::waitingForTrigger) {
-            while (index++ < numSamplesdiv4) {
+            while (index++ < numSamplesdiv8) {
                 auto curSample = *data + ((0.0001f * (juce::Random::getSystemRandom().nextFloat() - 0.5f))); // Get the current sample, then move onto the next.  Add a tiny bit of noise to avoid stuck scope lines when amplitude goes to zero.
                 // If a new trigger level:
-                data+=4;
+                data+=8;
 
                 if ((curSample >= triggerLevel) && (prevSample < triggerLevel)) {
                     collectedIndex = 0;
@@ -77,9 +77,9 @@ public:
 
         // Audio is ready for collecting:
         if (state == State::collecting) {
-            while (index++ < numSamplesdiv4) {
+            while (index++ < numSamplesdiv8) {
                 buffer[collectedIndex++] = *data; // Copy current sample into the buffer, then move onto the next.
-                data+=4;
+                data+=8;
 
                 // If we hit the end of the buffer, push and reset.
                 if (collectedIndex == buffer.size()) {
@@ -110,7 +110,7 @@ class WaveformComponent : public juce::Component, private juce::Timer {
 public:
     WaveformComponent(AudioBufferQueue<Type>& queueToUse) : audioBufferQueue(queueToUse) {
         sampleData.fill(Type(0));
-        startTimerHz(90); // 90 fps
+        startTimerHz(30); // 90 fps
     }//ScopeComponent()
 
     void paint(juce::Graphics& g) override {

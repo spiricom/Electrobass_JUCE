@@ -948,14 +948,14 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
 
         currentChunk++;
         
-        //now send the macro names (14 characters each)
+        //now send the macro names (9 characters each)
         for (int i = 0; i < NUM_GENERIC_MACROS; i++)
         {
             data7bitInt.clear();
             data7bitInt.add(0); // saying it's a preset
             data7bitInt.add(presetNumber); // which preset are we saving
         
-            //clip macro names to 14 letters if they are longer
+            //clip macro names to 9 letters if they are longer
             int myLength = 9;
             if (macroNames[i].length() < 9)
             {
@@ -972,16 +972,17 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
             }
             //MidiMessage presetMessage = ;
         
-//            midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
-            
+            midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+            currentChunk++;
         }
-        for (int i = NUM_GENERIC_MACROS; i < NUM_GENERIC_MACROS + 4; i++)
+        //now send the knob/joystick names (10 characters each)
+        for (int i = NUM_GENERIC_MACROS; i < (NUM_GENERIC_MACROS + 4); i++)
         {
             data7bitInt.clear();
             data7bitInt.add(0); // saying it's a preset
             data7bitInt.add(presetNumber); // which preset are we saving
         
-            //clip macro names to 14 letters if they are longer
+            //clip macro names to 10 letters if they are longer
             int myLength = 10;
             if (macroNames[i].length() < 10)
             {

@@ -186,22 +186,40 @@ void Oscillator::tick(float output[][MAX_NUM_VOICES])
        
        
         float amp = quickParams[OscAmp][v]->read();
-        float harm_pitch = harm + pitch;
         amp = amp < 0.f ? 0.f : amp;
         float note = processor.voiceNote[v];
-        if (isStepped_raw == nullptr || *isStepped_raw > 0)
-        {
-            harm_pitch = round(harm_pitch);
-        }
+        float harmFreq = 1.0f;
+        float midiAdd = 0.0f;
+        
         if (isHarmonic_raw == nullptr || *isHarmonic_raw > 0)
         {
-            note = harm_pitch >= 0 ? ftom(processor.tuner.mtof(note) * (harm_pitch + 1)) : ftom(processor.tuner.mtof(note) / fabs((harm_pitch - 1)));
-            harm_pitch = 0;
+            if (isStepped_raw == nullptr || *isStepped_raw > 0)
+            {
+                harm = round(harm);
+            }
+            if (harm >= 0)
+            {
+                harmFreq = (harm + 1.0f);
+            }
+            else
+            {
+                harmFreq = (1.0f / fabsf((harm - 1.0f)));
+            }
+            midiAdd = 0.0f;
+        }
+        else
+        {
+            if (isStepped_raw == nullptr || *isStepped_raw > 0)
+            {
+                pitch = round(pitch);
+            }
+            midiAdd = pitch;
+            harmFreq = 1.0f;
         }
         
         //DBG(ftom(processor.tuner.mtof(note) / (harm - 1)));
         //DBG(processor.tuner.mtof(note) / (harm - 1));
-        float finalFreq = processor.tuner.mtof(LEAF_clip(0.0f, note + harm_pitch + (fine * 0.01f), 127.0f)) + freq;
+        float finalFreq = (processor.tuner.mtof(LEAF_clip(0.0f, note + midiAdd + (fine * 0.01f), 127.0f)) * harmFreq) + freq;
         //DBG(note);
         //freq = freq < 10.f ? 0.f : freq
         

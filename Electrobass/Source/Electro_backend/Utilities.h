@@ -165,12 +165,16 @@ private:
     float scale(float input)
     {
         //lookup table for env times
+        if (isnan(input))
+        {
+            input = 0.0f;
+        }
         input = LEAF_clip(0.0f, input, 1.0f);
         //scale to lookup range
         input *= 2047.0f;
         int inputInt = (int)input;
         float inputFloat = (float)inputInt - input;
-        int nextPos = LEAF_clip(0, inputInt + 1, 2047);
+        int nextPos = LEAF_clipInt(0, inputInt + 1, 2047);
         return (skewTable[inputInt] * (1.0f - inputFloat)) + (skewTable[nextPos] * inputFloat);
 
         //return input;

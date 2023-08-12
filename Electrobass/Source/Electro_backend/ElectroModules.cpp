@@ -347,7 +347,7 @@ chooser(nullptr)
     getDial(OscHarm)->setVisible(true);
     getDial(OscPitch)->setVisible(false);
     getDial(OscPitch)->setRange(-24.,24., 1.);
-    getDial(OscHarm)->setRange(-16.,16., 1.);
+    getDial(OscHarm)->setRange(-15.,15., 1.);
     f1Label.setAlpha(enabledToggle.getToggleState() ? 1. : 0.5);
     f2Label.setAlpha(enabledToggle.getToggleState() ? 1. : 0.5);
     sendSlider.setEnabled(enabledToggle.getToggleState());
@@ -448,7 +448,7 @@ void OscModule::buttonClicked(Button* button)
             getDial(OscHarm)->transferMappings(getDial(OscPitch));
         } else
         {
-            getDial(OscHarm)->setRange(-16, 16., steppedToggle.getToggleState() ? 1 : 0.01 );
+            getDial(OscHarm)->setRange(-15, 15., steppedToggle.getToggleState() ? 1 : 0.01 );
             //getDial(OscPitch)->setText("Harmonics", dontSendNotification);
             getDial(OscPitch)->setValue(0.0f);
             getDial(OscPitch)->setVisible(false);
