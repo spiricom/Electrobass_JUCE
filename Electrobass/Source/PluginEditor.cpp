@@ -1034,7 +1034,7 @@ void ElectroAudioProcessorEditor::labelTextChanged(Label* label)
     }
     else if (macroControlNames.contains(label))
     {
-        String name = label->getText().substring(0, 8);
+        String name = label->getText().substring(0, 10);
         updateMacroNames(macroControlNames.indexOf(label), name);
     }
     else if (stringChannelEntries.contains(label))

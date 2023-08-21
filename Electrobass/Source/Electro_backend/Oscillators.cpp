@@ -31,7 +31,7 @@ syncSource(nullptr)
         tPBSawSquare_init(&sawPaired[i], &processor.leaf);
         
         tPBSineTriangle_init(&sinePaired[i], &processor.leaf);
-       
+        processor.voiceIsSounding[i] = 0;
     }
     
     filterSend = std::make_unique<SmoothedParameter>(p, vts, n + " FilterSend");

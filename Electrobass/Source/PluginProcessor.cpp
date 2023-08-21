@@ -1285,10 +1285,16 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         data7bitInt.add(copedentNumber); // saying which copedent number to store (need this to be a user entered value)
         for (int i = 0; i < copedentName.length(); i++)
         {
-            data7bitInt.add((copedentName.toUTF8()[i] & 127)); //printable characters are in the 0-127 range
-            
+            if (i < 10)
+            {
+                data7bitInt.add((copedentName.toUTF8()[i] & 127)); //printable characters are in the 0-127 range
+            }
         }
-        uint16 remainingBlanks = 14 - copedentName.length();
+        uint16 remainingBlanks = 0;
+        if (copedentName.length() < 10)
+        {
+            remainingBlanks = 10 - copedentName.length();
+        }
         for (uint16 i = 0; i < remainingBlanks; i++)
         {
             data7bitInt.add(32);
