@@ -1237,7 +1237,7 @@ void FXModule::paint(Graphics &g)
 
 void FXModule::comboBoxChanged(ComboBox *comboBox)
 {
-    if (comboBox == &fxCB)
+   if (comboBox == &fxCB)
     {
         if (ac.processor.stream)
         {

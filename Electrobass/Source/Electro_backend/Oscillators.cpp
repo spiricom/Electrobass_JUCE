@@ -36,7 +36,7 @@ syncSource(nullptr)
     
     filterSend = std::make_unique<SmoothedParameter>(p, vts, n + " FilterSend");
     isHarmonic_raw = vts.getRawParameterValue(n + " isHarmonic");
-    isHarmonic_raw = vts.getRawParameterValue(n + " isEnabled");
+    //isHarmonic_raw = vts.getRawParameterValue(n + " isEnabled");
     isStepped_raw = vts.getRawParameterValue(n + " isStepped");
     isSync_raw = vts.getRawParameterValue(n + " isSync");
     syncType_raw = vts.getRawParameterValue(n + " syncType");
