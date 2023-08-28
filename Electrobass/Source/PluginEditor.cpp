@@ -179,7 +179,11 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     transposeSlider.setColour(Slider::textBoxTextColourId, Colours::gold.withBrightness(0.95f));
     sliderAttachments.add(new SliderAttachment(vts, "Transpose", transposeSlider));
     tab1.addAndMakeVisible(transposeSlider);
-    
+    masterSlider.setSliderStyle(Slider::SliderStyle::LinearHorizontal);
+    sliderAttachments.add(new SliderAttachment(vts, "Master", masterSlider));
+    masterSlider.setTextBoxStyle(Slider::TextEntryBoxPosition::NoTextBox, true, 10, 10);
+    masterSlider.setName("Master");
+    tab1.addAndMakeVisible(masterSlider);
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
       
@@ -696,10 +700,10 @@ void ElectroAudioProcessorEditor::resized()
             stringActivityButtons[i]->setBounds(stringActivityButtons[i-6]->getRight(), y+ 15*s,
                                             4 * align/12, 18*s);
     }
-    muteToggle.setBounds(stringActivityButtons[5]->getRight(), stringActivityButtons[5]->getY(), 4 * align, 18*s);
+    muteToggle.setBounds(stringActivityButtons[5]->getRight(), stringActivityButtons[5]->getY(), 1.5f * align, 18*s);
    
     pedalControlsMasterToggle.setBounds(stringActivityButtons[10]->getRight(), stringActivityButtons[10]->getY(),1.5f *align,18*s);
-    mpeToggle.setBounds(pedalControlsMasterToggle.getRight(), pedalControlsMasterToggle.getY(),4 * align, 18*s );
+    mpeToggle.setBounds(pedalControlsMasterToggle.getRight(), pedalControlsMasterToggle.getY(),1.5f* align, 18*s );
     //OSCILLOSCOPE.get
     //    keyboard.setBoundsRelative(0.f, 0.86f, 1.0f, 0.14f);
     //    keyboard.setKeyWidth(width / 52.0f);
@@ -710,6 +714,7 @@ void ElectroAudioProcessorEditor::resized()
     //meters.setBounds(540*s-1, outputModule->getBottom()-1, 360*s+2, 114*s);
     setVerticalRotatedWithBounds(meters, true, Rectangle<int>(540*s+ 45, macroDials.getFirst()->getBottom() - 10, 190*s+2, 50*s));
     //meters.setBounds(540*s-1, outputModule->getBottom()-1, 360*s+2, 114*s);
+    masterSlider.setBounds(540*s+ 45, muteToggle.getY(), 190*s - 5, mpeToggle.getHeight());
 //    setVerticalRotatedWithBounds(meters, true, Rectangle<int>(540*s+100, outputModule->getBottom()-1, 300*s+2, 60*s));
     //==============================================================================
     // TAB2 ========================================================================
@@ -718,54 +723,26 @@ void ElectroAudioProcessorEditor::resized()
     y = 40;
     int h = 30;
     int pad = 4;
-    
-    for (int i = 0; i < NUM_MACROS; ++i)
+    for (int i = 0; i < NUM_GENERIC_MACROS + 4; ++i)
     {
         int padx = (i/6) < 3 ? 0 : 2;
-        macroControlLabels[i]->setBounds(x + 216*(i/6) + padx, y+(h+pad)*(i%6)*2, 100, h);
-        macroControlEntries[i]->setBounds(macroControlLabels[i]->getRight(),
-                                          macroControlLabels[i]->getY(), 100, h);
         if (i < (NUM_GENERIC_MACROS + 4))
         {
-            macroControlNameLabels[i]->setBounds(x + 216*(i/6) + padx,
-                                                 y+(h+pad)+(h+pad)*(i%6)*2, 70, h);
+            macroControlNameLabels[i]->setBounds(x + 216*(i/12) + padx,
+                                                 y+(h+pad)*(i%12), 70, h);
             macroControlNames[i]->setBounds(macroControlNameLabels[i]->getRight(),
                                             macroControlNameLabels[i]->getY(), 130, h);
         }
     }
+    for (int i = 0; i < NUM_MACROS; ++i)
+    {
+        int padx = (i/6) < 3 ? 0 : 2;
+        macroControlLabels[i]->setBounds(x + 216*((i+12)/12) + padx, y+(h+pad)*(i%12), 100, h);
+        macroControlEntries[i]->setBounds(macroControlLabels[i]->getRight(),
+                                          macroControlLabels[i]->getY(), 100, h);
+      
+    }
     
-//    y = 40;
-//    for (int i = NUM_GENERIC_MACROS; i < NUM_MACROS; ++i)
-//    {
-//        int padx = (i/4) < 3 ? 0 : 2;
-//        int j = i - NUM_GENERIC_MACROS;
-//        macroControlLabels[i]->setBounds(x + 216*(i/6) + padx, y+(h+pad)*(i%4)*2, 100, h);
-//        macroControlEntries[i]->setBounds(macroControlLabels[i]->getRight(),
-//                                          macroControlLabels[i]->getY(), 100, h);
-//        if (i < (NUM_GENERIC_MACROS + 4))
-//        {
-//            macroControlNameLabels[i]->setBounds(x + 216*(i/4) + padx,
-//                                                 y+(h+pad)+(h+pad)*(i%4)*2, 70, h);
-//            macroControlNames[i]->setBounds(macroControlNameLabels[i]->getRight(),
-//                                            macroControlNameLabels[i]->getY(), 130, h);}
-//
-//    }
-    y = 300;
-//    for (int i = NUM_GENERIC_MACROS + 4; i < NUM_MACROS; ++i)
-//    {
-//        int j = i - (NUM_GENERIC_MACROS + 4);
-//        macroControlLabels[i]->setBounds(x + 216*(j/2), y+(h+pad)+(h+pad)*(j%2), 100, h);
-//        macroControlEntries[i]->setBounds(macroControlLabels[i]->getRight(),
-//                                          macroControlLabels[i]->getY(), 100, h);
-////        if (i == NUM_MACROS - 1)
-////        {
-////            macroControlLabels[i]->setBounds(x + 216*(j/2),
-////                                             y+(h+pad)+(h+pad)*((j%2)+0.5f),
-////                                             100, h);
-////            macroControlEntries[NUM_MACROS]->setBounds(macroControlLabels[i]->getRight(),
-////                                                       y+(h+pad)+(h+pad)*((j%2)+1), 100, h);
-////        }
-//    }
     
     y = 460;
     stringChannelLabels[0]->setBounds(x, y, 300, h);
@@ -921,7 +898,7 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
         
     }else
     {
-        DBG(String(vts.getParameter(slider->getName())->getValue()));
+        //DBG(String(vts.getParameter(slider->getName())->getValue()));
         if(std::count(cUniqueMacroNames.begin(), cUniqueMacroNames.end(),slider->getName()))
         {
             auto it = find(cUniqueMacroNames.begin(), cUniqueMacroNames.end(),slider->getName() );
@@ -934,7 +911,7 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
                   // of K
                 index = it - cUniqueMacroNames.begin();
               }
-            DBG(String(index + (NUM_GENERIC_MACROS -1)));
+            //DBG(String(index + (NUM_GENERIC_MACROS -1)));
             processor.ccSources.getUnchecked(index + (NUM_GENERIC_MACROS ))->setValue(slider->getValue());
         } else
         {
@@ -1131,6 +1108,11 @@ void ElectroAudioProcessorEditor::updateMPEToggle(bool state)
         stringChannelEntries[i]->setText(text, dontSendNotification);
         stringChannelEntries[i]->setEnabled(state);
     }
+}
+
+void ElectroAudioProcessorEditor::updatePedalVolumeControl(bool state)
+{
+    pedalControlsMasterToggle.setToggleState(state, sendNotification);
 }
 
 

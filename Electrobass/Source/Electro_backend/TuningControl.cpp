@@ -19,19 +19,29 @@ TuningControl::MidiToFreq TuningControl::setMtoFFunction(bool isMTSOn)
     }
 }
 
-float TuningControl::mtof(float mn)
+float TuningControl::mtof(float mn, float* mtofTable)
 {
-    return (this->*mtofptr)(mn);
+    return (this->*mtofptr)(mn, mtofTable);
 }
 
-float TuningControl::_mtof(float f)
+float TuningControl::_mtof(float f, float* mtofTable)
 {
-    if (f <= -1500.0f) return(0);
-    else if (f > 1499.0f) return(_mtof(1499.0f));
-    else return (8.17579891564f * expf(0.0577622650f * f));
+
+   
+    float tempIndexF =((f * 100.0f) + 16384.0f);
+    int tempIndexI = (int)tempIndexF;
+    tempIndexF = tempIndexF -tempIndexI;
+
+    float freqToSmooth1 = mtofTable[tempIndexI & 32767];
+    float freqToSmooth2 = mtofTable[(tempIndexI + 1) & 32767];
+    float finalFreq = (freqToSmooth1 * (1.0f - tempIndexF)) + (freqToSmooth2 * tempIndexF);
+    return finalFreq;
+    
 }
 
-float TuningControl::_MTS_mtof(float mn)
+
+
+float TuningControl::_MTS_mtof(float mn, float *mtofTable)
 {
     return MTS_NoteToFrequency(client, (char)mn, -1);
 }

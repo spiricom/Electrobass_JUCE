@@ -344,6 +344,7 @@ vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout()),
 prompt("","",AlertWindow::AlertIconType::NoIcon)
 
 {
+    suspendProcessing(true);
     fxPost = vts.getRawParameterValue("FX Order");
     formatManager.registerBasicFormats();   
     keyboardState.addListener(this);
@@ -530,12 +531,18 @@ prompt("","",AlertWindow::AlertIconType::NoIcon)
 	initialMappings.add(defaultFilter1Cutoff);
 	initialMappings.add(defaultOutputAmp);
     
+    tHighpass_init(&dcBlockMaster, 10.0f, &leaf);
+    
     DBG("SOURCE//");
+    
     for (int i = 0; i < sourceIds.size(); ++i)
     {
         DBG(sourceIds[i] + ": " + String(i));
         sourceMappingCounts.set(sourceIds[i], 0);
     }
+    suspendProcessing(false);
+    
+    LEAF_generate_mtof(mtofTable, -163.825, 163.825 ,32768 );
     
     DBG("Post init: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
 }
@@ -1554,7 +1561,8 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         }
 
         
-       outputSamples[0] = sampleOutput * mastergain * pedGain * 0.98f; //drop a little bit to avoid touching clipping
+        outputSamples[0] = sampleOutput * mastergain * pedGain * 0.98f; //drop a little bit to avoid touching clipping
+        tHighpass_tick(&dcBlockMaster, outputSamples[0]);
         for (int channel = 0; channel < totalNumOutputChannels; ++channel)
         {
             buffer.setSample(channel, s, LEAF_clip(-1.0f, outputSamples[0], 1.0f));

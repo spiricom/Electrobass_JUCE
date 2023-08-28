@@ -40,7 +40,7 @@ public:
         MTSOnOff();
         mtofptr = setMtoFFunction(isMTS);
     };
-    float mtof (float mn);
+    float mtof (float mn,float* mtofTable);
     auto const getIsMTS() {return isMTS;};
     String getCurrentScalaString() {
         return String(currentScale.rawText);
@@ -56,11 +56,11 @@ public:
 
 private:
     void loadTuning(float *arr);
-    typedef float (TuningControl::*MidiToFreq)(float);
+    typedef float (TuningControl::*MidiToFreq)(float,float*);
     static MidiToFreq setMtoFFunction(bool);
     MidiToFreq mtofptr;
-    float _MTS_mtof(float mn);
-    float _mtof(float mn);
+    float _MTS_mtof(float mn,float* mtofTable);
+    float _mtof(float mn,float* mtofTable);
     MTSClient *client;
     bool isMTS;
     void MTSOnOff();

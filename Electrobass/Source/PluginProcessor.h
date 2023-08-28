@@ -220,7 +220,7 @@ public:
     
     Array<File> waveTableFiles;
     HashMap<String, Array<tWaveTableS>> waveTables;
-
+    float mtofTable[32768];
     LEAF leaf;
     float voiceNote[MAX_NUM_VOICES];
     float voicePrevBend[MAX_NUM_VOICES];
@@ -395,7 +395,7 @@ private:
     StringArray paramIds;
     StringArray sourceIds;
     AudioProcessorValueTreeState vts;
-    
+    tHighpass dcBlockMaster;
     char dummy_memory[1];
     
     int currentTuning;

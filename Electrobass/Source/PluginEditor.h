@@ -85,11 +85,12 @@ public:
     void timerCallback() override;
     //void currentTabChanged(int tabIndex, const String &newCurrentTabName) override;
     void update();
-    
+    Slider masterSlider;
     ElectroAudioProcessor& processor;
     AudioProcessorValueTreeState& vts;
     void  valueTreePropertyChanged (ValueTree &treeWhosePropertyHasChanged, const Identifier &property) override;
     void updateMPEToggle(bool state);
+    void updatePedalVolumeControl(bool state);
     void updateNumVoicesSlider(int numVoices);
 private:
     LookAndFeel_V4 laf;
