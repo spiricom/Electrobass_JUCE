@@ -219,7 +219,7 @@ void Oscillator::tick(float output[][MAX_NUM_VOICES])
         
         //DBG(ftom(processor.tuner.mtof(note) / (harm - 1)));
         //DBG(processor.tuner.mtof(note) / (harm - 1));
-        float finalFreq = (processor.tuner.mtof(LEAF_clip(0.0f, note + midiAdd + (fine * 0.01f), 127.0f)) * harmFreq) + freq;
+        float finalFreq = (processor.tuner.mtof(LEAF_clip(0.0f, note + midiAdd + (fine * 0.01f), 127.0f), processor.mtofTable) * harmFreq) + freq;
         //DBG(note);
         //freq = freq < 10.f ? 0.f : freq
         
@@ -745,7 +745,7 @@ void NoiseGenerator::loadAll(int v)
     quickParams[NoiseTilt][v]->setValueToRaw();
     tVZFilter_setGain(&shelf1[v], fastdbtoa(-1.0f * ((quickParams[NoiseTilt][v]->read() * 30.0f) - 15.0f)));
     tVZFilter_setGain(&shelf2[v], fastdbtoa((quickParams[NoiseTilt][v]->read() * 30.0f) - 15.0f));
-    tVZFilter_setFreqFast(&bell1[v], faster_mtof(quickParams[NoiseTilt][v]->read()  * 77.0f + 42.0f));
+    tVZFilter_setFreqFast(&bell1[v], LEAF_clip(0.0f, (quickParams[NoiseFreq][v]->read() * 77.0f + 26.0f) * 35.929824561403509f, 4095.0f));
     tVZFilter_setGain(&bell1[v],fastdbtoa((quickParams[NoiseGain][v]->read() * 34.0f) - 17.0f));
 
 }

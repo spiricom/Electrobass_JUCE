@@ -556,7 +556,7 @@ private:
                         {
                             editor->updateMPEToggle(true);
                             editor->updateNumVoicesSlider(10);
-                            
+                            editor->updatePedalVolumeControl(true);
                         }
                     }
                 }
@@ -569,6 +569,7 @@ private:
                         {
                             editor->updateMPEToggle(false);
                             editor->updateNumVoicesSlider(1);
+                            editor->updatePedalVolumeControl(false);
                         }
                     }
                 }

@@ -1121,7 +1121,7 @@ ElectroModule(editor, vts, ac, 0.07f, 0.22f, 0.07f, 0.07f, 0.78f)
 {
     outlineColour = Colours::darkgrey;
     //masterDial = std::make_unique<ElectroDial>(editor, "Master", "Master", false, false);
-    //sliderAttachments.add(new SliderAttachment(vts, "Master", masterDial->getSlider()));
+   
     fxPreButton.setRadioGroupId(1001);
     fxPreButton.setClickingTogglesState(true);
     fxPostButton.setRadioGroupId(1001);
