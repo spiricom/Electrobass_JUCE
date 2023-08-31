@@ -1716,13 +1716,17 @@ void ElectroAudioProcessor::pitchBend(int channel, int data)
     {
         int string = channelToStringMap[channel];
         if (string < 0) return;
-        stringActivity[string] = stringActivityTimeout;
+        
         vts.getParameter("PitchBend" + String(string))->setValueNotifyingHost(bend);
     }
     else
     {
         vts.getParameter("PitchBend0")->setValueNotifyingHost(bend);
     }
+    
+
+    stringActivity[0] = stringActivityTimeout;
+        
 }
 
 void ElectroAudioProcessor::ctrlInput(int channel, int ctrl, int value)
@@ -1732,7 +1736,7 @@ void ElectroAudioProcessor::ctrlInput(int channel, int ctrl, int value)
     // Take all channel CCs outside of MPE mode; only take ch1 in MPE Mode
     if (!mpeMode || channel == stringChannels[0] || channel == 2)
     {
-        stringActivity[0] = stringActivityTimeout;
+        //stringActivity[0] = stringActivityTimeout;
         
         int m = ccNumberToMacroMap[ctrl];
         
@@ -1750,6 +1754,7 @@ void ElectroAudioProcessor::ctrlInput(int channel, int ctrl, int value)
             ccSources.getUnchecked(m)->setValue(v);
         }
     }
+    stringActivity[0] = stringActivityTimeout;
 }
 
 void ElectroAudioProcessor::sustainOff()
