@@ -241,6 +241,14 @@ void Oscillator::tick(float output[][MAX_NUM_VOICES])
         
         output[0][v] += sample*f * *afpEnabled;
         output[1][v] += sample*(1.f-f) * *afpEnabled ;
+        if (isnan(output[0][v]))
+        {
+            output[0][v] = 0.0f;
+        }
+        if (isnan(output[0][v]))
+        {
+            output[1][v] = 0.0f;
+        }
     }
     
     sampleInBlock++;
@@ -794,6 +802,15 @@ void NoiseGenerator::tick(float output[][MAX_NUM_VOICES])
         
         output[0][v] += sample*f * *afpEnabled;
         output[1][v] += sample*(1.f-f) * *afpEnabled ;
+        
+        if (isnan(output[0][v]))
+        {
+            output[0][v] = 0.0f;
+        }
+        if (isnan(output[0][v]))
+        {
+            output[1][v] = 0.0f;
+        }
     }
     sampleInBlock++;
 }

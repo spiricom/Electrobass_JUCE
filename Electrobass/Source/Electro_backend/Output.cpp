@@ -52,6 +52,10 @@ void Output::tick(float input[MAX_NUM_VOICES])
     {
         float amp = quickParams[OutputAmp][v]->read();
         amp = amp < 0.f ? 0.f : amp;
+        if (isnan(amp))
+        {
+            amp = 0.0f;
+        }
         input[v] = input[v] * amp;
         // Porting over some code from
         // https://github.com/juce-framework/JUCE/blob/master/modules/juce_dsp/processors/juce_Panner.cpp
