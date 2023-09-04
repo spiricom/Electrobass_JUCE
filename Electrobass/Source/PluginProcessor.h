@@ -396,6 +396,7 @@ private:
     StringArray sourceIds;
     AudioProcessorValueTreeState vts;
     tHighpass dcBlockMaster;
+    float denormalMult = 1.0f;
     char dummy_memory[1];
     
     int currentTuning;

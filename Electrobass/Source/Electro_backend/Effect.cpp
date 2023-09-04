@@ -15,11 +15,11 @@ Effect::Effect(const String& n, ElectroAudioProcessor& p,
 {
     setParams();
     _tick = typeToTick(Softclip);
-    int temp = processor.leaf.clearOnAllocation;
+    //int temp = processor.leaf.clearOnAllocation;
     getProcessor()->leaf.clearOnAllocation = 1;
 
     
-    getProcessor()->leaf.clearOnAllocation = temp;
+    //getProcessor()->leaf.clearOnAllocation = temp;
     afpFXType = vts.getRawParameterValue(n + " FXType");
     inv_oversample = 1.0f / OVERSAMPLE;
     for (int i = 0; i < MAX_NUM_VOICES; i++){
@@ -33,14 +33,16 @@ Effect::Effect(const String& n, ElectroAudioProcessor& p,
         tVZFilter_setSampleRate(&shelf2[i], getProcessor()->leaf.sampleRate * OVERSAMPLE);
         tVZFilter_setSampleRate(&bell1[i], getProcessor()->leaf.sampleRate * OVERSAMPLE);
         tCompressor_init(&comp[i], &getProcessor()->leaf);
-        tLockhartWavefolder_init(&wf[i], &getProcessor()->leaf);
         tHermiteDelay_init(&delay1[i], 4000.0f, 4096, &getProcessor()->leaf);
         tHermiteDelay_init(&delay2[i], 4000.0f, 4096, &getProcessor()->leaf);
         tCycle_init(&mod1[i], &getProcessor()->leaf);
         tCycle_init(&mod2[i], &getProcessor()->leaf);
         tCycle_setFreq(&mod1[i], 0.2f);
         tCycle_setFreq(&mod2[i], 0.22222222222f);
-        
+        tTapeDelay_init(&tapeDelay[i], 2000, 30000, &getProcessor()->leaf);
+        tSVF_init(&delayLP[i], SVFTypeLowpass, 16000.f, .7f, &getProcessor()->leaf);
+        tSVF_init(&delayHP[i], SVFTypeHighpass, 20.f, .7f, &getProcessor()->leaf);
+        tFeedbackLeveler_init(&feedbackControl[i], .99f, 0.01f, 0.125f, 0, &getProcessor()->leaf);
         
         //filters
         tSVF_init(&lowpass[i], SVFTypeLowpass, 2000.f, 0.7f, &processor.leaf);
@@ -67,7 +69,6 @@ Effect::~Effect()
         tVZFilter_free(&shelf1[i]);
         tVZFilter_free(&shelf2[i]);
         tCompressor_free(&comp[i]);
-        tLockhartWavefolder_free(&wf[i]);
         tHermiteDelay_free(&delay1[i]);
         tHermiteDelay_free(&delay2[i]);
         tCycle_free(&mod1[i]);
@@ -137,6 +138,9 @@ Effect::EffectTick Effect::typeToTick(FXType type)
         case Wavefolder:
             return &Effect::wavefolderTick;
         break;
+        case Delay:
+            return &Effect::delayTick;
+        break;
         case LpFilter:
             return &Effect::lowpassTick;
         break;
@@ -184,6 +188,38 @@ float Effect::wavefolderTick(float sample, float param1, float param2, float par
     sample = wfState[v] / (1.0f + curFB);
     sample = tHighpass_tick(&dcBlock1[v], sample);
     //sample *= param5[v];
+    return sample;
+}
+
+float Effect::delayTick(float sample, float param1, float param2, float param3, float param4, float param5, int v)
+{
+    
+    float FBval = param2 * 1.1f;
+    FBval = LEAF_clip(0.0f, FBval, 0.9f);
+    
+    float cutoff1 = LEAF_clip(0.0f, (param3* 127.0f-16.0f) * 35.929824561403509f, 4095.0f); //get in proper range for setFreqFast
+    float cutoff2 = LEAF_clip(0.0f, (param4*127.0f-16.0f) * 35.929824561403509f, 4095.0f); //get in proper range for setFreqFast
+    tSVF_setFreqFast(&delayLP[v], cutoff1);
+    tSVF_setFreqFast(&delayHP[v], cutoff2);
+    
+
+    sample = tFeedbackLeveler_tick(&feedbackControl[v], tanhf(sample + (delayFB[v] * FBval)));
+
+    tTapeDelay_setDelay(&tapeDelay[v], param1 * 30000.0f);
+    
+    if (param5 > 0.5f)
+    {
+        delayFB[v] = tTapeDelay_tick(&tapeDelay[v], sample);
+    }
+    
+    else
+    {
+        delayFB[v] = tTapeDelay_tick(&tapeDelay[v], delayFB[v]);
+    }
+    
+    delayFB[v] = tSVF_tick(&delayLP[v], delayFB[v]);
+    delayFB[v] = tanhf(tSVF_tick(&delayHP[v], delayFB[v]));
+    sample = delayFB[v];
     return sample;
 }
 

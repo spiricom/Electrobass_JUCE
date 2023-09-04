@@ -190,7 +190,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
         if (i == 0)
         {
             
-            stringActivityButtons.add(new TextButton("PB+CCs"));
+            stringActivityButtons.add(new TextButton("PBin"));
             stringActivityButtons[i]->setConnectedEdges(Button::ConnectedOnLeft &
                                                         Button::ConnectedOnRight);
             stringActivityButtons[i]->setInterceptsMouseClicks(false, false);

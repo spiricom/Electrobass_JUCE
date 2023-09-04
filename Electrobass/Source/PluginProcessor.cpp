@@ -1411,6 +1411,9 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
     int mpe = mpeMode ? 1 : 0;
     int impe = 1-mpe;
     
+
+    denormalMult = denormalMult * -1.0f;
+    float denormalFix = 1e-15 * denormalMult;
     for (int s = 0; s < buffer.getNumSamples(); s++)
     {
         tickKnobsToSmooth();
@@ -1494,6 +1497,12 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         }
         //per voice inside
         noise->tick(samples);
+        
+        for (int v = 0; v < numVoicesActive; ++v)
+        {
+            samples[0][v] += denormalFix;
+            samples[1][v] += denormalFix;
+        }
         //per voice inside
         filt[0]->tick(samples[0]);
         
@@ -1762,7 +1771,7 @@ void ElectroAudioProcessor::ctrlInput(int channel, int ctrl, int value)
             ccSources.getUnchecked(m)->setValue(v);
         }
     }
-    stringActivity[0] = stringActivityTimeout;
+    //stringActivity[0] = stringActivityTimeout;
 }
 
 void ElectroAudioProcessor::sustainOff()
