@@ -2155,7 +2155,8 @@ void ElectroAudioProcessor::setStateInformation (const void* data, int sizeInByt
         // Audio processor value tree state
         if (XmlElement* state = xml->getChildByName(vts.state.getType()))
             vts.replaceState (juce::ValueTree::fromXml (*state));
-        DBG("Effect1 PAram2 " + String(vts.getRawParameterValue("Effect1 Param2")->load(std::memory_order_relaxed)));
+        DBG("FX ORDER"  +String( vts.getRawParameterValue("FX Order")->load()));
+      
         for (int v = 0; v < numVoicesActive; v++)
         {
             for (int i = 0; i < NUM_OSCS; i++)
