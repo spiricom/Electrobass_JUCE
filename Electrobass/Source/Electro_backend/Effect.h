@@ -71,6 +71,8 @@ private:
     float wfState[MAX_NUM_VOICES];
     float wfGainState[MAX_NUM_VOICES];
     float wfOffsetState[MAX_NUM_VOICES];
+    float delayFB[MAX_NUM_VOICES];
+    tFeedbackLeveler feedbackControl[MAX_NUM_VOICES];
     std::atomic<float>* afpFXType;
     tDiodeFilter diodeFilters[MAX_NUM_VOICES];
     tVZFilter VZfilterPeak[MAX_NUM_VOICES];
@@ -78,6 +80,10 @@ private:
     tVZFilter VZfilterHS[MAX_NUM_VOICES];
     tVZFilter VZfilterBR[MAX_NUM_VOICES];
     tSVF lowpass[MAX_NUM_VOICES];
+    tSVF delayLowpass[MAX_NUM_VOICES];
+    tTapeDelay tapeDelay[MAX_NUM_VOICES];
+    tSVF delayLP[MAX_NUM_VOICES];
+    tSVF delayHP[MAX_NUM_VOICES];
     tSVF highpass[MAX_NUM_VOICES];
     tSVF bandpass[MAX_NUM_VOICES];
     tLadderFilter Ladderfilter[MAX_NUM_VOICES];

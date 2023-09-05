@@ -145,6 +145,10 @@ void Filter::tick(float* samples)
         q = q < 0.1f ? 0.1f : q;
         
         (this->*filterTick)(samples[v], v, cutoff, q, keyFollow, gain);
+        if (isnan(samples[v]))
+        {
+            samples[v] = 0.0f;
+        }
     }
     
     sampleInBlock++;

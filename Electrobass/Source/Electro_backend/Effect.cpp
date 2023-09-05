@@ -15,43 +15,57 @@ Effect::Effect(const String& n, ElectroAudioProcessor& p,
 {
     setParams();
     _tick = typeToTick(Softclip);
-    int temp = processor.leaf.clearOnAllocation;
+    //int temp = processor.leaf.clearOnAllocation;
     getProcessor()->leaf.clearOnAllocation = 1;
 
     
-    getProcessor()->leaf.clearOnAllocation = temp;
+    //getProcessor()->leaf.clearOnAllocation = temp;
     afpFXType = vts.getRawParameterValue(n + " FXType");
     inv_oversample = 1.0f / OVERSAMPLE;
     for (int i = 0; i < MAX_NUM_VOICES; i++){
         tCrusher_init(&bc[i],&getProcessor()->leaf);
         tHighpass_init(&dcBlock1[i], 5.0f,&getProcessor()->leaf);
+        tHighpass_setSampleRate(&dcBlock1[i], getProcessor()->leaf.sampleRate * OVERSAMPLE);
         tHighpass_init(&dcBlock2[i], 5.0f,&getProcessor()->leaf);
+        tHighpass_setSampleRate(&dcBlock2[i], getProcessor()->leaf.sampleRate * OVERSAMPLE);
         tVZFilter_init(&shelf1[i], Lowshelf, 80.0f, 6.0f,  &getProcessor()->leaf);
-        tVZFilter_init(&shelf2[i], Highshelf, 12000.0f, 6.0f, &getProcessor()->leaf);
-        tVZFilter_init(&bell1[i], Bell, 1000.0f, 1.9f,  &getProcessor()->leaf);
         tVZFilter_setSampleRate(&shelf1[i], getProcessor()->leaf.sampleRate * OVERSAMPLE);
+        tVZFilter_init(&shelf2[i], Highshelf, 12000.0f, 6.0f, &getProcessor()->leaf);
         tVZFilter_setSampleRate(&shelf2[i], getProcessor()->leaf.sampleRate * OVERSAMPLE);
+        tVZFilter_init(&bell1[i], Bell, 1000.0f, 1.9f,  &getProcessor()->leaf);
         tVZFilter_setSampleRate(&bell1[i], getProcessor()->leaf.sampleRate * OVERSAMPLE);
         tCompressor_init(&comp[i], &getProcessor()->leaf);
-        tLockhartWavefolder_init(&wf[i], &getProcessor()->leaf);
+        tCompressor_setSampleRate(&comp[i], getProcessor()->leaf.sampleRate * OVERSAMPLE);
         tHermiteDelay_init(&delay1[i], 4000.0f, 4096, &getProcessor()->leaf);
         tHermiteDelay_init(&delay2[i], 4000.0f, 4096, &getProcessor()->leaf);
         tCycle_init(&mod1[i], &getProcessor()->leaf);
+        tCycle_setSampleRate(&mod1[i], getProcessor()->leaf.sampleRate * OVERSAMPLE);
         tCycle_init(&mod2[i], &getProcessor()->leaf);
+        tCycle_setSampleRate(&mod2[i], getProcessor()->leaf.sampleRate * OVERSAMPLE);
         tCycle_setFreq(&mod1[i], 0.2f);
         tCycle_setFreq(&mod2[i], 0.22222222222f);
-        
+        tTapeDelay_init(&tapeDelay[i], 2000, 30000, &getProcessor()->leaf);
+        tFeedbackLeveler_init(&feedbackControl[i], .99f, 0.01f, 0.125f, 0, &getProcessor()->leaf);
         
         //filters
         tSVF_init(&lowpass[i], SVFTypeLowpass, 2000.f, 0.7f, &processor.leaf);
+        tSVF_setSampleRate(&lowpass[i], getProcessor()->leaf.sampleRate * OVERSAMPLE);
         tSVF_init(&highpass[i], SVFTypeHighpass, 2000.f, 0.7f, &processor.leaf);
+        tSVF_setSampleRate(&highpass[i], getProcessor()->leaf.sampleRate * OVERSAMPLE);
         tSVF_init(&bandpass[i], SVFTypeBandpass, 2000.f, 0.7f, &processor.leaf);
+        tSVF_setSampleRate(&bandpass[i], getProcessor()->leaf.sampleRate * OVERSAMPLE);
         tDiodeFilter_init(&diodeFilters[i], 2000.f, 1.0f, &processor.leaf);
+        tDiodeFilter_setSampleRate(&diodeFilters[i], getProcessor()->leaf.sampleRate * OVERSAMPLE);
         tVZFilter_init(&VZfilterPeak[i], Bell, 2000.f, 1.0f, &processor.leaf);
+        tVZFilter_setSampleRate(&VZfilterPeak[i], getProcessor()->leaf.sampleRate * OVERSAMPLE);
         tVZFilter_init(&VZfilterLS[i], Lowshelf, 2000.f, 1.0f, &processor.leaf);
+        tVZFilter_setSampleRate(&VZfilterLS[i], getProcessor()->leaf.sampleRate * OVERSAMPLE);
         tVZFilter_init(&VZfilterHS[i], Highshelf, 2000.f, 1.0f, &processor.leaf);
+        tVZFilter_setSampleRate(&VZfilterHS[i], getProcessor()->leaf.sampleRate * OVERSAMPLE);
         tVZFilter_init(&VZfilterBR[i], BandReject, 2000.f, 1.0f, &processor.leaf);
+        tVZFilter_setSampleRate(&VZfilterBR[i], getProcessor()->leaf.sampleRate * OVERSAMPLE);
         tLadderFilter_init(&Ladderfilter[i], 2000.f, 1.0f, &processor.leaf);
+        tLadderFilter_setSampleRate(&Ladderfilter[i], getProcessor()->leaf.sampleRate * OVERSAMPLE);
     }
     LEAF_generate_table_skew_non_sym(resTable, 0.01f, 10.0f, 0.5f, SCALE_TABLE_SIZE);
 }
@@ -67,11 +81,13 @@ Effect::~Effect()
         tVZFilter_free(&shelf1[i]);
         tVZFilter_free(&shelf2[i]);
         tCompressor_free(&comp[i]);
-        tLockhartWavefolder_free(&wf[i]);
         tHermiteDelay_free(&delay1[i]);
         tHermiteDelay_free(&delay2[i]);
         tCycle_free(&mod1[i]);
         tCycle_free(&mod2[i]);
+    
+        tTapeDelay_free(&tapeDelay[i]);
+        tFeedbackLeveler_free(&feedbackControl[i]);
         
         //filters
         tSVF_free(&lowpass[i]);
@@ -137,6 +153,9 @@ Effect::EffectTick Effect::typeToTick(FXType type)
         case Wavefolder:
             return &Effect::wavefolderTick;
         break;
+        case Delay:
+            return &Effect::delayTick;
+        break;
         case LpFilter:
             return &Effect::lowpassTick;
         break;
@@ -180,10 +199,40 @@ float Effect::wavefolderTick(float sample, float param1, float param2, float par
     float curFF = param4;
     float ff = curFF * tanhf(sample) + ((1.0f - curFF) * sample);
     float fb = curFB * tanhf(wfState[v]);
-    wfState[v] = (ff + fb) - param5 * sinf(TWO_PI * sample);
+    wfState[v] = (ff + fb) - (param5 * sinf(TWO_PI * sample));
     sample = wfState[v] / (1.0f + curFB);
     sample = tHighpass_tick(&dcBlock1[v], sample);
-    //sample *= param5[v];
+    return sample;
+}
+
+float Effect::delayTick(float sample, float param1, float param2, float param3, float param4, float param5, int v)
+{
+    
+    float FBval = param2 * 1.1f;
+    FBval = LEAF_clip(0.0f, FBval, 1.1f);
+    
+    float cutoff1 = LEAF_clip(0.0f, (param3* 127.0f-16.0f) * 35.929824561403509f, 4095.0f); //get in proper range for setFreqFast
+    float cutoff2 = LEAF_clip(0.0f, (param4*127.0f-16.0f) * 35.929824561403509f, 4095.0f); //get in proper range for setFreqFast
+    tSVF_setFreqFast(&lowpass[v], cutoff1);
+    tSVF_setFreqFast(&highpass[v], cutoff2);
+    
+    if (isnan(sample))
+    {
+        sample = 0.0f;
+    }
+    sample *= (param5 * 1.5f) + 1.0f;
+    
+    sample = tFeedbackLeveler_tick(&feedbackControl[v], tanhf(sample + (delayFB[v] * FBval)));
+
+    tTapeDelay_setDelay(&tapeDelay[v], param1 * 30000.0f + 1.0f);
+    
+
+    delayFB[v] = tTapeDelay_tick(&tapeDelay[v], sample);
+
+    
+    delayFB[v] = tSVF_tick(&lowpass[v], delayFB[v]);
+    delayFB[v] = tanhf(tSVF_tick(&highpass[v], delayFB[v]));
+    sample = delayFB[v];
     return sample;
 }
 

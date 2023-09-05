@@ -190,7 +190,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
         if (i == 0)
         {
             
-            stringActivityButtons.add(new TextButton("PB+CCs"));
+            stringActivityButtons.add(new TextButton("PBin"));
             stringActivityButtons[i]->setConnectedEdges(Button::ConnectedOnLeft &
                                                         Button::ConnectedOnRight);
             stringActivityButtons[i]->setInterceptsMouseClicks(false, false);
@@ -768,7 +768,7 @@ void ElectroAudioProcessorEditor::resized()
     //versionLabel.setFont(euphemia.withHeight(20*s));
     sendOutButton.setBounds(width*0.82f, -1, width*0.08f+2, tabs.getTabBarDepth());
     streamChangesButton.setBounds(width*0.90f, -1, width*0.1f+2, tabs.getTabBarDepth());
-    presetNumber.setBounds(sendOutButton.getX() - width*0.08f+2, -1, width*0.07f+1, tabs.getTabBarDepth()/2);
+    presetNumber.setBounds(sendOutButton.getX() - width*0.08f+2, -1, width*0.07f+1, tabs.getTabBarDepth());
     
 //    presetNamelabel.setBounds(presetNameEditor.getX()-  width*0.05f+2, tabs.getTabBarDepth()/2,width*0.05f+2, tabs.getTabBarDepth()/2);
     presetNumberlabel.setBounds(presetNumber.getX()-  width*0.05f+2, -1,width*0.05f+2, tabs.getTabBarDepth()/2);
@@ -1082,6 +1082,7 @@ void ElectroAudioProcessorEditor::update()
     updateMidiKeyRangeSlider(processor.midiKeyMin, processor.midiKeyMax);
     updateNumVoicesSlider(processor.numVoicesActive);
     updateRandomValueLabel(processor.lastRandomValue);
+    updateFXOrder(
     for(auto osc : oscModules)
     {
         osc->updateShapeCB();

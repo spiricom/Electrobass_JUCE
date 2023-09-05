@@ -369,7 +369,7 @@ prompt("","",AlertWindow::AlertIconType::NoIcon)
         centsDeviation[i] = i;
     }
 
-    leaf.clearOnAllocation = 0;
+    leaf.clearOnAllocation = 1;
     
     for (int i = 0; i < NUM_OSCS; ++i)
     {
@@ -619,7 +619,11 @@ void ElectroAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBloc
 {
     stringActivityTimeout = sampleRate/samplesPerBlock/2;
     LEAF_setSampleRate(&leaf, sampleRate);
-    
+    //clear oversampler array
+    for (int i = 0; i < OVERSAMPLE; i++)
+    {
+        oversamplerArray[i] = 0.0f;
+    }
     DBG("Pre prepare: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
     
 
@@ -1411,6 +1415,9 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
     int mpe = mpeMode ? 1 : 0;
     int impe = 1-mpe;
     
+
+    denormalMult = denormalMult * -1.0f;
+    float denormalFix = 1e-15 * denormalMult;
     for (int s = 0; s < buffer.getNumSamples(); s++)
     {
         tickKnobsToSmooth();
@@ -1494,8 +1501,14 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         }
         //per voice inside
         noise->tick(samples);
+        for (int v = 0; v < numVoicesActive; ++v)
+        {
+            samples[0][v] += denormalFix;
+            samples[1][v] += denormalFix;
+        }
         //per voice inside
         filt[0]->tick(samples[0]);
+
         
         for (int v = 0; v < numVoicesActive; ++v)
         {
@@ -1507,6 +1520,11 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         for (int v = 0; v < numVoicesActive; ++v)
         {
             samples[1][v] += samples[0][v]*parallel;
+            
+            if (isnan(samples[1][v]))
+            {
+                samples[1][v] = 0.0f;
+            }
         }
         if (fxPost == nullptr || *fxPost > 0)
         {
@@ -1518,9 +1536,22 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         
         for (int v = 0; v < numVoicesActive; ++v)
         {
+            if (isnan(samples[1][v]))
+            {
+                samples[1][v] = 0.0f;
+            }
             tOversampler_upsample(&os[v], samples[1][v], oversamplerArray);
+            if (isnan(oversamplerArray[0]))
+            {
+                oversamplerArray[0] = 0.0f;
+            }
+            if (isnan(oversamplerArray[1]))
+            {
+                oversamplerArray[1] = 0.0f;
+            }
             for (int i = 0; i < fx.size(); i++) {
                 fx[i]->oversample_tick(oversamplerArray, v);
+                
             }
             //hard clip before downsampling to get a little more antialiasing from clipped signal.
             for (int i = 0; i < (OVERSAMPLE); i++)
@@ -1528,16 +1559,25 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
                 oversamplerArray[i] = LEAF_clip(-1.0f, oversamplerArray[i], 1.0f);
             }
             samples[1][v] = tOversampler_downsample(&os[v], oversamplerArray);
+            if (isnan(samples[1][v]))
+            {
+                samples[1][v] = 0.0f;
+            }
         }
     
         if (fxPost == nullptr || *fxPost <= 0)
         {
             output->tick(samples[1]);
+            
         }
         float sampleOutput = 0.0f;
         output->tickLowpass(samples[1]);
         for(int v = 0; v < numVoicesActive; v++)
         {
+            if (isnan(samples[1][v]))
+            {
+                samples[1][v] = 0.0f;
+            }
             sampleOutput += samples[1][v];
         }
         float mastergain = master->tickNoHooks();
@@ -1548,16 +1588,16 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
        // span a better range.
         if(pedalControlsMaster)
         {
-        float volumeSmoothed = ccParams.getUnchecked(12)->get();
-        float volIdx = LEAF_clip(47.0f, ((volumeSmoothed * 80.0f) + 47.0f), 127.0f);
-        
-        //then interpolate the value
-        int volIdxInt = (int) volIdx;
-        float alpha = volIdx-volIdxInt;
-        int volIdxIntPlus = (volIdxInt + 1) & 127;
-        float omAlpha = 1.0f - alpha;
-        pedGain = volumeAmps128[volIdxInt] * omAlpha;
-        pedGain += volumeAmps128[volIdxIntPlus] * alpha;
+            float volumeSmoothed = ccParams.getUnchecked(12)->get();
+            float volIdx = LEAF_clip(0.0f, (volumeSmoothed * 80.0f), 127.0f);
+            
+            //then interpolate the value
+            int volIdxInt = (int) volIdx;
+            float alpha = volIdx-volIdxInt;
+            int volIdxIntPlus = (volIdxInt + 1) & 127;
+            float omAlpha = 1.0f - alpha;
+            pedGain = volumeAmps128[volIdxInt] * omAlpha;
+            pedGain += volumeAmps128[volIdxIntPlus] * alpha;
         }
 
         
@@ -1724,13 +1764,17 @@ void ElectroAudioProcessor::pitchBend(int channel, int data)
     {
         int string = channelToStringMap[channel];
         if (string < 0) return;
-        stringActivity[string] = stringActivityTimeout;
+        
         vts.getParameter("PitchBend" + String(string))->setValueNotifyingHost(bend);
     }
     else
     {
         vts.getParameter("PitchBend0")->setValueNotifyingHost(bend);
     }
+    
+
+    stringActivity[0] = stringActivityTimeout;
+        
 }
 
 void ElectroAudioProcessor::ctrlInput(int channel, int ctrl, int value)
@@ -1740,7 +1784,7 @@ void ElectroAudioProcessor::ctrlInput(int channel, int ctrl, int value)
     // Take all channel CCs outside of MPE mode; only take ch1 in MPE Mode
     if (!mpeMode || channel == stringChannels[0] || channel == 2)
     {
-        stringActivity[0] = stringActivityTimeout;
+        //stringActivity[0] = stringActivityTimeout;
         
         int m = ccNumberToMacroMap[ctrl];
         
@@ -1758,6 +1802,7 @@ void ElectroAudioProcessor::ctrlInput(int channel, int ctrl, int value)
             ccSources.getUnchecked(m)->setValue(v);
         }
     }
+    //stringActivity[0] = stringActivityTimeout;
 }
 
 void ElectroAudioProcessor::sustainOff()
