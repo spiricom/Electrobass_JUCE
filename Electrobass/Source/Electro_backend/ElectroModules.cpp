@@ -1121,34 +1121,48 @@ ElectroModule(editor, vts, ac, 0.07f, 0.22f, 0.07f, 0.07f, 0.78f)
 {
     outlineColour = Colours::darkgrey;
     //masterDial = std::make_unique<ElectroDial>(editor, "Master", "Master", false, false);
-   
-    fxPreButton.setRadioGroupId(1001);
-    fxPreButton.setClickingTogglesState(true);
     fxPostButton.setRadioGroupId(1001);
     fxPostButton.setClickingTogglesState(true);
-    //addAndMakeVisible(fxPreButton);
-    addAndMakeVisible(fxPostButton);
-    addAndMakeVisible(fxPreButton);
-    fxPreButton.onClick = [this] {updateFXOrder(&fxPreButton);};
-    fxPostButton.onClick = [this] {updateFXOrder(&fxPostButton);};
-    getDial(OutputAmp)->getTargets()[2]->setRemovable(false);
-    fxPreButton.triggerClick();
+    fxPreButton.setRadioGroupId(1001);
+    fxPreButton.setClickingTogglesState(true);
     
-    //updateFXOrder(<#TextButton *button#>)
+    //addAndMakeVisible(fxPreButton);
+    addAndMakeVisible(fxPreButton);
+    addAndMakeVisible(fxPostButton);
+    fxPreButton.addListener(this);
+    fxPostButton.addListener(this);
+    
+    getDial(OutputAmp)->getTargets()[2]->setRemovable(false);
+   // updateFXOrder(1.0f);
+    updateFXOrder(vts.getRawParameterValue("FX Order")->load());
+}
+
+void OutputModule::updateFXOrder(float val)
+{
+    if (val >= 1.f)
+    {
+    
+        fxPreButton.setToggleState(false,dontSendNotification);
+        fxPostButton.setToggleState(true,dontSendNotification);
+    } else
+    {
+        fxPreButton.setToggleState(true,dontSendNotification);
+        fxPostButton.setToggleState(false,dontSendNotification);
+        
+    }
 }
 
 
-
-void OutputModule::updateFXOrder(TextButton *button)
+void OutputModule::updateFXOrder(Button *button)
 {
     if(button == &fxPreButton)
     {
-        vts.getParameter("FX Order")->setValueNotifyingHost(!button->getToggleState());
+        vts.getParameter("FX Order")->setValueNotifyingHost(0.f);
         
     }
     else if(button == &fxPostButton)
     {
-        vts.getParameter("FX Order")->setValueNotifyingHost(button->getToggleState());
+        vts.getParameter("FX Order")->setValueNotifyingHost(1.f);
     }
     if (ac.processor.stream)
     {
@@ -1169,6 +1183,10 @@ void OutputModule::updateFXOrder(TextButton *button)
         DBG("Send:  FXORder with ID"  + String(tempId) + " and value " + String(ac.processor.streamValue1));
        ac.processor.streamSend = true;
     }
+}
+void OutputModule::buttonClicked(Button* button)
+{
+    updateFXOrder(button);
 }
 
 

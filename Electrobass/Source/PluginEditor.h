@@ -100,7 +100,10 @@ private:
     void updateMacroControl(int macro, int ctrl);
     void updateMacroNames(int macro, String name);
     void updateMidiKeyRangeSlider(int min, int max);
-   
+    void updateFXOrder(bool order)
+    {
+        
+    }
     void updateVelocityLabel(float velocity);
     void updateRandomValueLabel(float value);
     static void setVerticalRotatedWithBounds (Component& component, bool clockWiseRotation, Rectangle<int> verticalBounds)

@@ -299,7 +299,7 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
         paramIds.add(n);
     }
     n = "FX Order";
-    layout.add (std::make_unique<AudioParameterChoice> (ParameterID { n,  1 }, n, StringArray("Off", "On"), 0));
+    layout.add (std::make_unique<AudioParameterChoice> (ParameterID { n,  1 }, n, StringArray("Off", "On"), 1));
     paramIds.add(n);
     
     n = "PedalControlsMaster";
@@ -543,6 +543,10 @@ prompt("","",AlertWindow::AlertIconType::NoIcon)
     suspendProcessing(false);
     
     LEAF_generate_mtof(mtofTable, -163.825, 163.825 ,32768 );
+    if (ElectroAudioProcessorEditor* editor = dynamic_cast<ElectroAudioProcessorEditor*>(getActiveEditor()))
+    {
+        editor->update();
+    }
     
     DBG("Post init: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
 }
