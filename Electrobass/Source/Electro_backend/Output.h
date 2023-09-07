@@ -29,6 +29,7 @@ public:
     void tick(float input[MAX_NUM_VOICES]);
     std::unique_ptr<SmoothedParameter> master;
     void tickLowpass(float input [MAX_NUM_VOICES]);
+
 private:
     void lowpassTick(float& sample, int v, float cutoff);
     tSVF lowpass[MAX_NUM_VOICES];

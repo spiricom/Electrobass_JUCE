@@ -1082,9 +1082,9 @@ void ElectroAudioProcessorEditor::update()
     updateMidiKeyRangeSlider(processor.midiKeyMin, processor.midiKeyMax);
     updateNumVoicesSlider(processor.numVoicesActive);
     updateRandomValueLabel(processor.lastRandomValue);
-    
-    //update effects order?? --JS
-    
+
+    outputModule->updateFXOrder(processor.fxPost->load());
+
     for(auto osc : oscModules)
     {
         osc->updateShapeCB();

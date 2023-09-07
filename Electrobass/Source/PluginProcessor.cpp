@@ -299,7 +299,7 @@ AudioProcessorValueTreeState::ParameterLayout ElectroAudioProcessor::createParam
         paramIds.add(n);
     }
     n = "FX Order";
-    layout.add (std::make_unique<AudioParameterChoice> (ParameterID { n,  1 }, n, StringArray("Off", "On"), 0));
+    layout.add (std::make_unique<AudioParameterChoice> (ParameterID { n,  1 }, n, StringArray("Off", "On"), 1));
     paramIds.add(n);
     
     n = "PedalControlsMaster";
@@ -551,6 +551,10 @@ prompt("","",AlertWindow::AlertIconType::NoIcon)
     suspendProcessing(false);
     
     LEAF_generate_mtof(mtofTable, -163.825, 163.825 ,32768 );
+    if (ElectroAudioProcessorEditor* editor = dynamic_cast<ElectroAudioProcessorEditor*>(getActiveEditor()))
+    {
+        editor->update();
+    }
     
     DBG("Post init: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
 }
@@ -2219,7 +2223,8 @@ void ElectroAudioProcessor::setStateInformation (const void* data, int sizeInByt
         // Audio processor value tree state
         if (XmlElement* state = xml->getChildByName(vts.state.getType()))
             vts.replaceState (juce::ValueTree::fromXml (*state));
-        DBG("Effect1 PAram2 " + String(vts.getRawParameterValue("Effect1 Param2")->load(std::memory_order_relaxed)));
+        DBG("FX ORDER"  +String( vts.getRawParameterValue("FX Order")->load()));
+      
         for (int v = 0; v < numVoicesActive; v++)
         {
             for (int i = 0; i < NUM_OSCS; i++)

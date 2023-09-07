@@ -259,13 +259,15 @@ public:
     
     OutputModule(ElectroAudioProcessorEditor& editor, AudioProcessorValueTreeState&, AudioComponent&);
     ~OutputModule() override;
-    
+    void updateFXOrder(Button *button);
+    void buttonClicked(Button* button) override;
     void resized() override;
-    
+    void updateFXOrder(float);
 private:
-    void updateFXOrder(TextButton *button);
-    TextButton fxPreButton {"FX PRE"};
+    
+    
     TextButton fxPostButton {"FX POST"};
+    TextButton fxPreButton {"FX PRE"};
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (OutputModule)
 };
 
@@ -282,6 +284,7 @@ public:
     void resized() override;
     void paint(Graphics &g) override;
     void comboBoxChanged(ComboBox *comboBox) override;
+    
 private:
     ComboBox fxCB;
     void setNamesAndDefaults(FXType effect);

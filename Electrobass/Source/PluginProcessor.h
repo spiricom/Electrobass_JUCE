@@ -383,13 +383,14 @@ public:
         openStrings[i] = val;
     }
     void sendOpenStringMidiMessage();
+    std::atomic<float>* fxPost;
 private:
     HashMap<String, MappingTargetModel*> targetMap;
     float openStrings[4] = {28, 33, 38, 43};
     String tuningName;
     int tuningNumber;
     bool mute = false;
-    std::atomic<float>* fxPost;
+    
     std::mutex m;
     MTSClient *client;
     StringArray paramIds;
