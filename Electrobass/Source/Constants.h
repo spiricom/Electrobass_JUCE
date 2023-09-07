@@ -24,8 +24,7 @@
 #define NUM_MACROS (NUM_GENERIC_MACROS + NUM_UNIQUE_MACROS)
 #define PEDAL_MACRO_ID (NUM_MACROS-1)
 
-#define NUM_STRINGS 12
-#define MAX_NUM_VOICES 12
+#define MAX_NUM_VOICES 10
 #define NUM_CHANNELS (MAX_NUM_VOICES+1)
 
 #define NUM_OSCS 3
@@ -148,7 +147,7 @@ static const StringArray cLowFreqParams = {
     "Phase"
 };
 static const std::vector<std::vector<float>> vLowFreqInit = {
-    { 0.0f, 30.f, 0.5f, 2.f },  //Rate
+    { 0.0f, 30.f, 0.25f, 2.f },  //Rate
     { 0.0f, 1.0f, 0.0f, 0.5f },  //Shape
     { 0.0f, 1.0f, 0.0f, 0.5f } // Phase Offset
 };
@@ -191,7 +190,7 @@ static const std::vector<std::vector<float>> vNoiseInit = {
     { 0.0f, 1.f, 0.5f, 0.5f },   //tilt
     { 0.0f, 1.f, 0.5f, 0.5f },  //Gain
     { 0.0f, 1.f, 0.5f, 0.5f },   //Freq
-    { 0.0f, 2.0f, 0.f, 1.f }   //Amp
+    { 0.0f, 1.0f, 0.f, 0.5f }   //Amp
 };
 
 //==============================================================================
@@ -374,9 +373,10 @@ typedef enum _FXType
     None = 0,
     Softclip,
     Hardclip,
+    PolynomialShaper,
     ABSaturator,
     Tanh,
-    Shaper,
+    Shaper2,
     Compressor,
     Chorus,
     Bitcrush,
@@ -399,9 +399,10 @@ static const StringArray FXTypeNames = {
     "None",
     "Softclip",
     "Hardclip",
+    "PolynomialShaper",
     "ABSaturator",
     "Tanh",
-    "Shaper",
+    "Shaper2",
     "Compressor",
     "Chorus",
     "Bitcrush",
@@ -421,6 +422,7 @@ static const StringArray FXTypeNames = {
 
 static const std::vector<StringArray> FXParamNames = {
     {"","","","","" },
+    {"Drive","Offset", "","","" },
     {"Drive","Offset","Shape","","" },
     {"Drive","Offset","Shape","","" },
     {"Drive","Offset","","",""},
@@ -445,6 +447,7 @@ static const std::vector<StringArray> FXParamNames = {
 
 static const std::vector<std::vector<float>> FXParamDefaults = {
     {0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    {0.2f, 0.5f, 1.0f, 1.0f, 0.0f},
     {0.2f, 0.5f, 1.0f, 1.0f, 0.0f},
     {0.2f, 0.5f, 1.0f, 1.0f, 0.0f},
     {0.2f, 0.5f, 1.0f, 1.0f, 0.0f},

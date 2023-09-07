@@ -161,7 +161,9 @@ public:
     void loadAll(int);
 private:
     // noise tilt
-    tVZFilter shelf1[MAX_NUM_VOICES], shelf2[MAX_NUM_VOICES], bell1[MAX_NUM_VOICES];
+    tVZFilterLS shelf1[MAX_NUM_VOICES];
+    tVZFilterHS shelf2[MAX_NUM_VOICES];
+    tVZFilterBell bell1[MAX_NUM_VOICES];
     tNoise noise[MAX_NUM_VOICES];
 
     

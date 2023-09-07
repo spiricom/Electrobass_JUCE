@@ -36,7 +36,9 @@ private:
     EffectTick _tick;
     tHighpass dcBlock1[MAX_NUM_VOICES];
     tHighpass dcBlock2[MAX_NUM_VOICES];
-    tVZFilter shelf1[MAX_NUM_VOICES], shelf2[MAX_NUM_VOICES], bell1[MAX_NUM_VOICES];
+    tVZFilterLS shelf1[MAX_NUM_VOICES];
+    tVZFilterHS shelf2[MAX_NUM_VOICES];
+    tVZFilterBell bell1[MAX_NUM_VOICES];
     tCompressor comp[MAX_NUM_VOICES];
     tCrusher bc[MAX_NUM_VOICES];
     tLockhartWavefolder wf[MAX_NUM_VOICES];
@@ -48,6 +50,7 @@ private:
     float scaleFilterResonance(float input);
     float tiltFilterTick(float sample, float param1, float param2, float param3, float param4, float param5,int v);
     float hardClipTick(float sample, float param1, float param2, float param3, float param4, float param5,int v);
+    float polynomialShaperTick(float sample, float param1, float param2, float param3, float param4, float param5,int v);
     //void (Effect::*effectTick)(float& sample, int v, float param1, float param2, float param3, float mix);
     float tanhTick(float sample, float param1, float param2, float param3, float param4, float param5, int v);
     float softClipTick(float sample, float param1, float param2, float param3, float param4, float param5, int v);
@@ -75,9 +78,9 @@ private:
     tFeedbackLeveler feedbackControl[MAX_NUM_VOICES];
     std::atomic<float>* afpFXType;
     tDiodeFilter diodeFilters[MAX_NUM_VOICES];
-    tVZFilter VZfilterPeak[MAX_NUM_VOICES];
-    tVZFilter VZfilterLS[MAX_NUM_VOICES];
-    tVZFilter VZfilterHS[MAX_NUM_VOICES];
+    tVZFilterBell VZfilterPeak[MAX_NUM_VOICES];
+    tVZFilterLS VZfilterLS[MAX_NUM_VOICES];
+    tVZFilterHS VZfilterHS[MAX_NUM_VOICES];
     tVZFilter VZfilterBR[MAX_NUM_VOICES];
     tSVF lowpass[MAX_NUM_VOICES];
     tSVF delayLowpass[MAX_NUM_VOICES];

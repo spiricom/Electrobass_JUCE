@@ -96,7 +96,7 @@ void Envelope::tick()
     
     for (int v = 0; v < processor.numVoicesActive; v++)
     {
-        
+#if 0
         if(processor.knobsToSmooth.contains(quickParams[EnvelopeAttack][v]))
         {
             float attack = quickParams[EnvelopeAttack][v]->read();
@@ -128,11 +128,24 @@ void Envelope::tick()
             tADSRT_setLeakFactor(&envs[v], 0.99995f + 0.00005f*(1.f-leak));
         }
         
-       
-        
-        
-        
-
+#endif
+#if 1
+        float attack = quickParams[EnvelopeAttack][v]->read();
+        attack = attack < 0.f ? 0.f : attack;
+        tADSRT_setAttack(&envs[v], attack);
+        float decay = quickParams[EnvelopeDecay][v]->read();
+        decay = decay < 0.f ? 0.f : decay;
+        tADSRT_setDecay(&envs[v], decay);
+        float sustain = quickParams[EnvelopeSustain][v]->read();
+        sustain = sustain < 0.f ? 0.f : sustain;
+        tADSRT_setSustain(&envs[v], sustain);
+        float release = quickParams[EnvelopeRelease][v]->read();
+        release = release < 0.f ? 0.f : release;
+        tADSRT_setRelease(&envs[v], release);
+        float leak = quickParams[EnvelopeLeak][v]->read();
+        leak = leak < 0.f ? 0.f : leak;
+        tADSRT_setLeakFactor(&envs[v], 0.99995f + 0.00005f*(1.f-leak));
+#endif
         float value = tADSRT_tickNoInterp(&envs[v]);
         
         source[v] = value;

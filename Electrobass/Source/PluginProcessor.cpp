@@ -362,6 +362,12 @@ prompt("","",AlertWindow::AlertIconType::NoIcon)
         tSimplePoly_init(&strings[i], 1, &leaf);
         voiceNote[i] = 0;
         voiceIsSounding[i] = false;
+
+    }
+    for (int i = 0; i < MAX_NUM_VOICES; ++i)
+    {
+        tHighpass_init(&dcBlockPreFilt1[i],10.0f, &leaf);
+        tHighpass_init(&dcBlockPreFilt2[i],10.0f, &leaf);
     }
     
     for (int i = 0; i < 128; ++i)
@@ -371,6 +377,8 @@ prompt("","",AlertWindow::AlertIconType::NoIcon)
 
     leaf.clearOnAllocation = 1;
     
+    
+
     for (int i = 0; i < NUM_OSCS; ++i)
     {
         String n = "Osc" + String(i+1);
@@ -1417,7 +1425,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
     
 
     denormalMult = denormalMult * -1.0f;
-    float denormalFix = 1e-15 * denormalMult;
+    float denormalFix = 1e-15f * denormalMult;
     for (int s = 0; s < buffer.getNumSamples(); s++)
     {
         tickKnobsToSmooth();
@@ -1503,9 +1511,11 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         noise->tick(samples);
         for (int v = 0; v < numVoicesActive; ++v)
         {
-            samples[0][v] += denormalFix;
-            samples[1][v] += denormalFix;
+            samples[0][v] = tHighpass_tick(&dcBlockPreFilt1[v],samples[0][v]) + denormalFix;
+            samples[1][v] = tHighpass_tick(&dcBlockPreFilt2[v],samples[1][v]) + denormalFix;
         }
+        
+
         //per voice inside
         filt[0]->tick(samples[0]);
 
@@ -1520,11 +1530,12 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         for (int v = 0; v < numVoicesActive; ++v)
         {
             samples[1][v] += samples[0][v]*parallel;
-            
+#ifdef NAN_CHECK
             if (isnan(samples[1][v]))
             {
                 samples[1][v] = 0.0f;
             }
+#endif
         }
         if (fxPost == nullptr || *fxPost > 0)
         {
@@ -1536,11 +1547,14 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         
         for (int v = 0; v < numVoicesActive; ++v)
         {
+#ifdef NAN_CHECK
             if (isnan(samples[1][v]))
             {
                 samples[1][v] = 0.0f;
             }
+#endif
             tOversampler_upsample(&os[v], samples[1][v], oversamplerArray);
+#ifdef NAN_CHECK
             if (isnan(oversamplerArray[0]))
             {
                 oversamplerArray[0] = 0.0f;
@@ -1549,6 +1563,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
             {
                 oversamplerArray[1] = 0.0f;
             }
+#endif
             for (int i = 0; i < fx.size(); i++) {
                 fx[i]->oversample_tick(oversamplerArray, v);
                 
@@ -1559,10 +1574,12 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
                 oversamplerArray[i] = LEAF_clip(-1.0f, oversamplerArray[i], 1.0f);
             }
             samples[1][v] = tOversampler_downsample(&os[v], oversamplerArray);
+#ifdef NAN_CHECK
             if (isnan(samples[1][v]))
             {
                 samples[1][v] = 0.0f;
             }
+#endif
         }
     
         if (fxPost == nullptr || *fxPost <= 0)
@@ -1574,10 +1591,12 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         output->tickLowpass(samples[1]);
         for(int v = 0; v < numVoicesActive; v++)
         {
+#ifdef NAN_CHECK
             if (isnan(samples[1][v]))
             {
                 samples[1][v] = 0.0f;
             }
+#endif
             sampleOutput += samples[1][v];
         }
         float mastergain = master->tickNoHooks();
@@ -1589,8 +1608,8 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         if(pedalControlsMaster)
         {
             float volumeSmoothed = ccParams.getUnchecked(12)->get();
-            float volIdx = LEAF_clip(0.0f, (volumeSmoothed * 80.0f), 127.0f);
-            
+            //float volIdx = LEAF_clip(0.0f, (volumeSmoothed * 127.0f), 127.0f);
+            float volIdx = volumeSmoothed * 127.0f;
             //then interpolate the value
             int volIdxInt = (int) volIdx;
             float alpha = volIdx-volIdxInt;
