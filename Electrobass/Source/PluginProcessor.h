@@ -415,6 +415,8 @@ private:
     String presetName;
     int presetNumber = 0;
     tOversampler os[MAX_NUM_VOICES];
+    tHighpass dcBlockPreFilt1[MAX_NUM_VOICES];
+    tHighpass dcBlockPreFilt2[MAX_NUM_VOICES];
     float oversamplerArray[OVERSAMPLE];
     AlertWindow prompt;
     std::array<std::atomic<float>, 128> m_peakLevels;

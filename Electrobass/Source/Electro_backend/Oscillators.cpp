@@ -173,7 +173,7 @@ void Oscillator::tick(float output[][MAX_NUM_VOICES])
     for (int v = 0; v < processor.numVoicesActive; ++v)
     {
         float shape = quickParams[OscShape][v]->read();
-        if(processor.knobsToSmooth.contains(quickParams[OscShape][v]))
+        //if(processor.knobsToSmooth.contains(quickParams[OscShape][v]))
         {
             setShape(v, shape);
         }
@@ -241,6 +241,7 @@ void Oscillator::tick(float output[][MAX_NUM_VOICES])
         
         output[0][v] += sample*f * *afpEnabled;
         output[1][v] += sample*(1.f-f) * *afpEnabled ;
+#if CHECK_NAN
         if (isnan(output[0][v]))
         {
             output[0][v] = 0.0f;
@@ -249,6 +250,7 @@ void Oscillator::tick(float output[][MAX_NUM_VOICES])
         {
             output[1][v] = 0.0f;
         }
+#endif
     }
     
     sampleInBlock++;
@@ -674,9 +676,9 @@ MappingSourceModel(p, n, true, true, Colours::darkorange)
     setParams();
     for (int i = 0; i < MAX_NUM_VOICES; i++)
     {
-        tVZFilter_init(&shelf1[i], Lowshelf, 80.0f, 6.0f,   &processor.leaf);
-        tVZFilter_init(&shelf2[i], Highshelf, 12000.0f, 6.0f,  &processor.leaf);
-        tVZFilter_init(&bell1[i], Bell, 1000.0f, 1.9f,   &processor.leaf);
+        tVZFilterLS_init(&shelf1[i], 80.0f, 0.5f,   1.0f, &processor.leaf);
+        tVZFilterHS_init(&shelf2[i], 12000.0f, 0.5f, 1.0f,  &processor.leaf);
+        tVZFilterBell_init(&bell1[i], 1000.0f, 1.9f,  1.0f, &processor.leaf);
         tNoise_init(&noise[i], WhiteNoise, &processor.leaf);
     }
     
@@ -690,9 +692,9 @@ NoiseGenerator::~NoiseGenerator()
     for (int i = 0; i < MAX_NUM_VOICES; i++)
     {
         tNoise_free(&noise[i]);
-        tVZFilter_free(&bell1[i]);
-        tVZFilter_free(&shelf1[i]);
-        tVZFilter_free(&shelf2[i]);
+        tVZFilterBell_free(&bell1[i]);
+        tVZFilterLS_free(&shelf1[i]);
+        tVZFilterHS_free(&shelf2[i]);
     }
 }
 
@@ -701,9 +703,9 @@ void NoiseGenerator::prepareToPlay (double sampleRate, int samplesPerBlock)
     AudioComponent::prepareToPlay(sampleRate, samplesPerBlock);
     for (int i = 0; i < MAX_NUM_VOICES; i++)
     {
-        tVZFilter_setSampleRate(&bell1[i], sampleRate);
-        tVZFilter_setSampleRate(&shelf1[i], sampleRate);
-        tVZFilter_setSampleRate(&shelf2[i], sampleRate);
+        tVZFilterBell_setSampleRate(&bell1[i], sampleRate);
+        tVZFilterLS_setSampleRate(&shelf1[i], sampleRate);
+        tVZFilterHS_setSampleRate(&shelf2[i], sampleRate);
     }
 }
 
@@ -712,49 +714,17 @@ void NoiseGenerator::frame()
     sampleInBlock = 0;
     enabled = afpEnabled == nullptr || *afpEnabled > 0 ||
     processor.sourceMappingCounts[getName()] > 0;
-    
-//    currentShapeSet = LFOShapeSet(int(*afpShapeSet));
-//    switch (currentShapeSet) {
-//        case SineTriLFOShapeSet:
-//            shapeTick = &LowFreqOscillator::sineTriTick;
-//            break;
-//
-//        case SawPulseLFOShapeSet:
-//            shapeTick = &LowFreqOscillator::sawSquareTick;
-//            break;
-//
-//        case SineLFOShapeSet:
-//            shapeTick = &LowFreqOscillator::sineTick;
-//            break;
-//
-//        case TriLFOShapeSet:
-//            shapeTick = &LowFreqOscillator::triTick;
-//            break;
-//
-//        case SawLFOShapeSet:
-//            shapeTick = &LowFreqOscillator::sawTick;
-//            break;
-//
-//        case PulseLFOShapeSet:
-//            shapeTick = &LowFreqOscillator::pulseTick;
-    
-//            break;
-//
-//        default:
-//            shapeTick = &LowFreqOscillator::sineTriTick;
-//            break;
-//    }
 }
+
 void NoiseGenerator::loadAll(int v)
 {
     quickParams[NoiseGain][v]->setValueToRaw();
     quickParams[NoiseAmp][v]->setValueToRaw();
     quickParams[NoiseFreq][v]->setValueToRaw();
     quickParams[NoiseTilt][v]->setValueToRaw();
-    tVZFilter_setGain(&shelf1[v], fastdbtoa(-1.0f * ((quickParams[NoiseTilt][v]->read() * 30.0f) - 15.0f)));
-    tVZFilter_setGain(&shelf2[v], fastdbtoa((quickParams[NoiseTilt][v]->read() * 30.0f) - 15.0f));
-    tVZFilter_setFreqFast(&bell1[v], LEAF_clip(0.0f, (quickParams[NoiseFreq][v]->read() * 77.0f + 26.0f) * 35.929824561403509f, 4095.0f));
-    tVZFilter_setGain(&bell1[v],fastdbtoa((quickParams[NoiseGain][v]->read() * 34.0f) - 17.0f));
+    tVZFilterLS_setGain(&shelf1[v], fasterdbtoa(-1.0f * ((quickParams[NoiseTilt][v]->read() * 30.0f) - 15.0f)));
+    tVZFilterHS_setGain(&shelf2[v], fasterdbtoa((quickParams[NoiseTilt][v]->read() * 30.0f) - 15.0f));
+    tVZFilterBell_setFrequencyAndGain(&bell1[v], faster_mtof(quickParams[NoiseFreq][v]->read() * 77.0f + 26.0f), fasterdbtoa((quickParams[NoiseGain][v]->read() * 34.0f) - 17.0f));
 
 }
 
@@ -770,29 +740,17 @@ void NoiseGenerator::tick(float output[][MAX_NUM_VOICES])
         float freq = quickParams[NoiseFreq][v]->read();
         float amp = quickParams[NoiseAmp][v]->read();
         amp = amp < 0.f ? 0.f : amp;
-        if(processor.knobsToSmooth.contains(quickParams[NoiseTilt][v]))
-        {
-            tVZFilter_setGain(&shelf1[v], fastdbtoa(-1.0f * ((tilt * 30.0f) - 15.0f)));
-            tVZFilter_setGain(&shelf2[v], fastdbtoa((tilt * 30.0f) - 15.0f));
-        }
-        if(processor.knobsToSmooth.contains(quickParams[NoiseFreq][v]))
-        {
+
+        tVZFilterLS_setGain (&shelf1[v], fasterdbtoa(-1.0f * ((tilt * 30.0f) - 15.0f)));
+        tVZFilterHS_setGain (&shelf2[v], fasterdbtoa((tilt * 30.0f) - 15.0f));
+        tVZFilterBell_setFrequencyAndGain (&bell1[v], faster_mtof(freq * 77.0f + 26.0f), fasterdbtoa((gain* 34.0f) - 17.0f));
             
-            tVZFilter_setFreqFast(&bell1[v], LEAF_clip(0.0f, (freq * 77.0f + 26.0f) * 35.929824561403509f, 4095.0f));
-        }
-        
-        if(processor.knobsToSmooth.contains(quickParams[NoiseGain][v]))
-        {
-            tVZFilter_setGain(&bell1[v],fastdbtoa((gain* 34.0f) - 17.0f));
-        }
-//        tVZFilter_setFrequencyAndResonanceAndGain(&bell1[v], faster_mtof(freq * 77.0f + 42.0f), 1.9f, fastdbtoa((gain* 34.0f) - 17.0f));
-        
         
         //float sample = tSVF_tick(&bandpass[v], tNoise_tick(&noise[v])) * amp;
         float sample = tNoise_tick(&noise[v]) ;
-        sample = tVZFilter_tickEfficient(&shelf1[v], sample);
-        sample = tVZFilter_tickEfficient(&shelf2[v], sample);
-        sample = tVZFilter_tickEfficient(&bell1[v], sample);
+        sample = tVZFilterLS_tick(&shelf1[v], sample);
+        sample = tVZFilterHS_tick(&shelf2[v], sample);
+        sample = tVZFilterBell_tick(&bell1[v], sample);
         sample = sample * amp; 
         float normSample = (sample + 1.f) * 0.5f;
         //float normSample = sample;
@@ -802,7 +760,7 @@ void NoiseGenerator::tick(float output[][MAX_NUM_VOICES])
         
         output[0][v] += sample*f * *afpEnabled;
         output[1][v] += sample*(1.f-f) * *afpEnabled ;
-        
+#if CHECK_NAN
         if (isnan(output[0][v]))
         {
             output[0][v] = 0.0f;
@@ -811,6 +769,7 @@ void NoiseGenerator::tick(float output[][MAX_NUM_VOICES])
         {
             output[1][v] = 0.0f;
         }
+#endif
     }
     sampleInBlock++;
 }
