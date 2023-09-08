@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<installer-gui-script minSpecVersion="1">
+    <title>Electrobass 1</title>
+    <license file="License.txt" />
+    <readme file="Readme.rtf" />
+    <pkg-ref id="Electrobass.vst3.pkg"/>
+    <pkg-ref id="Electrobass.component.pkg"/>
+    <pkg-ref id="Electrobass.app.pkg"/>
+    <pkg-ref id="Electrobass.resources.pkg"/>
+    <options require-scripts="false" customize="always" />
+    <choices-outline>
+        <line choice="Electrobass.vst3.pkg"/>
+        <line choice="Electrobass.component.pkg"/>
+        <line choice="Electrobass.app.pkg"/>
+        <line choice="Electrobass.resources.pkg"/>
+    </choices-outline>
+    <choice id="Electrobass.vst3.pkg" visible="true" start_selected="true" title="Electrobass VST"><pkg-ref id="Electrobass.vst3.pkg"/></choice><pkg-ref id="Electrobass.vst3.pkg" version="1" onConclusion="none">Electrobass_VST3.pkg</pkg-ref>
+    <choice id="Electrobass.component.pkg" visible="true" start_selected="true" title="Electrobass Audio Unit"><pkg-ref id="Electrobass.component.pkg"/></choice><pkg-ref id="Electrobass.component.pkg" version="1" onConclusion="none">Electrobass_AU.pkg</pkg-ref>
+    <choice id="Electrobass.app.pkg" visible="true" start_selected="true" title="Electrobass App"><pkg-ref id="Electrobass.app.pkg"/></choice><pkg-ref id="Electrobass.app.pkg" version="1" onConclusion="none">Electrobass_APP.pkg</pkg-ref>
+    <choice id="Electrobass.resources.pkg" visible="true" enabled="false" selected="true" title="Install resources">
+        <pkg-ref id="Electrobass.resources.pkg"/>
+    </choice>
+    <pkg-ref id="Electrobass.resources.pkg" version="1" onConclusion="none">Electrobass_Resources.pkg</pkg-ref>
+</installer-gui-script>
