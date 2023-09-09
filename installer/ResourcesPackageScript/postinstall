@@ -1,7 +1,0 @@
-#!/bin/bash
-#rsync -r --update "/tmp/Electrobass" /Applications
-rsync -r --update "/tmp/bkApp/Electrobass.app" /Applications
-#chown -R $USER:staff "/Library/Application Support/Electrobass"
-chown -R $USER:staff "/Applications/Electrobass.app"
-rm -rf "/tmp/Electrobass"
-rm -rf "/tmp/bkApp"
