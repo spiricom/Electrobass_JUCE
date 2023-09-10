@@ -241,7 +241,9 @@ ElectroDial* ElectroModule::getDial (int index)
 
 OscModule::OscModule(ElectroAudioProcessorEditor& editor, AudioProcessorValueTreeState& vts,
                      AudioComponent& ac) :
-ElectroModule(editor, vts, ac, 0.05f, 0.132f, 0.05f, 0.18f, 0.8f),
+//float relLeftMargin, float relDialWidth,
+//float relDialSpacing, float relTopMargin, float relDialHeight) :
+ElectroModule(editor, vts, ac, 0.05f, 0.1f, 0.05f, 0.18f, 0.8f),
 chooser(nullptr)
 {
     
@@ -275,7 +277,8 @@ chooser(nullptr)
     syncType.setToggleState(false, dontSendNotification);
     addAndMakeVisible(syncType);
     
-    addAndMakeVisible(pitchDialToggle);
+    
+    
     steppedToggle.addListener(this);
     steppedToggle.setTitle("Stepped Dial");
     steppedToggle.setButtonText("ST");
@@ -345,7 +348,7 @@ chooser(nullptr)
     addAndMakeVisible(s.get());
     
     getDial(OscHarm)->setVisible(true);
-    getDial(OscPitch)->setVisible(false);
+    getDial(OscPitch)->setVisible(true);
     getDial(OscPitch)->setRange(-24.,24., 1.);
     getDial(OscHarm)->setRange(-15.,15., 1.);
     f1Label.setAlpha(enabledToggle.getToggleState() ? 1. : 0.5);
@@ -367,8 +370,8 @@ void OscModule::resized()
     
     s->setBounds(4, 4, (int)(getWidth()*0.1f), enabledToggle.getHeight()-8);
    
-    harmonicsLabel.setBoundsRelative(relLeftMargin + (relDialWidth * 0.25f),
-                                     0.02f, relDialWidth+((relDialSpacing * 0.25f)), 0.16f);
+    harmonicsLabel.setBoundsRelative(relLeftMargin + (.132f * 0.25f),
+                                     0.02f, .132f+((relDialSpacing * 0.25f)), 0.16f);
     
     pitchDialToggle.setBoundsRelative(0.0f, 0.412f, 0.05f, 0.15f);
     syncToggle.setBoundsRelative(0.0f, 0.6f, 0.05f, 0.15f);
@@ -377,13 +380,13 @@ void OscModule::resized()
 
     
     
-    pitchLabel.setBoundsRelative(relLeftMargin+(relDialWidth * 1.25f),
-                                 0.02f, relDialWidth+relDialSpacing, 0.16f);
+    pitchLabel.setBoundsRelative(relLeftMargin+(.132f * 1.25f),
+                                 0.02f, .132f+relDialSpacing, 0.16f);
     
-    freqLabel.setBoundsRelative(relLeftMargin+2*relDialWidth+((1.5f*relDialSpacing)),
-                                 0.02f, relDialWidth+relDialSpacing, 0.16f);
+    freqLabel.setBoundsRelative(relLeftMargin+2*.132f+((1.5f*relDialSpacing)),
+                                 0.02f, .132f+relDialSpacing, 0.16f);
     
-    shapeCB.setBoundsRelative(relLeftMargin+3*(relDialWidth+relDialSpacing), 0.02f,
+    shapeCB.setBoundsRelative(relLeftMargin+3*(.132f+relDialSpacing), 0.02f,
                               relDialWidth+relDialSpacing, 0.16f);
     
     sendSlider.setBoundsRelative(0.96f, 0.f, 0.04f, 1.0f);
@@ -392,14 +395,16 @@ void OscModule::resized()
     smoothingToggle.setBoundsRelative(0.0f, 0.41f, 0.04f, 0.15f);
     f1Label.setBoundsRelative(0.9f, 0.05f, 0.06f, 0.15f);
     f2Label.setBoundsRelative(0.9f, 0.80f, 0.06f, 0.15f);
-    
-    for (int i = 0; i < ac.getParamNames().size() - 1; ++i)
+    dials[dials.size()-1]->setBoundsRelative(relLeftMargin , relTopMargin,
+                                relDialWidth, relDialHeight);
+    dials[0]->setBoundsRelative(relLeftMargin + (relDialWidth+relDialSpacing), relTopMargin,
+                                relDialWidth, relDialHeight);
+    for (int i = 1; i < ac.getParamNames().size() - 1; ++i)
     {
-        dials[i]->setBoundsRelative(relLeftMargin + (relDialWidth+relDialSpacing)*i, relTopMargin,
+        dials[i]->setBoundsRelative(relLeftMargin + (relDialWidth+relDialSpacing)*(i+1), relTopMargin,
                                     relDialWidth, relDialHeight);
     }
-    dials[ac.getParamNames().size() - 1]->setBoundsRelative(relLeftMargin, relTopMargin,
-                                                             relDialWidth, relDialHeight);
+    
 }
 
 void OscModule::sliderValueChanged(Slider* slider)
@@ -438,7 +443,7 @@ void OscModule::buttonClicked(Button* button)
     {
         if (!pitchDialToggle.getToggleState())
         {
-            getDial(OscPitch)->setRange(-24, 24., steppedToggle.getToggleState() ? 1 : 0.01 );
+            
             //getDial(OscPitch)->setText("Pitch", dontSendNotification);
             //addAndMakeVisible(getDial(OscPitch));
             getDial(OscHarm)->setValue(0.0);
@@ -448,7 +453,7 @@ void OscModule::buttonClicked(Button* button)
             getDial(OscHarm)->transferMappings(getDial(OscPitch));
         } else
         {
-            getDial(OscHarm)->setRange(-15, 15., steppedToggle.getToggleState() ? 1 : 0.01 );
+
             //getDial(OscPitch)->setText("Harmonics", dontSendNotification);
             getDial(OscPitch)->setValue(0.0f);
             getDial(OscPitch)->setVisible(false);
@@ -459,10 +464,14 @@ void OscModule::buttonClicked(Button* button)
         
         if (!steppedToggle.getToggleState())
         {
+            getDial(OscPitch)->setRange(-24, 24., steppedToggle.getToggleState() ? 1 : 0.01 );
+            getDial(OscHarm)->setRange(-15, 15., steppedToggle.getToggleState() ? 1 : 0.01 );
             steppedToggle.setButtonText("SM");
         }
         else
         {
+            getDial(OscHarm)->setRange(-15, 15., steppedToggle.getToggleState() ? 1 : 0.01 );
+            getDial(OscPitch)->setRange(-24, 24., steppedToggle.getToggleState() ? 1 : 0.01 );
             steppedToggle.setButtonText("ST");
         }
         displayPitch();
@@ -664,11 +673,10 @@ void OscModule::displayPitch()
     auto harm = getDial(OscHarm)->getSlider().getValue();
     harmonicsLabel.setColour(Label::textColourId, Colours::gold.withBrightness(0.95f));
     String t = harm >= 0 ? String(abs(harm + 1),3) : String("1/" + String(abs(harm-1),3));
-    if (pitchDialToggle.getToggleState())
+   
         harmonicsLabel.setText(t, dontSendNotification);
-    else
-        harmonicsLabel.setText("0.000", dontSendNotification);
-    auto pitch = pitchDialToggle.getToggleState() ? 0 : getDial(OscPitch)->getSlider().getValue();
+    
+    auto pitch = getDial(OscPitch)->getSlider().getValue();
     auto fine = getDial(OscFine)->getSlider().getValue()*0.01;
     pitchLabel.setColour(Label::textColourId, Colours::gold.withBrightness(0.95f));
     String text = pitch+fine >= 0 ? "+" : "";
