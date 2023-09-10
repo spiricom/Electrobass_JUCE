@@ -5,7 +5,7 @@
               companyCopyright="Snyderphonics" companyWebsite="http://snyderphonics.com/"
               pluginCharacteristicsValue="pluginIsSynth,pluginProducesMidiOut,pluginWantsMidiIn"
               defines="JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP=1&#10;BOOST_ALL_NO_LIB=1&#10;"
-              pluginVST3Category="Instrument">
+              pluginVST3Category="Instrument" pluginFormats="buildAAX,buildAU,buildStandalone,buildVST3">
   <MAINGROUP id="zr98AB" name="Electrobass">
     <GROUP id="{B8EA8B88-4125-0A91-2EA2-1CD3B3374012}" name="Source">
       <FILE id="rkeubL" name="RingBuffer.h" compile="0" resource="0" file="Source/RingBuffer.h"/>
@@ -106,7 +106,7 @@
         <CONFIGURATION isDebug="1" name="Debug" targetName="Electrobass" recommendedWarnings="LLVM"
                        defines="SAFE_FILTER"/>
         <CONFIGURATION isDebug="0" name="Release" targetName="Electrobass" optimisation="6"
-                       defines="SAFE_FILTER"/>
+                       defines="SAFE_FILTER" fastMath="1"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_audio_basics" path="../../../../JUCE/modules"/>
