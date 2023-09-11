@@ -74,9 +74,9 @@ MappingTarget::MappingTarget(ElectroAudioProcessorEditor& editor, MappingTargetM
 Slider(m.name),
 processor(editor.processor),
 model(m),
+removable(true),
 text(""),
-sliderEnabled(false),
-removable(true)
+sliderEnabled(false)
 {    
     setDoubleClickReturnValue(true, 0.);
     setSliderStyle(SliderStyle::LinearBarVertical);
@@ -319,9 +319,9 @@ void MappingTarget::menuCallback(int result, MappingTarget* target)
 //==============================================================================
 //==============================================================================
 ElectroDial::ElectroDial(ElectroAudioProcessorEditor& editor, const String& paramName, const String& displayName, bool isSource, bool isTarget) :
-label(displayName, displayName),
 paramName(paramName),
-editor(editor)
+editor(editor),
+label(displayName, displayName)
 {
     setName(paramName);
     slider.setSliderStyle(Slider::RotaryVerticalDrag);

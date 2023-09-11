@@ -1321,8 +1321,8 @@ void FXModule::comboBoxChanged(ComboBox *comboBox)
 
 void FXModule::setNamesAndDefaults(FXType effect)
 {
-    if (ac.processor.stream)
-        while(ac.processor.streamSend);
+    //if (ac.processor.stream)
+        //while(ac.processor.streamSend);
     for (int i = 0; i < FXParam::Mix; i++)
     {
         getDial(i)->setText(FXParamNames[effect][i], dontSendNotification);

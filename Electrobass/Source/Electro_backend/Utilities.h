@@ -22,18 +22,18 @@ public:
     //==============================================================================
     ParameterHook() = default;
     
-    ParameterHook(String sourceName, float* hook, float min, float max,
-                  String scalarName, float* scalar) :
-    sourceName(sourceName),
-    hook(hook),
-    min(min),
-    length(max-min),
-    scalarName(scalarName),
-    scalar(scalar)
+    ParameterHook(String sourceNameIn, float* hookIn, float minIn, float maxIn,
+                  String scalarNameIn, float* scalarIn) :
+    sourceName(sourceNameIn),
+    hook(hookIn),
+    min(minIn),
+    length(maxIn-minIn),
+    scalarName(scalarNameIn),
+    scalar(scalarIn)
     {
     }
     
-    ~ParameterHook() {};
+    ~ParameterHook() {}
     
     //==============================================================================
     inline float getValue()
@@ -60,7 +60,7 @@ public:
 //    SmoothedParameter() = default;
     SmoothedParameter(ElectroAudioProcessor& processor, AudioProcessorValueTreeState& vts,
                       String paramId);
-    ~SmoothedParameter() {};
+    ~SmoothedParameter() {}
     //==============================================================================
     virtual float tick();
     float tickNoHooks();
@@ -151,7 +151,7 @@ public:
         }
         if ((numSmoothedHooks == 0) && (numNonSmoothedHooks == 0))
         {
-            if (value == target)
+            if ((value >= (target - 0.0001f)) && (value <= (target + 0.0001f)))
             {
                 removeMe = true;
             }
