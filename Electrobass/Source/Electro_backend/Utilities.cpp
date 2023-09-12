@@ -15,12 +15,12 @@ SmoothedParameter::SmoothedParameter(ElectroAudioProcessor& processor, AudioProc
                                      String paramId) :
 processor(processor),
 name(paramId),
+removeMe(true),
 raw(vts.getRawParameterValue(paramId)),
 parameter(vts.getParameter(paramId)),
 range(parameter->getNormalisableRange()),
 value(raw->load(std::memory_order_relaxed)),
 smoothed(value),
-removeMe(true),
 isSkewed(false)
 {
     //DBG(paramId+" " + String(value));
@@ -159,7 +159,7 @@ void SmoothedParameter::setHookRange(int index, float min, float max, bool isBip
             b = b -  parameter->getValue();
         hooks[index].min = b;
     }
-    DBG("Sethook rage:   " + String(hooks[index].length));
+    DBG("Sethook range:   " + String(hooks[index].length));
     DBG("Sethook min:   " + String(hooks[index].min));
     
 }
@@ -432,8 +432,8 @@ void MappingTargetModel::removeScalar(bool sendChangeEvent)
 AudioComponent::AudioComponent(const String& n, ElectroAudioProcessor& p,
                                AudioProcessorValueTreeState& vts, StringArray s,
                                bool toggleable) :
-name(n),
 processor(p),
+name(n),
 vts(vts),
 paramNames(s),
 toggleable(toggleable)

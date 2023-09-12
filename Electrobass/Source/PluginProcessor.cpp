@@ -407,7 +407,7 @@ prompt("","",AlertWindow::AlertIconType::NoIcon)
     }
     seriesParallelParam = std::make_unique<SmoothedParameter>(*this, vts, "Filter Series-Parallel Mix");
     
-    macroCCNumbers[PEDAL_MACRO_ID+1] = NUM_MACROS+1;
+    //macroCCNumbers[PEDAL_MACRO_ID+1] = NUM_MACROS+1;
     for (int i = 0; i < NUM_MACROS; ++i)
     {
         macroCCNumbers[i] = i+1;
@@ -899,7 +899,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
                             index = it - paramDestOrder.begin();
                           }
                         float tempId = index + 2;
-                        tempData.add(index + 2);//TargetID
+                        tempData.add(tempId);//TargetID
                         //scalarSource -- negative 1 if no source
                         DBG("INdex of "  +  id  + " is " + String(tempId));
                         float scalarsource = -1.0f;
@@ -1822,7 +1822,7 @@ void ElectroAudioProcessor::ctrlInput(int channel, int ctrl, int value)
             vts.getParameter("M" + String(m+1))->setValueNotifyingHost(v);
             ccSources.getUnchecked(m)->setValue(v);
         }
-        else if (NUM_GENERIC_MACROS <= m && m < PEDAL_MACRO_ID)
+        else if (NUM_GENERIC_MACROS <= m)// && m < PEDAL_MACRO_ID)
         {
             v = value * INV_127;
             vts.getParameter(cUniqueMacroNames[m-NUM_GENERIC_MACROS])
@@ -2350,7 +2350,7 @@ void ElectroAudioProcessor::setStateEBP(const void *data, int sizeInBytes, int p
         }
     }
     knobsToSmooth.clear();
-    ElectroAudioProcessorEditor* editor = dynamic_cast<ElectroAudioProcessorEditor*>(getActiveEditor());
+    //ElectroAudioProcessorEditor* editor = dynamic_cast<ElectroAudioProcessorEditor*>(getActiveEditor());
     setPresetNumber(presetNumber);
     uint16_t bufferIndex = 0;
     char presetName[14];
@@ -2452,6 +2452,7 @@ void ElectroAudioProcessor::setStateEBP(const void *data, int sizeInBytes, int p
         DBG("mapping destination" + paramDestOrder.at(destNumber));
         DBG("mapping source" + paramSourceOrder.at(sourceNumber));
         DBG("destination T" + String(destNumberToT[destNumber]));
+        DBG("scalar" + paramSourceOrder.at(scalarNumber));
         DBG(" slotindex" + String(slotIndex));
         MappingSourceModel* source = sourceMap[paramSourceOrder.at(sourceNumber)];
         MappingTargetModel* target;
@@ -2464,6 +2465,12 @@ void ElectroAudioProcessor::setStateEBP(const void *data, int sizeInBytes, int p
              target = targetMap[paramDestOrder.at(destNumber) + " T" + String(destNumberToT[destNumber]++ +1)];
         }
         target->setMapping(source, amount, false);
+        
+        if (scalarNumber != 255)
+        {
+            source = sourceMap[paramSourceOrder.at(scalarNumber)];
+            target->setMappingScalar(source, false);
+        }
       }
 
     if (ElectroAudioProcessorEditor* editor = dynamic_cast<ElectroAudioProcessorEditor*>(getActiveEditor()))

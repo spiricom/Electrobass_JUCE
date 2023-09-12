@@ -140,7 +140,7 @@ public:
               // of K
             index = it - paramDestOrder.begin();
           }
-        float tempId = index + 2;
+        int tempId = index + 2;
         return tempId;
     }
     
