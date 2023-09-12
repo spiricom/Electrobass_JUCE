@@ -822,7 +822,7 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
             processor.streamID2 = 1;
             processor.streamValue1 = midiKeyRangeSlider.getMinValue();
             processor.streamValue2 = midiKeyRangeSlider.getMaxValue();
-            //processor.streamSend = true;
+            processor.streamSend = true;
         }
     }
     else if (slider == &numVoicesSlider)
@@ -839,10 +839,23 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
         //pitchBendSliders[0]->setRange(- (rangeDownSlider.getValue()), rangeUpSlider.getValue());
         if(processor.stream)
         {
-            processor.streamID1 = 0;
-            processor.streamID2 = 1;
-            processor.streamValue1 = midiKeyRangeSlider.getMinValue();
-            processor.streamValue2 = midiKeyRangeSlider.getMaxValue();
+            //processor.streamID1 = 0;
+            //processor.streamID2 = 1;
+            processor.streamValue1 = rangeSlider.getValue();
+            auto it = find(paramDestOrder.begin(), paramDestOrder.end(),"PitchBendRange" );
+            int index = 0;
+              // If element was found
+              if (it != paramDestOrder.end())
+              {
+                  
+                  // calculating the index
+                  // of K
+                index = it - paramDestOrder.begin();
+              }
+            float tempId = index + 2;
+            processor.streamID1 = tempId;
+            DBG("Send: PitchBendRange with id" + String(tempId) +
+                " as " + String(processor.streamValue1) );
             processor.streamSend = true;
         }
     } else if (slider == &seriesParallelSlider)

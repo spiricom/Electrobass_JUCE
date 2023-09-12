@@ -768,7 +768,10 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
            
            midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
            data7bitInt.clear();
-           if (streamID2 != 0)
+           
+           data7bitInt.add(126);
+           midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+           if (streamID2 > 0)
            {
                fu.f = (float)streamID2;
                data7bitInt.add((fu.i >> 28) & 15);
@@ -784,10 +787,12 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
                data7bitInt.add((fu.i >> 7) & 127);
                data7bitInt.add(fu.i & 127);
                midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+               DBG("sent ID " +  String(streamID2) + " with value" +  String(streamValue2));
+               data7bitInt.clear();
+               data7bitInt.add(126);
+               midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
            }
-           data7bitInt.clear();
-           data7bitInt.add(126);
-           midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+           
            DBG("sent ID " +  String(streamID1) + " with value" +  String(streamValue1));
            streamID1 = -1;
            streamID2 = -1;
