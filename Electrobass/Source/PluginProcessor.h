@@ -385,6 +385,10 @@ public:
     void sendOpenStringMidiMessage();
     std::atomic<float>* fxPost;
 private:
+    
+    void processMIDIDataIfNeeded (MidiBuffer& midiMessages);
+    
+    
     HashMap<String, MappingTargetModel*> targetMap;
     float openStrings[4] = {28, 33, 38, 43};
     String tuningName;

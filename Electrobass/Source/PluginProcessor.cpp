@@ -349,12 +349,12 @@ prompt("","",AlertWindow::AlertIconType::NoIcon)
     formatManager.registerBasicFormats();   
     keyboardState.addListener(this);
     
-    LEAF_init(&leaf, 44100.0f, dummy_memory, 1, []() {return (float)rand() / RAND_MAX; });
+    LEAF_init(&leaf, 44100.0f, dummy_memory, 32, []() {return (float)rand() / RAND_MAX; });
     
     leaf.clearOnAllocation = 1;
     
     tSimplePoly_init(&strings[0], MAX_NUM_VOICES, &leaf);
-    tSimplePoly_setNumVoices(&strings[0], numVoicesActive);
+    tSimplePoly_setNumVoices(&strings[0], (uint8_t)numVoicesActive);
     
     voiceNote[0] = 0;
     for (int i = 1; i < MAX_NUM_VOICES; ++i)
@@ -575,8 +575,12 @@ ElectroAudioProcessor::~ElectroAudioProcessor()
     for (int i = 0; i < MAX_NUM_VOICES; ++i)
     {
         tSimplePoly_free(&strings[i]);
+        tOversampler_free(&os[i]);
+        tHighpass_free(&dcBlockPreFilt1[i]);
+        tHighpass_free(&dcBlockPreFilt2[i]);
     }
-    
+    tHighpass_free(&dcBlockMaster);
+
 
 //    leaf_free(&leaf, (char*)midiKeyValues);
 //    leaf_free(&leaf, (char*)velocityValues);
@@ -737,663 +741,8 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
     buffer.clear (i, 0, buffer.getNumSamples());
     
-    MidiMessage m;
-    for (MidiMessageMetadata metadata : midiMessages) {
-        m = metadata.getMessage();
-        handleMidiMessage(m);
-    }
-    midiMessages.clear();
-   if(stream)
-   {
-       if(streamSend)
-       {
-           union uintfUnion fu;
-           Array<uint8_t> data7bitInt;
-           data7bitInt.add(3);
-           data7bitInt.add(0);
-           fu.f = (float)streamID1;
-           data7bitInt.add((fu.i >> 28) & 15);
-           data7bitInt.add((fu.i >> 21) & 127);
-           data7bitInt.add((fu.i >> 14) & 127);
-           data7bitInt.add((fu.i >> 7) & 127);
-           data7bitInt.add(fu.i & 127);
-           
-           fu.f = LEAF_clip(0.0f, streamValue1, 1.0f);
-           data7bitInt.add((fu.i >> 28) & 15);
-           data7bitInt.add((fu.i >> 21) & 127);
-           data7bitInt.add((fu.i >> 14) & 127);
-           data7bitInt.add((fu.i >> 7) & 127);
-           data7bitInt.add(fu.i & 127);
-           
-           
-           midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
-           data7bitInt.clear();
-           
-           data7bitInt.add(126);
-           midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
-           if (streamID2 > 0)
-           {
-               fu.f = (float)streamID2;
-               data7bitInt.add((fu.i >> 28) & 15);
-               data7bitInt.add((fu.i >> 21) & 127);
-               data7bitInt.add((fu.i >> 14) & 127);
-               data7bitInt.add((fu.i >> 7) & 127);
-               data7bitInt.add(fu.i & 127);
-               
-               fu.f = LEAF_clip(0.0f, streamValue2, 1.0f);
-               data7bitInt.add((fu.i >> 28) & 15);
-               data7bitInt.add((fu.i >> 21) & 127);
-               data7bitInt.add((fu.i >> 14) & 127);
-               data7bitInt.add((fu.i >> 7) & 127);
-               data7bitInt.add(fu.i & 127);
-               midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
-               DBG("sent ID " +  String(streamID2) + " with value" +  String(streamValue2));
-               data7bitInt.clear();
-               data7bitInt.add(126);
-               midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
-           }
-           
-           DBG("sent ID " +  String(streamID1) + " with value" +  String(streamValue1));
-           streamID1 = -1;
-           streamID2 = -1;
-           streamValue1 = -2.f;
-           streamValue2 = -2.f;
-           streamSend = false;
-           
-       }
-       
-       if (streamMapping)
-       {
-           DBG("Streaming Mapping: TargetID" + String(streamMappingTargetId) + "  slot  "  + String(streamMappingTargetSlot) + " type " + String(streamMappingIdentifier) +  " value " + String(streamMappingValue));
-           union uintfUnion fu;
-           Array<uint8_t> data7bitInt;
-           data7bitInt.add(4);
-           data7bitInt.add(0);
-           
-           fu.f = (float)streamMappingTargetId;
-           data7bitInt.add((fu.i >> 28) & 15);
-           data7bitInt.add((fu.i >> 21) & 127);
-           data7bitInt.add((fu.i >> 14) & 127);
-           data7bitInt.add((fu.i >> 7) & 127);
-           data7bitInt.add(fu.i & 127);
-           
-           data7bitInt.add(streamMappingTargetSlot);
-           data7bitInt.add(streamMappingIdentifier);
-           
-           fu.f = (float)streamMappingValue;
-           data7bitInt.add((fu.i >> 28) & 15);
-           data7bitInt.add((fu.i >> 21) & 127);
-           data7bitInt.add((fu.i >> 14) & 127);
-           data7bitInt.add((fu.i >> 7) & 127);
-           data7bitInt.add(fu.i & 127);
-           
-           midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
-           data7bitInt.clear();
-           data7bitInt.add(126);
-           midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
-           streamMapping = false;
-       }
-   }
+    processMIDIDataIfNeeded(midiMessages);
     
-    if (waitingToSendPreset)
-    {
-        Array<float> data;
-        
-        // Parameter values
-        // Order is determined in createParameterLayout
-        int count = 0;
-       // int myCount = 0;
-        //first send a count of the number of parameters that will be sent
-        data.add(paramDestOrder.size() + 2); //plus midi key values
-        data.add(midiKeyMax/127.0f);
-        DBG(String(count++)+ ": Midi Key Max: "+ String(midiKeyMax/127.0f));
-        data.add(midiKeyMin/127.0f);
-        DBG(String(count++)+ ": Midi Key Min: "+ String(midiKeyMin/127.0f));
-        for (auto id : paramDestOrder)
-        {
-            //data.add((float)myCount++);
-            //const NormalisableRange<float>& range = vts.getParameter(id)->getNormalisableRange();
-            std::regex e("^PitchBend[0-9]+$|^F[0-9]+$|^K[0-9]+$");
-            if (!std::regex_match(id.toStdString(), e))
-            {
-                data.add(vts.getParameter(id)->getValue());
-                DBG(String(count++)+ ": " + id + ": "+ String(vts.getParameter(id)->getValue()));
-            }
-            else
-            {
-                DBG("skipped");
-            }
-         
-                
-                
-        }
-        
-        //mark end of parameter values
-        data.add(-2.0f);
-        
-        //now prepare the mapping data, need to loop through the array to count how many before adding to the final array
-        Array<float> tempData;
-        int mapCount = 0;
-        // Mappings
-        DBG("Mappings");
-        DBG("Name: sourceparamid, targetparamaid, scalarsource, range, slot#");
-        for (auto id : paramDestOrder)
-        {
-            for (int t = 0; t < 3; ++t)
-            {
-                String tn = id + " T" + String(t+1);
-                if (targetMap.contains(tn))
-                {
-                    MappingTargetModel* target = targetMap[tn];
-                    if (MappingSourceModel* source = target->currentSource)
-                    {
-                        tempData.add(sourceIds.indexOf(source->name));//SourceID
-                        auto it = find(paramDestOrder.begin(), paramDestOrder.end(), id);
-                        int index = 0;
-                          // If element was found
-                          if (it != paramDestOrder.end())
-                          {
-                              
-                              // calculating the index
-                              // of K
-                            index = it - paramDestOrder.begin();
-                          }
-                        float tempId = index + 2;
-                        tempData.add(tempId);//TargetID
-                        //scalarSource -- negative 1 if no source
-                        DBG("INdex of "  +  id  + " is " + String(tempId));
-                        float scalarsource = -1.0f;
-                        if (target->currentScalarSource != nullptr)
-                        {
-                            scalarsource = sourceIds.indexOf(target->currentScalarSource->name);
-                        }
-                            
-                        tempData.add(scalarsource);
-                        float multiplier = 1.0f;
-                        const NormalisableRange<float>& range = vts.getParameter(id)->getNormalisableRange();
-                        float tempRange = target->end;
-                        if (tempRange < 0.0f)
-                        {
-                            multiplier = -1.0f;
-                            tempRange = fabsf(target->end);
-                        }
-                        tempRange = ((tempRange) / (range.end - range.start));
-                        tempData.add(tempRange * multiplier);//Mapping range length
-                        tempData.add(t);//Mapping slot
-                        DBG(tn +": " + String(sourceIds.indexOf(source->name))+ ", " + String(tempId)+", " + String(scalarsource)+ ", " +String(tempRange * multiplier)+
-                            ", " +String(t));
-                        mapCount++;
-                    }
-                }
-            }
-        }
-        
-        //now send how many mappings will follow
-        data.add(mapCount);
-        for (int i = 0; i < tempData.size(); i++)
-        {
-            data.add(tempData[i]);
-        }
-        
-        //mark end of mapping values
-        data.add(-3.0f);
-
-        //next things that would be useful to send:
-        // string assignment midi notes
-        // tunings
-        // how many extra wavetables are used and which oscillators are they assigned to
-        // 
-//        for (int i = 0 ; i < sourceIds.size(); i++)
-//        {
-//            DBG(String(i) +  ": " + sourceIds[i]);
-//        }
-        Array<uint8_t> data7bitInt;
-        union uintfUnion fu;
-        
-        uint16_t sizeOfSysexChunk = (64 / 5) - 3;
-        int dataToSend = data.size();
-        uint16_t currentChunk = 0;
-        uint16_t currentDataPointer = 0;
-        data7bitInt.add(0); // saying it's a preset
-        data7bitInt.add(presetNumber); // which preset are we saving
-        data7bitInt.add(17);
-        data7bitInt.add(18);
-        data7bitInt.add(VERSION_NUMBER_MAJOR);
-        data7bitInt.add(VERSION_NUMBER_MINOR);
-        for (int i = 0; i < presetName.length(); i++)
-        {
-            data7bitInt.add((presetName.toUTF8()[i] & 127)); //printable characters are in the 0-127 range
-            
-        }
-        uint16 remainingBlanks = 14 - presetName.length();
-        for (uint16 i = 0; i < remainingBlanks; i++)
-        {
-            data7bitInt.add(32);
-        }
-        //MidiMessage presetMessage = ;
-    
-        midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
-
-        currentChunk++;
-        
-        //now send the macro names (9 characters each)
-        for (int i = 0; i < NUM_GENERIC_MACROS; i++)
-        {
-            data7bitInt.clear();
-            data7bitInt.add(0); // saying it's a preset
-            data7bitInt.add(presetNumber); // which preset are we saving
-        
-            //clip macro names to 9 letters if they are longer
-            int myLength = 9;
-            if (macroNames[i].length() < 9)
-            {
-                myLength = macroNames[i].length();
-            }
-            for (int j = 0; j < myLength; j++)
-            {
-                data7bitInt.add((macroNames[i].toUTF8()[j] & 127)); //printable characters are in the 0-127 range
-            }
-            remainingBlanks = 9 - myLength;
-            for (int  j = 0; j < remainingBlanks; j++)
-            {
-                data7bitInt.add(32);
-            }
-            //MidiMessage presetMessage = ;
-        
-            midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
-            currentChunk++;
-        }
-        //now send the knob/joystick names (10 characters each)
-        for (int i = NUM_GENERIC_MACROS; i < (NUM_GENERIC_MACROS + 4); i++)
-        {
-            data7bitInt.clear();
-            data7bitInt.add(0); // saying it's a preset
-            data7bitInt.add(presetNumber); // which preset are we saving
-        
-            //clip macro names to 10 letters if they are longer
-            int myLength = 10;
-            if (macroNames[i].length() < 10)
-            {
-                myLength = macroNames[i].length();
-            }
-            for (int j = 0; j < myLength; j++)
-            {
-                data7bitInt.add((macroNames[i].toUTF8()[j] & 127)); //printable characters are in the 0-127 range
-            }
-            remainingBlanks = 10 - myLength;
-            for (int  j = 0; j < remainingBlanks; j++)
-            {
-                data7bitInt.add(32);
-            }
-            //MidiMessage presetMessage = ;
-        
-            midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
-            currentChunk++;
-        }
-        while(currentDataPointer < dataToSend)
-        {
-            data7bitInt.clear();
-
-            data7bitInt.add(0); // saying it's a preset
-            data7bitInt.add(presetNumber); // which preset are we saving
-            
-            //data7bitInt.add(currentChunk); // whichChhunk
-            uint16_t toSendInThisChunk;
-            uint16_t dataRemaining = dataToSend - currentDataPointer;
-            if (dataRemaining < sizeOfSysexChunk)
-            {
-                toSendInThisChunk = dataRemaining;
-            }
-            else
-            {
-                toSendInThisChunk = sizeOfSysexChunk;
-            }
-
-            for (int i = currentDataPointer; i < toSendInThisChunk+currentDataPointer; i++)
-            {
-                fu.f = data[i];
-                data7bitInt.add((fu.i >> 28) & 15);
-                data7bitInt.add((fu.i >> 21) & 127);
-                data7bitInt.add((fu.i >> 14) & 127);
-                data7bitInt.add((fu.i >> 7) & 127);
-                data7bitInt.add(fu.i & 127);
-
-            }
-            currentDataPointer = currentDataPointer + toSendInThisChunk;
-            MidiMessage presetMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
-        
-            midiMessages.addEvent(presetMessage, 0);
-
-            currentChunk++;
-        }
-        data7bitInt.clear();
-        data7bitInt.add(126); // custom command to start parsing, sysex send is finished!
-        data7bitInt.add(1); // which preset did we just finish
-        MidiMessage presetMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
-        midiMessages.addEvent(presetMessage, 0);
-        
-        /*
-        data7bitInt.clear();
-        data7bitInt.add(0); // saying it's a preset
-        data7bitInt.add(1); // which preset are we saving
-        data7bitInt.add(0); // whichChhunk
-        for (int i = 0; i < data.size(); i++)
-        {
-            fu.f = data[i];
-            data7bitInt.add((fu.i >> 28) & 15);
-            data7bitInt.add((fu.i >> 21) & 127);
-            data7bitInt.add((fu.i >> 14) & 127);
-            data7bitInt.add((fu.i >> 7) & 127);
-            data7bitInt.add(fu.i & 127);
-        }
-        MidiMessage presetMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
-    
-        midiMessages.addEvent(presetMessage, 0);
-        
-        */
-        // Wavetable data
-        /*
-        // Determine which tables are in use and therefore should be sent
-        Array<String> tableSetsToSend;
-        for (auto osc : oscs)
-        {
-            if (osc->getCurrentShapeSet() == UserOscShapeSet)
-            {
-                tableSetsToSend.addIfNotAlreadyThere(osc->getWaveTableFile().getFullPathName());
-            }
-        }
-        
-        // Send out each set of tables
-        for (auto setName : tableSetsToSend)
-        {
-            data.clear();
-            data7bitInt.clear();
-            
-            for (auto table : waveTables.getReference(setName))
-            {
-                for (int i = 0; i < table->numTables; ++i)
-                {
-                    data.add(table->sizes[i]);
-                    for (int j = 0; j < table->sizes[i]; ++j)
-                    {
-                        data.add(table->tables[i][j]);
-                    }
-                }
-            }
-            
-            for (int i = 0; i < data.size(); i++)
-            {
-                data7bitInt.add(2); // saying it's wavetable data
-                
-                fu.f = data[i];
-                data7bitInt.add((fu.i >> 28) & 15);
-                data7bitInt.add((fu.i >> 21) & 127);
-                data7bitInt.add((fu.i >> 14) & 127);
-                data7bitInt.add((fu.i >> 7) & 127);
-                data7bitInt.add(fu.i & 127);
-                
-
-            }
-            MidiMessage wtMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
-            
-            midiMessages.addEvent(wtMessage, 0);
-        }
-    */
-        waitingToSendPreset = false;
-    }
-    
-    
-    if (waitingToSendTuning)
-    {
-        uint16_t currentChunk = 0;
-        Array<uint8_t> data7bitInt;
-        union uintfUnion fu;
-        
-        data7bitInt.add(1); // saying it's a preset
-        data7bitInt.add(tuningNumber); // which preset are we saving
-        
-        for (int i = 0; i < presetName.length(); i++)
-        {
-            data7bitInt.add((presetName.toUTF8()[i] & 127)); //printable characters are in the 0-127 range
-            
-        }
-        uint16 remainingBlanks = 14 - presetName.length();
-        for (uint16 i = 0; i < remainingBlanks; i++)
-        {
-            data7bitInt.add(32);
-        }
-        //MidiMessage presetMessage = ;
-    
-        midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
-
-        currentChunk++;
-        Array<float> data;
-        for (int i = 0; i < 128; i++)
-        {
-            data.add(centsDeviation[i]);
-        }
-        
-       
-        
-        uint16_t currentDataPointer = 0;
-        uint16_t sizeOfSysexChunk = (64 / 5) - 3;
-        int dataToSend = data.size();
-        while(currentDataPointer < dataToSend)
-        {
-            data7bitInt.clear();
-
-            data7bitInt.add(1); // saying it's a tuning
-            data7bitInt.add(presetNumber); // which tuning are we saving
-            
-            //data7bitInt.add(currentChunk); // whichChhunk
-            uint16_t toSendInThisChunk;
-            uint16_t dataRemaining = dataToSend - currentDataPointer;
-            if (dataRemaining < sizeOfSysexChunk)
-            {
-                toSendInThisChunk = dataRemaining;
-            }
-            else
-            {
-                toSendInThisChunk = sizeOfSysexChunk;
-            }
-
-            for (int i = currentDataPointer; i < toSendInThisChunk+currentDataPointer; i++)
-            {
-                fu.f = data[i];
-                data7bitInt.add((fu.i >> 28) & 15);
-                data7bitInt.add((fu.i >> 21) & 127);
-                data7bitInt.add((fu.i >> 14) & 127);
-                data7bitInt.add((fu.i >> 7) & 127);
-                data7bitInt.add(fu.i & 127);
-
-            }
-            currentDataPointer = currentDataPointer + toSendInThisChunk;
-            MidiMessage presetMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
-        
-            midiMessages.addEvent(presetMessage, 0);
-
-            currentChunk++;
-        }
-        data7bitInt.clear();
-        data7bitInt.add(126); // custom command to start parsing, sysex send is finished!
-        data7bitInt.add(tuningNumber); // which tuning did we just finish
-        MidiMessage presetMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
-        midiMessages.addEvent(presetMessage, 0);
-        waitingToSendTuning = false;
-    }
-    
-    if (waitingToSendOpenString)
-    {
-        uint16_t currentChunk = 0;
-        Array<uint8_t> data7bitInt;
-        union uintfUnion fu;
-        
-        data7bitInt.add(3); // saying it's a preset
-        data7bitInt.add(0); // which preset are we saving
-        
-       
-
-        
-        Array<float> data;
-        for (int i = 0; i < 4; i++)
-        {
-            data.add(openStrings[i]);
-        }
-        
-       
-        
-        uint16_t currentDataPointer = 0;
-        uint16_t sizeOfSysexChunk = (64 / 5) - 3;
-        int dataToSend = data.size();
-        while(currentDataPointer < dataToSend)
-        {
-            data7bitInt.clear();
-
-            data7bitInt.add(3); // saying it's a tuning
-            data7bitInt.add(0); // which tuning are we saving
-            
-            //data7bitInt.add(currentChunk); // whichChhunk
-            uint16_t toSendInThisChunk;
-            uint16_t dataRemaining = dataToSend - currentDataPointer;
-            if (dataRemaining < sizeOfSysexChunk)
-            {
-                toSendInThisChunk = dataRemaining;
-            }
-            else
-            {
-                toSendInThisChunk = sizeOfSysexChunk;
-            }
-
-            for (int i = currentDataPointer; i < toSendInThisChunk+currentDataPointer; i++)
-            {
-                fu.f = data[i];
-                data7bitInt.add((fu.i >> 28) & 15);
-                data7bitInt.add((fu.i >> 21) & 127);
-                data7bitInt.add((fu.i >> 14) & 127);
-                data7bitInt.add((fu.i >> 7) & 127);
-                data7bitInt.add(fu.i & 127);
-
-            }
-            currentDataPointer = currentDataPointer + toSendInThisChunk;
-            MidiMessage presetMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
-        
-            midiMessages.addEvent(presetMessage, 0);
-
-            currentChunk++;
-        }
-        data7bitInt.clear();
-        data7bitInt.add(126); // custom command to start parsing, sysex send is finished!
-        data7bitInt.add(0); // which tuning did we just finish
-        MidiMessage presetMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
-        midiMessages.addEvent(presetMessage, 0);
-        waitingToSendOpenString = false;
-    }
-    
-    if (waitingToSendCopedent)
-    {
-        Array<float> data;
-        for (int i = 0; i < copedentArray.size(); ++i)
-        {
-            for (auto value : copedentArray.getReference(i))
-            {
-                data.add(value);
-            }
-        }
-        
-        Array<uint8_t> data7bitInt;
-        union uintfUnion fu;
-        
-        uint16_t sizeOfSysexChunk = (64 / 5) - 3;
-        int dataToSend = data.size();
-        uint16_t currentChunk = 0;
-        uint16_t currentDataPointer = 0;
-        
-        data7bitInt.clear();
-        data7bitInt.add(2); // saying it's a copedent
-        data7bitInt.add(copedentNumber); // saying which copedent number to store (need this to be a user entered value)
-        for (int i = 0; i < copedentName.length(); i++)
-        {
-            if (i < 10)
-            {
-                data7bitInt.add((copedentName.toUTF8()[i] & 127)); //printable characters are in the 0-127 range
-            }
-        }
-        uint16 remainingBlanks = 0;
-        if (copedentName.length() < 10)
-        {
-            remainingBlanks = 10 - copedentName.length();
-        }
-        for (uint16 i = 0; i < remainingBlanks; i++)
-        {
-            data7bitInt.add(32);
-        }
-    
-        midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
-
-        currentChunk++;
-        
-        
-        while(currentDataPointer < dataToSend)
-        {
-            data7bitInt.clear();
-
-            data7bitInt.add(2); // saying it's a copedent
-            data7bitInt.add(copedentNumber); // saying which copedent number to store (need this to be a user entered value)
-            //flat7bitInt.add(50 + j);
-            
-            //data7bitInt.add(currentChunk); // whichChhunk
-            uint16_t toSendInThisChunk;
-            uint16_t dataRemaining = dataToSend - currentDataPointer;
-            if (dataRemaining < sizeOfSysexChunk)
-            {
-                toSendInThisChunk = dataRemaining;
-            }
-            else
-            {
-                toSendInThisChunk = sizeOfSysexChunk;
-            }
-
-            for (int i = currentDataPointer; i < toSendInThisChunk+currentDataPointer; i++)
-            {
-                fu.f = data[i];
-                data7bitInt.add((fu.i >> 28) & 15);
-                data7bitInt.add((fu.i >> 21) & 127);
-                data7bitInt.add((fu.i >> 14) & 127);
-                data7bitInt.add((fu.i >> 7) & 127);
-                data7bitInt.add(fu.i & 127);
-
-            }
-            currentDataPointer = currentDataPointer + toSendInThisChunk;
-            MidiMessage presetMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
-        
-            midiMessages.addEvent(presetMessage, 0);
-
-            currentChunk++;
-        }
-        data7bitInt.clear();
-        data7bitInt.add(126); // custom command to start parsing, sysex send is finished!
-        data7bitInt.add(copedentNumber); // which copedent did we just finish
-        MidiMessage copedentMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
-        midiMessages.addEvent(copedentMessage, 0);
-        waitingToSendCopedent = false;
-    }
-    
-    Array<float> resolvedCopedent;
-    for (int r = 0; r < MAX_NUM_VOICES; ++r)
-    {
-        float minBelowZero = 0.0f;
-        float maxAboveZero = 0.0f;
-        for (int c = 1; c < CopedentColumnNil; ++c)
-        {
-            if (pedalValues[c]->load() > 0)
-            {
-                float value = copedentArray.getReference(c)[r];
-                if (value < minBelowZero) minBelowZero = value;
-                else if (value > maxAboveZero) maxAboveZero = value;
-            }
-        }
-        resolvedCopedent.add(minBelowZero + maxAboveZero);
-    }
     //Optimize this away
     for (int i = 0; i < envs.size(); ++i)
     {
@@ -1474,14 +823,14 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         for (int v = 0; v < numVoicesActive; ++v)
         {
             float pitchBend = transp + globalPitchBend + pitchBendParams[v+1]->tickNoHooksNoSmoothing();
-            float tempNote = (float)tSimplePoly_getPitch(&strings[v*mpe], v*impe);
-            //tempNote += resolvedCopedent[v];
+            float tempNote = (float)tSimplePoly_getPitch(&strings[v*mpe],(uint8_t) (v*impe));
+
             
             //added this check because if there is no active voice "getPitch" returns -1
             if ((tempNote >= 0) && (tempNote < 128))
             {
                 //freeze pitch bend data on voices where a note off has happened and we are in the release phase
-                if (tSimplePoly_isOn(&strings[v*mpe], v*impe))
+                if (tSimplePoly_isOn(&strings[v*mpe], (uint8_t)(v*impe)))
                 {
                      tempNote += pitchBend;
                      voicePrevBend[v] = pitchBend;
@@ -1658,13 +1007,658 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
     }
 }
 
+void ElectroAudioProcessor::processMIDIDataIfNeeded (MidiBuffer& midiMessages)
+{
+    MidiMessage m;
+    for (MidiMessageMetadata metadata : midiMessages) {
+        m = metadata.getMessage();
+        handleMidiMessage(m);
+    }
+    midiMessages.clear();
+    
+    
+    if(stream)
+    {
+        if(streamSend)
+        {
+            union uintfUnion fu;
+            Array<uint8_t> data7bitInt;
+            data7bitInt.add(3);
+            data7bitInt.add(0);
+            fu.f = (float)streamID1;
+            data7bitInt.add((fu.i >> 28) & 15);
+            data7bitInt.add((fu.i >> 21) & 127);
+            data7bitInt.add((fu.i >> 14) & 127);
+            data7bitInt.add((fu.i >> 7) & 127);
+            data7bitInt.add(fu.i & 127);
+            
+            fu.f = LEAF_clip(0.0f, streamValue1, 1.0f);
+            data7bitInt.add((fu.i >> 28) & 15);
+            data7bitInt.add((fu.i >> 21) & 127);
+            data7bitInt.add((fu.i >> 14) & 127);
+            data7bitInt.add((fu.i >> 7) & 127);
+            data7bitInt.add(fu.i & 127);
+            
+            
+            midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+            data7bitInt.clear();
+            
+            data7bitInt.add(126);
+            midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+            if (streamID2 > 0)
+            {
+                fu.f = (float)streamID2;
+                data7bitInt.add((fu.i >> 28) & 15);
+                data7bitInt.add((fu.i >> 21) & 127);
+                data7bitInt.add((fu.i >> 14) & 127);
+                data7bitInt.add((fu.i >> 7) & 127);
+                data7bitInt.add(fu.i & 127);
+                
+                fu.f = LEAF_clip(0.0f, streamValue2, 1.0f);
+                data7bitInt.add((fu.i >> 28) & 15);
+                data7bitInt.add((fu.i >> 21) & 127);
+                data7bitInt.add((fu.i >> 14) & 127);
+                data7bitInt.add((fu.i >> 7) & 127);
+                data7bitInt.add(fu.i & 127);
+                midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+                DBG("sent ID " +  String(streamID2) + " with value" +  String(streamValue2));
+                data7bitInt.clear();
+                data7bitInt.add(126);
+                midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+            }
+            
+            DBG("sent ID " +  String(streamID1) + " with value" +  String(streamValue1));
+            streamID1 = -1;
+            streamID2 = -1;
+            streamValue1 = -2.f;
+            streamValue2 = -2.f;
+            streamSend = false;
+            
+        }
+        
+        if (streamMapping)
+        {
+            DBG("Streaming Mapping: TargetID" + String(streamMappingTargetId) + "  slot  "  + String(streamMappingTargetSlot) + " type " + String(streamMappingIdentifier) +  " value " + String(streamMappingValue));
+            union uintfUnion fu;
+            Array<uint8_t> data7bitInt;
+            data7bitInt.add(4);
+            data7bitInt.add(0);
+            
+            fu.f = (float)streamMappingTargetId;
+            data7bitInt.add((fu.i >> 28) & 15);
+            data7bitInt.add((fu.i >> 21) & 127);
+            data7bitInt.add((fu.i >> 14) & 127);
+            data7bitInt.add((fu.i >> 7) & 127);
+            data7bitInt.add(fu.i & 127);
+            
+            data7bitInt.add(streamMappingTargetSlot);
+            data7bitInt.add(streamMappingIdentifier);
+            
+            fu.f = (float)streamMappingValue;
+            data7bitInt.add((fu.i >> 28) & 15);
+            data7bitInt.add((fu.i >> 21) & 127);
+            data7bitInt.add((fu.i >> 14) & 127);
+            data7bitInt.add((fu.i >> 7) & 127);
+            data7bitInt.add(fu.i & 127);
+            
+            midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+            data7bitInt.clear();
+            data7bitInt.add(126);
+            midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+            streamMapping = false;
+        }
+    }
+     
+     if (waitingToSendPreset)
+     {
+         Array<float> data;
+         
+         // Parameter values
+         // Order is determined in createParameterLayout
+         int count = 0;
+        // int myCount = 0;
+         //first send a count of the number of parameters that will be sent
+         data.add(paramDestOrder.size() + 2); //plus midi key values
+         data.add(midiKeyMax/127.0f);
+         DBG(String(count++)+ ": Midi Key Max: "+ String(midiKeyMax/127.0f));
+         data.add(midiKeyMin/127.0f);
+         DBG(String(count++)+ ": Midi Key Min: "+ String(midiKeyMin/127.0f));
+         for (auto id : paramDestOrder)
+         {
+             //data.add((float)myCount++);
+             //const NormalisableRange<float>& range = vts.getParameter(id)->getNormalisableRange();
+             std::regex e("^PitchBend[0-9]+$|^F[0-9]+$|^K[0-9]+$");
+             if (!std::regex_match(id.toStdString(), e))
+             {
+                 data.add(vts.getParameter(id)->getValue());
+                 DBG(String(count++)+ ": " + id + ": "+ String(vts.getParameter(id)->getValue()));
+             }
+             else
+             {
+                 DBG("skipped");
+             }
+          
+                 
+                 
+         }
+         
+         //mark end of parameter values
+         data.add(-2.0f);
+         
+         //now prepare the mapping data, need to loop through the array to count how many before adding to the final array
+         Array<float> tempData;
+         int mapCount = 0;
+         // Mappings
+         DBG("Mappings");
+         DBG("Name: sourceparamid, targetparamaid, scalarsource, range, slot#");
+         for (auto id : paramDestOrder)
+         {
+             for (int t = 0; t < 3; ++t)
+             {
+                 String tn = id + " T" + String(t+1);
+                 if (targetMap.contains(tn))
+                 {
+                     MappingTargetModel* target = targetMap[tn];
+                     if (MappingSourceModel* source = target->currentSource)
+                     {
+                         tempData.add(sourceIds.indexOf(source->name));//SourceID
+                         auto it = find(paramDestOrder.begin(), paramDestOrder.end(), id);
+                         int index = 0;
+                           // If element was found
+                           if (it != paramDestOrder.end())
+                           {
+                               
+                               // calculating the index
+                               // of K
+                             index = it - paramDestOrder.begin();
+                           }
+                         float tempId = index + 2;
+                         tempData.add(tempId);//TargetID
+                         //scalarSource -- negative 1 if no source
+                         DBG("Index of "  +  id  + " is " + String(tempId));
+                         float scalarsource = -1.0f;
+                         if (target->currentScalarSource != nullptr)
+                         {
+                             scalarsource = sourceIds.indexOf(target->currentScalarSource->name);
+                         }
+                             
+                         tempData.add(scalarsource);
+                         float multiplier = 1.0f;
+                         const NormalisableRange<float>& range = vts.getParameter(id)->getNormalisableRange();
+                         float tempRange = target->end;
+                         if (tempRange < 0.0f)
+                         {
+                             multiplier = -1.0f;
+                             tempRange = fabsf(target->end);
+                         }
+                         tempRange = ((tempRange) / (range.end - range.start));
+                         tempData.add(tempRange * multiplier);//Mapping range length
+                         tempData.add(t);//Mapping slot
+                         DBG(tn +": " + String(sourceIds.indexOf(source->name))+ ", " + String(tempId)+", " + String(scalarsource)+ ", " +String(tempRange * multiplier)+
+                             ", " +String(t));
+                         mapCount++;
+                     }
+                 }
+             }
+         }
+         
+         //now send how many mappings will follow
+         data.add(mapCount);
+         for (int i = 0; i < tempData.size(); i++)
+         {
+             data.add(tempData[i]);
+         }
+         
+         //mark end of mapping values
+         data.add(-3.0f);
+
+         //next things that would be useful to send:
+         // string assignment midi notes
+         // tunings
+         // how many extra wavetables are used and which oscillators are they assigned to
+         //
+    //        for (int i = 0 ; i < sourceIds.size(); i++)
+    //        {
+    //            DBG(String(i) +  ": " + sourceIds[i]);
+    //        }
+         Array<uint8_t> data7bitInt;
+         union uintfUnion fu;
+         
+         uint16_t sizeOfSysexChunk = (64 / 5) - 3;
+         int dataToSend = data.size();
+         uint16_t currentChunk = 0;
+         uint16_t currentDataPointer = 0;
+         data7bitInt.add(0); // saying it's a preset
+         data7bitInt.add(presetNumber); // which preset are we saving
+         data7bitInt.add(17);
+         data7bitInt.add(18);
+         data7bitInt.add(VERSION_NUMBER_MAJOR);
+         data7bitInt.add(VERSION_NUMBER_MINOR);
+         for (int i = 0; i < presetName.length(); i++)
+         {
+             data7bitInt.add((presetName.toUTF8()[i] & 127)); //printable characters are in the 0-127 range
+             
+         }
+         uint16 remainingBlanks = 14 - presetName.length();
+         for (uint16 i = 0; i < remainingBlanks; i++)
+         {
+             data7bitInt.add(32);
+         }
+         //MidiMessage presetMessage = ;
+     
+         midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+
+         currentChunk++;
+         
+         //now send the macro names (9 characters each)
+         for (int i = 0; i < NUM_GENERIC_MACROS; i++)
+         {
+             data7bitInt.clear();
+             data7bitInt.add(0); // saying it's a preset
+             data7bitInt.add(presetNumber); // which preset are we saving
+         
+             //clip macro names to 9 letters if they are longer
+             int myLength = 9;
+             if (macroNames[i].length() < 9)
+             {
+                 myLength = macroNames[i].length();
+             }
+             for (int j = 0; j < myLength; j++)
+             {
+                 data7bitInt.add((macroNames[i].toUTF8()[j] & 127)); //printable characters are in the 0-127 range
+             }
+             remainingBlanks = 9 - myLength;
+             for (int  j = 0; j < remainingBlanks; j++)
+             {
+                 data7bitInt.add(32);
+             }
+             //MidiMessage presetMessage = ;
+         
+             midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+             currentChunk++;
+         }
+         //now send the knob/joystick names (10 characters each)
+         for (int i = NUM_GENERIC_MACROS; i < (NUM_GENERIC_MACROS + 4); i++)
+         {
+             data7bitInt.clear();
+             data7bitInt.add(0); // saying it's a preset
+             data7bitInt.add(presetNumber); // which preset are we saving
+         
+             //clip macro names to 10 letters if they are longer
+             int myLength = 10;
+             if (macroNames[i].length() < 10)
+             {
+                 myLength = macroNames[i].length();
+             }
+             for (int j = 0; j < myLength; j++)
+             {
+                 data7bitInt.add((macroNames[i].toUTF8()[j] & 127)); //printable characters are in the 0-127 range
+             }
+             remainingBlanks = 10 - myLength;
+             for (int  j = 0; j < remainingBlanks; j++)
+             {
+                 data7bitInt.add(32);
+             }
+             //MidiMessage presetMessage = ;
+         
+             midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+             currentChunk++;
+         }
+         while(currentDataPointer < dataToSend)
+         {
+             data7bitInt.clear();
+
+             data7bitInt.add(0); // saying it's a preset
+             data7bitInt.add(presetNumber); // which preset are we saving
+             
+             //data7bitInt.add(currentChunk); // whichChhunk
+             uint16_t toSendInThisChunk;
+             uint16_t dataRemaining = dataToSend - currentDataPointer;
+             if (dataRemaining < sizeOfSysexChunk)
+             {
+                 toSendInThisChunk = dataRemaining;
+             }
+             else
+             {
+                 toSendInThisChunk = sizeOfSysexChunk;
+             }
+
+             for (int i = currentDataPointer; i < toSendInThisChunk+currentDataPointer; i++)
+             {
+                 fu.f = data[i];
+                 data7bitInt.add((fu.i >> 28) & 15);
+                 data7bitInt.add((fu.i >> 21) & 127);
+                 data7bitInt.add((fu.i >> 14) & 127);
+                 data7bitInt.add((fu.i >> 7) & 127);
+                 data7bitInt.add(fu.i & 127);
+
+             }
+             currentDataPointer = currentDataPointer + toSendInThisChunk;
+             MidiMessage presetMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
+         
+             midiMessages.addEvent(presetMessage, 0);
+
+             currentChunk++;
+         }
+         data7bitInt.clear();
+         data7bitInt.add(126); // custom command to start parsing, sysex send is finished!
+         data7bitInt.add(1); // which preset did we just finish
+         MidiMessage presetMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
+         midiMessages.addEvent(presetMessage, 0);
+         
+         /*
+         data7bitInt.clear();
+         data7bitInt.add(0); // saying it's a preset
+         data7bitInt.add(1); // which preset are we saving
+         data7bitInt.add(0); // whichChhunk
+         for (int i = 0; i < data.size(); i++)
+         {
+             fu.f = data[i];
+             data7bitInt.add((fu.i >> 28) & 15);
+             data7bitInt.add((fu.i >> 21) & 127);
+             data7bitInt.add((fu.i >> 14) & 127);
+             data7bitInt.add((fu.i >> 7) & 127);
+             data7bitInt.add(fu.i & 127);
+         }
+         MidiMessage presetMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
+     
+         midiMessages.addEvent(presetMessage, 0);
+         
+         */
+         // Wavetable data
+         /*
+         // Determine which tables are in use and therefore should be sent
+         Array<String> tableSetsToSend;
+         for (auto osc : oscs)
+         {
+             if (osc->getCurrentShapeSet() == UserOscShapeSet)
+             {
+                 tableSetsToSend.addIfNotAlreadyThere(osc->getWaveTableFile().getFullPathName());
+             }
+         }
+         
+         // Send out each set of tables
+         for (auto setName : tableSetsToSend)
+         {
+             data.clear();
+             data7bitInt.clear();
+             
+             for (auto table : waveTables.getReference(setName))
+             {
+                 for (int i = 0; i < table->numTables; ++i)
+                 {
+                     data.add(table->sizes[i]);
+                     for (int j = 0; j < table->sizes[i]; ++j)
+                     {
+                         data.add(table->tables[i][j]);
+                     }
+                 }
+             }
+             
+             for (int i = 0; i < data.size(); i++)
+             {
+                 data7bitInt.add(2); // saying it's wavetable data
+                 
+                 fu.f = data[i];
+                 data7bitInt.add((fu.i >> 28) & 15);
+                 data7bitInt.add((fu.i >> 21) & 127);
+                 data7bitInt.add((fu.i >> 14) & 127);
+                 data7bitInt.add((fu.i >> 7) & 127);
+                 data7bitInt.add(fu.i & 127);
+                 
+
+             }
+             MidiMessage wtMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
+             
+             midiMessages.addEvent(wtMessage, 0);
+         }
+     */
+         waitingToSendPreset = false;
+     }
+     
+     
+     if (waitingToSendTuning)
+     {
+         uint16_t currentChunk = 0;
+         Array<uint8_t> data7bitInt;
+         union uintfUnion fu;
+         
+         data7bitInt.add(1); // saying it's a preset
+         data7bitInt.add(tuningNumber); // which preset are we saving
+         
+         for (int i = 0; i < presetName.length(); i++)
+         {
+             data7bitInt.add((presetName.toUTF8()[i] & 127)); //printable characters are in the 0-127 range
+             
+         }
+         uint16 remainingBlanks = 14 - presetName.length();
+         for (uint16 i = 0; i < remainingBlanks; i++)
+         {
+             data7bitInt.add(32);
+         }
+         //MidiMessage presetMessage = ;
+     
+         midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+
+         currentChunk++;
+         Array<float> data;
+         for (int i = 0; i < 128; i++)
+         {
+             data.add(centsDeviation[i]);
+         }
+         
+        
+         
+         uint16_t currentDataPointer = 0;
+         uint16_t sizeOfSysexChunk = (64 / 5) - 3;
+         int dataToSend = data.size();
+         while(currentDataPointer < dataToSend)
+         {
+             data7bitInt.clear();
+
+             data7bitInt.add(1); // saying it's a tuning
+             data7bitInt.add(presetNumber); // which tuning are we saving
+             
+             //data7bitInt.add(currentChunk); // whichChhunk
+             uint16_t toSendInThisChunk;
+             uint16_t dataRemaining = dataToSend - currentDataPointer;
+             if (dataRemaining < sizeOfSysexChunk)
+             {
+                 toSendInThisChunk = dataRemaining;
+             }
+             else
+             {
+                 toSendInThisChunk = sizeOfSysexChunk;
+             }
+
+             for (int i = currentDataPointer; i < toSendInThisChunk+currentDataPointer; i++)
+             {
+                 fu.f = data[i];
+                 data7bitInt.add((fu.i >> 28) & 15);
+                 data7bitInt.add((fu.i >> 21) & 127);
+                 data7bitInt.add((fu.i >> 14) & 127);
+                 data7bitInt.add((fu.i >> 7) & 127);
+                 data7bitInt.add(fu.i & 127);
+
+             }
+             currentDataPointer = currentDataPointer + toSendInThisChunk;
+             MidiMessage presetMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
+         
+             midiMessages.addEvent(presetMessage, 0);
+
+             currentChunk++;
+         }
+         data7bitInt.clear();
+         data7bitInt.add(126); // custom command to start parsing, sysex send is finished!
+         data7bitInt.add(tuningNumber); // which tuning did we just finish
+         MidiMessage presetMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
+         midiMessages.addEvent(presetMessage, 0);
+         waitingToSendTuning = false;
+     }
+     
+     if (waitingToSendOpenString)
+     {
+         uint16_t currentChunk = 0;
+         Array<uint8_t> data7bitInt;
+         union uintfUnion fu;
+         
+         data7bitInt.add(3); // saying it's a preset
+         data7bitInt.add(0); // which preset are we saving
+         
+        
+
+         
+         Array<float> data;
+         for (int i = 0; i < 4; i++)
+         {
+             data.add(openStrings[i]);
+         }
+         
+        
+         
+         uint16_t currentDataPointer = 0;
+         uint16_t sizeOfSysexChunk = (64 / 5) - 3;
+         int dataToSend = data.size();
+         while(currentDataPointer < dataToSend)
+         {
+             data7bitInt.clear();
+
+             data7bitInt.add(3); // saying it's a tuning
+             data7bitInt.add(0); // which tuning are we saving
+             
+             //data7bitInt.add(currentChunk); // whichChhunk
+             uint16_t toSendInThisChunk;
+             uint16_t dataRemaining = dataToSend - currentDataPointer;
+             if (dataRemaining < sizeOfSysexChunk)
+             {
+                 toSendInThisChunk = dataRemaining;
+             }
+             else
+             {
+                 toSendInThisChunk = sizeOfSysexChunk;
+             }
+
+             for (int i = currentDataPointer; i < toSendInThisChunk+currentDataPointer; i++)
+             {
+                 fu.f = data[i];
+                 data7bitInt.add((fu.i >> 28) & 15);
+                 data7bitInt.add((fu.i >> 21) & 127);
+                 data7bitInt.add((fu.i >> 14) & 127);
+                 data7bitInt.add((fu.i >> 7) & 127);
+                 data7bitInt.add(fu.i & 127);
+
+             }
+             currentDataPointer = currentDataPointer + toSendInThisChunk;
+             MidiMessage presetMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
+         
+             midiMessages.addEvent(presetMessage, 0);
+
+             currentChunk++;
+         }
+         data7bitInt.clear();
+         data7bitInt.add(126); // custom command to start parsing, sysex send is finished!
+         data7bitInt.add(0); // which tuning did we just finish
+         MidiMessage presetMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
+         midiMessages.addEvent(presetMessage, 0);
+         waitingToSendOpenString = false;
+     }
+     
+     if (waitingToSendCopedent)
+     {
+         Array<float> data;
+         for (int i = 0; i < copedentArray.size(); ++i)
+         {
+             for (auto value : copedentArray.getReference(i))
+             {
+                 data.add(value);
+             }
+         }
+         
+         Array<uint8_t> data7bitInt;
+         union uintfUnion fu;
+         
+         uint16_t sizeOfSysexChunk = (64 / 5) - 3;
+         int dataToSend = data.size();
+         uint16_t currentChunk = 0;
+         uint16_t currentDataPointer = 0;
+         
+         data7bitInt.clear();
+         data7bitInt.add(2); // saying it's a copedent
+         data7bitInt.add(copedentNumber); // saying which copedent number to store (need this to be a user entered value)
+         for (int i = 0; i < copedentName.length(); i++)
+         {
+             if (i < 10)
+             {
+                 data7bitInt.add((copedentName.toUTF8()[i] & 127)); //printable characters are in the 0-127 range
+             }
+         }
+         uint16 remainingBlanks = 0;
+         if (copedentName.length() < 10)
+         {
+             remainingBlanks = 10 - copedentName.length();
+         }
+         for (uint16 i = 0; i < remainingBlanks; i++)
+         {
+             data7bitInt.add(32);
+         }
+     
+         midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+
+         currentChunk++;
+         
+         
+         while(currentDataPointer < dataToSend)
+         {
+             data7bitInt.clear();
+
+             data7bitInt.add(2); // saying it's a copedent
+             data7bitInt.add(copedentNumber); // saying which copedent number to store (need this to be a user entered value)
+             //flat7bitInt.add(50 + j);
+             
+             //data7bitInt.add(currentChunk); // whichChhunk
+             uint16_t toSendInThisChunk;
+             uint16_t dataRemaining = dataToSend - currentDataPointer;
+             if (dataRemaining < sizeOfSysexChunk)
+             {
+                 toSendInThisChunk = dataRemaining;
+             }
+             else
+             {
+                 toSendInThisChunk = sizeOfSysexChunk;
+             }
+
+             for (int i = currentDataPointer; i < toSendInThisChunk+currentDataPointer; i++)
+             {
+                 fu.f = data[i];
+                 data7bitInt.add((fu.i >> 28) & 15);
+                 data7bitInt.add((fu.i >> 21) & 127);
+                 data7bitInt.add((fu.i >> 14) & 127);
+                 data7bitInt.add((fu.i >> 7) & 127);
+                 data7bitInt.add(fu.i & 127);
+
+             }
+             currentDataPointer = currentDataPointer + toSendInThisChunk;
+             MidiMessage presetMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
+         
+             midiMessages.addEvent(presetMessage, 0);
+
+             currentChunk++;
+         }
+         data7bitInt.clear();
+         data7bitInt.add(126); // custom command to start parsing, sysex send is finished!
+         data7bitInt.add(copedentNumber); // which copedent did we just finish
+         MidiMessage copedentMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
+         midiMessages.addEvent(copedentMessage, 0);
+         waitingToSendCopedent = false;
+     }
+}
 
 //TODO: need to add mapped sources to knobs to smooth array (currently only added by GUI knob twist)
 void ElectroAudioProcessor::tickKnobsToSmooth()
 {
     for (int i = 0; i < knobsToSmooth.size(); i++)
     {
-        SmoothedParameter* knob = knobsToSmooth.getUnchecked(i);
+        SmoothedParameter* knob = knobsToSmooth[i];
         knob->tick();
         
     }
@@ -1675,15 +1669,13 @@ void  ElectroAudioProcessor::removeKnobsToSmooth()
 {
     for (int i = 0; i < knobsToSmooth.size(); i++)
     {
-        SmoothedParameter* knob = knobsToSmooth.getUnchecked(i);
+        SmoothedParameter* knob = knobsToSmooth[i];
         if (knob->getRemoveMe())
         {
-            
             knob->setRemoveMe(false);
             knobsToSmooth.remove(i);
         }
     }
-    
 }
 //==============================================================================
 bool ElectroAudioProcessor::hasEditor() const
@@ -2156,17 +2148,19 @@ void ElectroAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 void ElectroAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     DBG("Pre set state: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
-    
+    suspendProcessing(true);
     std::unique_ptr<juce::XmlElement> xml(getXmlFromBinary(data, sizeInBytes));
     
     if (xml.get() != nullptr)
     {
+        /*  // what's the purpose of this, since we are going to clear it below??
         for (int i = 0; i < knobsToSmooth.size(); i++)
         {
             SmoothedParameter* knob = knobsToSmooth.getUnchecked(i);
             knob->setRemoveMe(false);
             //knobsToSmooth.remove(i);
         }
+         */
         knobsToSmooth.clear();
         // Top level settings
         String presetPath = xml->getStringAttribute("path");
@@ -2297,14 +2291,13 @@ void ElectroAudioProcessor::setStateInformation (const void* data, int sizeInByt
         else
         {
 			// A couple of default mappings that will be used if nothing has been saved
-            //TODO: this seems wrong now that we changed envelope 1 to always be amp mapping
 			Mapping defaultFilter1Cutoff;
 			defaultFilter1Cutoff.sourceName = "Envelope3";
 			defaultFilter1Cutoff.targetName = "Filter1 Cutoff T3";
 			defaultFilter1Cutoff.value = 24.f;
 
 			Mapping defaultOutputAmp;
-			defaultOutputAmp.sourceName = "Envelope4";
+			defaultOutputAmp.sourceName = "Envelope1";
 			defaultOutputAmp.targetName = "Output Amp T3";
 			defaultOutputAmp.value = 1.f;
 
@@ -2327,7 +2320,7 @@ void ElectroAudioProcessor::setStateInformation (const void* data, int sizeInByt
     {
         editor->update();
     }
-    
+    suspendProcessing(false);
     DBG("Post set state: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
 }
 

@@ -190,32 +190,23 @@ void Oscillator::tick(float output[][MAX_NUM_VOICES])
         float note = processor.voiceNote[v];
         float harmFreq = 1.0f;
         float midiAdd = 0.0f;
-        
-        if (isHarmonic_raw == nullptr || *isHarmonic_raw > 0)
+
+        if (isStepped_raw == nullptr || *isStepped_raw > 0)
         {
-            if (isStepped_raw == nullptr || *isStepped_raw > 0)
-            {
-                harm = round(harm);
-            }
-            if (harm >= 0)
-            {
-                harmFreq = (harm + 1.0f);
-            }
-            else
-            {
-                harmFreq = (1.0f / fabsf((harm - 1.0f)));
-            }
-            midiAdd = 0.0f;
+            harm = round(harm);
+            pitch = round(pitch);
+        }
+        if (harm >= 0)
+        {
+            harmFreq = (harm + 1.0f);
         }
         else
         {
-            if (isStepped_raw == nullptr || *isStepped_raw > 0)
-            {
-                pitch = round(pitch);
-            }
-            midiAdd = pitch;
-            harmFreq = 1.0f;
+            harmFreq = (1.0f / fabsf((harm - 1.0f)));
         }
+        midiAdd = pitch;
+        
+
         
         //DBG(ftom(processor.tuner.mtof(note) / (harm - 1)));
         //DBG(processor.tuner.mtof(note) / (harm - 1));
@@ -246,7 +237,7 @@ void Oscillator::tick(float output[][MAX_NUM_VOICES])
         {
             output[0][v] = 0.0f;
         }
-        if (isnan(output[0][v]))
+        if (isnan(output[1][v]))
         {
             output[1][v] = 0.0f;
         }
@@ -550,12 +541,12 @@ float LowFreqOscillator::tick()
     {
         float rate = quickParams[LowFreqRate][v]->read();
         float shape = quickParams[LowFreqShape][v]->read();
-        if (processor.knobsToSmooth.contains(quickParams[LowFreqShape][v]))
+        //if (processor.knobsToSmooth.contains(quickParams[LowFreqShape][v]))
         {
             setShape(v,shape);
         }
         
-        if (processor.knobsToSmooth.contains(quickParams[LowFreqRate][v]))
+        //if (processor.knobsToSmooth.contains(quickParams[LowFreqRate][v]))
         {
             setRate(v,rate);
         }

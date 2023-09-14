@@ -55,6 +55,7 @@ public:
     void resized() override;
     
     void sliderValueChanged(Slider* slider) override;
+    void valueChangedSliderStream(Slider* slider);
     void buttonClicked(Button* button) override; 
     
     void labelTextChanged(Label* label) override {};
@@ -188,7 +189,7 @@ public:
                   // of K
                 index = it - paramDestOrder.begin();
               }
-            float tempId = index + 2;
+            int tempId = index + 2;
             ac.processor.streamID1 = tempId;
             //button->get
             DBG("Send: " + comboBox->getName() + " with ID"  + String(tempId) + " and value " + String(ac.processor.streamValue1)/*String(streamValue)*/);

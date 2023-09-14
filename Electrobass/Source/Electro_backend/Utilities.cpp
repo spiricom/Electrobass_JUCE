@@ -55,7 +55,7 @@ float SmoothedParameter::tick()
     }
     if ((numSmoothedHooks == 0) && (numNonSmoothedHooks == 0))
     {
-        if (value == target)
+        if ((value >= target - 0.0001f) && (value <= target + 0.0001f)) //changed this because equality check on floats isn't reliable
         {
             removeMe = true;
         }
@@ -118,9 +118,10 @@ void SmoothedParameter::setHookRange(int index, float min, float max, bool isBip
     hooks[index].min = min;
     float difference = max-min;
     hooks[index].length = max-min;
-    float multiplier = 1.0f;
+    //float multiplier = 1.0f;
     DBG("Sethook max:start   " + String(max));
     DBG("Sethook min:start   " + String(min));
+    /*
     if (difference < 0)
     {
         multiplier = -1.0f;
@@ -130,6 +131,7 @@ void SmoothedParameter::setHookRange(int index, float min, float max, bool isBip
     {
         multiplier = -1.0f;
     }
+     */
     //DBG("Difference " + String(difference));
 
     if(isSkewed)

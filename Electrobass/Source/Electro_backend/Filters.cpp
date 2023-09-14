@@ -120,11 +120,11 @@ void Filter::tick(float* samples)
         float keyFollow = quickParams[FilterKeyFollow][v]->read();
         float q = quickParams[FilterResonance][v]->read();
         float gain = quickParams[FilterGain][v]->read();
-        if (processor.knobsToSmooth.contains(quickParams[FilterResonance][v]))
+        //if (processor.knobsToSmooth.contains(quickParams[FilterResonance][v]))
         {
             setQ(q, v);
         }
-        if (processor.knobsToSmooth.contains(quickParams[FilterGain][v]))
+        //if (processor.knobsToSmooth.contains(quickParams[FilterGain][v]))
         {
             setGain(gain, v);
         }

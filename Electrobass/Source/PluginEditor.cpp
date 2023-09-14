@@ -415,11 +415,31 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     addAndMakeVisible(tab4);
     
     tab4.addAndMakeVisible(fxTab);
+    MappingSource * sourcesOrganizedByID[128];
     for (auto mapModel : p.sourceMap)
     {
         MappingSource *s = new MappingSource(*this, *mapModel);
-        allSources.add(s);
-        tab4.addAndMakeVisible(s);
+        //allSources.add(s);
+
+        auto it = find(paramSourceOrder.begin(), paramSourceOrder.end(),s->getModel().name);
+        int index = 0;
+          // If element was found
+          if (it != paramSourceOrder.end())
+          {
+              
+              // calculating the index
+              // of K
+            index = it - paramSourceOrder.begin();
+          }
+        
+        sourcesOrganizedByID[index] = s;
+    }
+    for (int j= 0; j< paramSourceOrder.size(); j++)
+    {
+        
+        allSources.add(sourcesOrganizedByID[j]);
+        tab4.addAndMakeVisible(allSources[j]);
+        
     }
     //==============================================================================
     
@@ -797,7 +817,7 @@ void ElectroAudioProcessorEditor::resized()
     fxTab.setBoundsRelative(0.05f, 0.08f, 0.99f, 0.75f);
     for (int i = 0; i < allSources.size(); ++i)
     {
-        allSources[i]->setBounds(6*s + (75+2)*(i/5), fxTab.getBottom() + ((i%5)*(40*0.5f)), 75, 40*0.5f);
+        allSources[i]->setBounds(6*s + (93+2)*(i/5), fxTab.getBottom() + ((i%5)*(48*0.5f)), 93, 38*0.5f);
     }
     //==============================================================================
   
@@ -852,7 +872,7 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
                   // of K
                 index = it - paramDestOrder.begin();
               }
-            float tempId = index + 2;
+            int tempId = index + 2;
             processor.streamID1 = tempId;
             DBG("Send: PitchBendRange with id" + String(tempId) +
                 " as " + String(processor.streamValue1) );
@@ -876,7 +896,7 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
             }
             if (index != -1) // to avoid sending things not in the dest array (like foot pedals and knee levers)
             {
-                float tempId = index + 2;
+                int tempId = index + 2;
                 processor.streamID1 = tempId;
                 //button->get
                 DBG("Send: " + slider->getName() + " with ID"  + String(tempId) + " and value " + String(processor.streamValue1)/*String(streamValue)*/);
@@ -900,7 +920,7 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
           }
         if (index != -1) // to avoid sending things not in the dest array (like foot pedals and knee levers)
         {
-            float tempId = index + 2;
+            int tempId = index + 2;
             processor.streamID1 = tempId;
             //button->get
             DBG("Send: " + slider->getName() + " with ID"  + String(tempId) + " and value " + String(processor.streamValue1)/*String(streamValue)*/);
@@ -972,7 +992,7 @@ void ElectroAudioProcessorEditor::buttonClicked(Button* button)
                       // of K
                     index = it - paramDestOrder.begin();
                   }
-                float tempId = index + 2;
+                int tempId = index + 2;
                 processor.streamID1 = tempId;
                 //button->get
                 DBG("Send: " + button->getName() + " with ID"  + String(tempId) + " and value " + String(processor.streamValue1));
