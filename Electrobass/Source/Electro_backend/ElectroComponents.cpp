@@ -117,22 +117,6 @@ void MappingTarget::itemDropped(const SourceDetails &dragSourceDetails)
 void MappingTarget::paint(Graphics& g)
 {
     Slider::paint(g);
-    
-//    if (model.currentScalarSource != nullptr)
-//    {
-//        g.setColour(model.currentScalarSource->colour);
-        
-//        Justification just =
-//        model.currentScalarSource == nullptr ? Justification::centred : Justification::centredLeft;
-//        Label* label = getValueLabel();
-//        label->setJustificationType(just);
-//        label->setBorderSize(BorderSize<int>(0, 1, 0, 0));
-        
-//        int x = (label->getWidth()/2) + 2;
-//        int w = x - 4;
-//        g.drawFittedText(getScalarString(), x, 4, w, w*0.7, Justification::centred, 1);
-//        g.fillEllipse(getWidth()-5, 3, 3, 3);
-//    }
 }
 
 void MappingTarget::resized()
@@ -522,11 +506,11 @@ void ElectroDial::resized()
         int m = 1;
         if (r == 1) area.removeFromLeft(1);
         if (r == 2) m = 0;
-        t[0]->setBounds(area.removeFromLeft(w/3 - m));
+        t[0]->setBounds(area.removeFromLeft(w/3 - m) * .98f);
         area.removeFromLeft(1);
-        t[1]->setBounds(area.removeFromLeft(w/3 - m));
+        t[1]->setBounds(area.removeFromLeft(w/3 - m)* .98f);
         area.removeFromLeft(1);
-        t[2]->setBounds(area.removeFromLeft(w/3 - m));
+        t[2]->setBounds(area.removeFromLeft(w/3 - m)* .98f);
     }
 }
 

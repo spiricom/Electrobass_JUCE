@@ -246,7 +246,7 @@ float Effect::delayTick(float sample, float param1, float param2, float param3, 
 #endif
     delayFB[v] = sample;
     return sample;
-}q
+}
 
 float Effect::chorusTick(float sample, float param1, float param2, float param3, float param4, float param5, int v)
 {

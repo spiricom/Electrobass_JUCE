@@ -117,9 +117,9 @@ void Oscillator::frame()
             shapeTick = &Oscillator::triTick;
             break;
             
-        case UserOscShapeSet:
-            shapeTick = &Oscillator::userTick;
-            break;
+        //case UserOscShapeSet:
+            //shapeTick = &Oscillator::userTick;
+            //break;
             
         default:
             shapeTick = &Oscillator::sawSquareTick;
@@ -156,9 +156,9 @@ void Oscillator::setShape(int v, float shape)
             tPBTriangle_setSkew(&tri[v], shape);
             break;
             
-        case UserOscShapeSet:
-            tWaveOscS_setIndex(&wave[v], shape);
-            break;
+        //case UserOscShapeSet:
+            //tWaveOscS_setIndex(&wave[v], shape);
+            //break;
             
         default:
             //tPBSaw_setShape(&sawPaired[v], shape);
