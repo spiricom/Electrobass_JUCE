@@ -77,7 +77,7 @@ void Output::tickLowpass(float input [MAX_NUM_VOICES])
 
 void Output::lowpassTick(float& sample, int v, float cutoff)
 {
-    float in = LEAF_clip(0.0f,(((cutoff* 70.0f) + 58.0f)-16.0f) * 35.929824561403509f,4095.f);
+    float in = (cutoff* 70.0f) + 58.0f;
     tSVF_setFreqFast(&lowpass[v], in);
     sample = tSVF_tick(&lowpass[v], sample);
 }

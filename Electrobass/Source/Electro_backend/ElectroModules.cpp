@@ -164,7 +164,7 @@ void ElectroModule::valueChangedSliderStream(Slider* slider)
     /*
      if (sliderIndex != "Decay" && sliderIndex != "Rate" && sliderIndex != "Attack" && sliderIndex != "Release" && sliderIndex != "Resonance")
      */
-    if (sliderIndex != 4)
+    if ((sliderIndex != 97) && (sliderIndex != 103) && (sliderIndex != 106) && (sliderIndex != 107) && (sliderIndex != 109)&& (sliderIndex != 112)&& (sliderIndex != 113)&& (sliderIndex != 115)&& (sliderIndex != 118)&& (sliderIndex != 119)&& (sliderIndex != 121)&& (sliderIndex != 124)&& (sliderIndex != 125)&& (sliderIndex != 127)&& (sliderIndex != 130)&& (sliderIndex != 135)&& (sliderIndex != 140)&& (sliderIndex != 145))
     {
         float end = slider->getRange().getEnd();
         float start = slider->getRange().getStart();

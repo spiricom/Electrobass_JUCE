@@ -45,9 +45,9 @@ private:
     void setGain(float gain, int v);
     
     tDiodeFilter diodeFilters[MAX_NUM_VOICES];
-    tVZFilter VZfilterPeak[MAX_NUM_VOICES];
-    tVZFilter VZfilterLS[MAX_NUM_VOICES];
-    tVZFilter VZfilterHS[MAX_NUM_VOICES];
+    tVZFilterBell VZfilterPeak[MAX_NUM_VOICES];
+    tVZFilterLS VZfilterLS[MAX_NUM_VOICES];
+    tVZFilterHS VZfilterHS[MAX_NUM_VOICES];
     tVZFilter VZfilterBR[MAX_NUM_VOICES];
     tSVF lowpass[MAX_NUM_VOICES];
     tSVF highpass[MAX_NUM_VOICES];
