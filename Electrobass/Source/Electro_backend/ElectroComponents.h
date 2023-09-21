@@ -87,6 +87,8 @@ public:
     void setText(String s);
     void setTextColour(Colour colour);
     
+    void setOutlineColour(Colour colour);
+    
     void setMapping(MappingSource* source, float end);
     void setMappingRange(float end, bool directChange, bool sendListenerNotif);
     void setMappingScalar(MappingSource* source);

@@ -51,7 +51,7 @@ Font ElectroLookAndFeel::getPopupMenuFont (void)
 Font ElectroLookAndFeel::getTextButtonFont (TextButton& b, int buttonHeight)
 {
     Font font (tp);
-    float h = buttonHeight * 0.4f;
+    float h = buttonHeight * 0.6f;
     if (b.getToggleState()) h *= 1.1f;
     font.setHeight(h);
     return font;

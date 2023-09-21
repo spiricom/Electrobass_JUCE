@@ -230,6 +230,11 @@ void MappingTarget::setTextColour(Colour c)
     setColour(textBoxTextColourId, c);
 }
 
+void MappingTarget::setOutlineColour(Colour c)
+{
+    setColour(textBoxOutlineColourId, c);
+}
+
 void MappingTarget::setMapping(MappingSource* source, float end)
 {
     model.setMapping(&source->getModel(), end, true);
@@ -327,6 +332,7 @@ label(displayName, displayName)
         label.setBorderSize(BorderSize<int>(0));
         addAndMakeVisible(&label);
         
+        
         for (int i = 0; i < numTargets; ++i)
         {
             t.add(new MappingTarget(editor, *editor.processor.getMappingTarget(paramName + " T" + String(i+1))));
@@ -335,6 +341,7 @@ label(displayName, displayName)
 //            t[i]->addListener(this);
             t[i]->addMouseListener(this, true);
             addAndMakeVisible(t[i]);
+            t[i]->setOutlineColour (juce::Colours::darkslategrey);
         }
     }
     else

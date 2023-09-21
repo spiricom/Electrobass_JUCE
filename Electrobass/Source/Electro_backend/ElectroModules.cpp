@@ -240,7 +240,7 @@ OscModule::OscModule(ElectroAudioProcessorEditor& editor, AudioProcessorValueTre
                      AudioComponent& ac) :
 //float relLeftMargin, float relDialWidth,
 //float relDialSpacing, float relTopMargin, float relDialHeight) :
-ElectroModule(editor, vts, ac, 0.115f, 0.096f, 0.04f, 0.18f, 0.73f),
+ElectroModule(editor, vts, ac, 0.115f, 0.096f, 0.04f, 0.18f, 0.75f),
 chooser(nullptr)
 {
     
@@ -278,7 +278,7 @@ chooser(nullptr)
     
     steppedToggle.addListener(this);
     steppedToggle.setTitle("Stepped Dial");
-    steppedToggle.setButtonText("ST");
+    steppedToggle.setButtonText("Stepped");
     steppedToggle.changeWidthToFitText();
     steppedToggle.setToggleable(true);
     steppedToggle.setClickingTogglesState(true);
@@ -396,10 +396,10 @@ void OscModule::resized()
     harmonicsLabel.setBoundsRelative(relLeftMargin,
                                      0.02f, 0.1f, 0.16f);
     
-    pitchDialToggle.setBoundsRelative(0.0f, 0.412f, 0.05f, 0.15f);
+    pitchDialToggle.setBoundsRelative(0.0f, 0.5f, 0.05f, 0.15f);
     syncToggle.setBoundsRelative(0.0f, 0.6f, 0.05f, 0.15f);
     syncType.setBoundsRelative(0.0f, 0.75f, 0.05f, 0.15f);
-    steppedToggle.setBoundsRelative(0.0f, 0.2f, 0.05f, 0.15f);
+    steppedToggle.setBoundsRelative(0.0f, 0.2f, 0.1f, 0.15f);
 
     
     
@@ -414,8 +414,8 @@ void OscModule::resized()
     
     sendSlider.setBoundsRelative(0.96f, 0.f, 0.04f, 1.0f);
     
-    enabledToggle.setBoundsRelative(0.917f, 0.41f, 0.04f, 0.15f);
-    smoothingToggle.setBoundsRelative(0.0f, 0.41f, 0.04f, 0.15f);
+    enabledToggle.setBoundsRelative(0.917f, 0.5f, 0.04f, 0.15f);
+    smoothingToggle.setBoundsRelative(0.0f, 0.5f, 0.5f, 0.15f);
     f1Label.setBoundsRelative(0.9f, 0.05f, 0.06f, 0.15f);
     f2Label.setBoundsRelative(0.9f, 0.80f, 0.06f, 0.15f);
     //draw harmonics knob first
@@ -469,13 +469,13 @@ void OscModule::buttonClicked(Button* button)
         {
             getDial(OscPitch)->setRange(-24, 24., steppedToggle.getToggleState() ? 1 : 0.01 );
             getDial(OscHarm)->setRange(-15, 15., steppedToggle.getToggleState() ? 1 : 0.01 );
-            steppedToggle.setButtonText("SM");
+            steppedToggle.setButtonText("Smoothed");
         }
         else
         {
             getDial(OscHarm)->setRange(-15, 15., steppedToggle.getToggleState() ? 1 : 0.01 );
             getDial(OscPitch)->setRange(-24, 24., steppedToggle.getToggleState() ? 1 : 0.01 );
-            steppedToggle.setButtonText("ST");
+            steppedToggle.setButtonText("Stepped");
         }
         displayPitch();
     }
