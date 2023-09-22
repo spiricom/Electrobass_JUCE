@@ -164,7 +164,8 @@ void ElectroModule::valueChangedSliderStream(Slider* slider)
     /*
      if (sliderIndex != "Decay" && sliderIndex != "Rate" && sliderIndex != "Attack" && sliderIndex != "Release" && sliderIndex != "Resonance")
      */
-    if (sliderIndex != 4)
+    //there's gotta be a better way, we should store a little boolean that says whether the slider is scaled with a slider and check that instead -JS
+    if ((sliderIndex != 97) && (sliderIndex != 103) && (sliderIndex != 106) && (sliderIndex != 107) && (sliderIndex != 109)&& (sliderIndex != 112)&& (sliderIndex != 113)&& (sliderIndex != 115)&& (sliderIndex != 118)&& (sliderIndex != 119)&& (sliderIndex != 121)&& (sliderIndex != 124)&& (sliderIndex != 125)&& (sliderIndex != 127)&& (sliderIndex != 130)&& (sliderIndex != 135)&& (sliderIndex != 140)&& (sliderIndex != 145))
     {
         float end = slider->getRange().getEnd();
         float start = slider->getRange().getStart();
@@ -239,7 +240,7 @@ OscModule::OscModule(ElectroAudioProcessorEditor& editor, AudioProcessorValueTre
                      AudioComponent& ac) :
 //float relLeftMargin, float relDialWidth,
 //float relDialSpacing, float relTopMargin, float relDialHeight) :
-ElectroModule(editor, vts, ac, 0.05f, 0.1f, 0.05f, 0.18f, 0.8f),
+ElectroModule(editor, vts, ac, 0.115f, 0.096f, 0.04f, 0.18f, 0.75f),
 chooser(nullptr)
 {
     
@@ -277,7 +278,7 @@ chooser(nullptr)
     
     steppedToggle.addListener(this);
     steppedToggle.setTitle("Stepped Dial");
-    steppedToggle.setButtonText("ST");
+    steppedToggle.setButtonText("Stepped");
     steppedToggle.changeWidthToFitText();
     steppedToggle.setToggleable(true);
     steppedToggle.setClickingTogglesState(true);
@@ -285,6 +286,7 @@ chooser(nullptr)
     addAndMakeVisible(steppedToggle);
     displayPitch();
     
+    /* if we comment this out does it break patches (because that element is left out of VTS?)*/
     buttonAttachments.add(new ButtonAttachment(vts, ac.getName() + " isHarmonic", pitchDialToggle));
     pitchDialToggle.setName(ac.getName() + " isHarmonic");
     
@@ -391,36 +393,36 @@ void OscModule::resized()
     
     s->setBounds(4, 4, (int)(getWidth()*0.1f), enabledToggle.getHeight()-8);
    
-    harmonicsLabel.setBoundsRelative(relLeftMargin + (.132f * 0.25f),
-                                     0.02f, .132f+((relDialSpacing * 0.25f)), 0.16f);
+    harmonicsLabel.setBoundsRelative(relLeftMargin,
+                                     0.02f, 0.1f, 0.16f);
     
-    pitchDialToggle.setBoundsRelative(0.0f, 0.412f, 0.05f, 0.15f);
+    pitchDialToggle.setBoundsRelative(0.0f, 0.5f, 0.05f, 0.15f);
     syncToggle.setBoundsRelative(0.0f, 0.6f, 0.05f, 0.15f);
     syncType.setBoundsRelative(0.0f, 0.75f, 0.05f, 0.15f);
-    steppedToggle.setBoundsRelative(0.0f, 0.2f, 0.05f, 0.15f);
+    steppedToggle.setBoundsRelative(0.0f, 0.2f, 0.1f, 0.15f);
 
     
     
-    pitchLabel.setBoundsRelative(relLeftMargin+(.132f * 1.25f),
-                                 0.02f, .132f+relDialSpacing, 0.16f);
+    pitchLabel.setBoundsRelative(relLeftMargin+(1.0f*(relDialWidth+relDialSpacing)),
+                                 0.02f, .1f, 0.16f);
     
-    freqLabel.setBoundsRelative(relLeftMargin+2*.132f+((1.5f*relDialSpacing)),
-                                 0.02f, .132f+relDialSpacing, 0.16f);
+    freqLabel.setBoundsRelative(relLeftMargin+(3.0f*(relDialWidth+relDialSpacing)),
+                                 0.02f, .1f, 0.16f);
     
-    shapeCB.setBoundsRelative(relLeftMargin+3*(.132f+relDialSpacing), 0.02f,
-                              relDialWidth+relDialSpacing, 0.16f);
+    shapeCB.setBoundsRelative(relLeftMargin+(4.0f*(relDialWidth+relDialSpacing)), 0.02f,
+                              .16f, 0.16f);
     
     sendSlider.setBoundsRelative(0.96f, 0.f, 0.04f, 1.0f);
     
-    enabledToggle.setBoundsRelative(0.917f, 0.41f, 0.04f, 0.15f);
-    smoothingToggle.setBoundsRelative(0.0f, 0.41f, 0.04f, 0.15f);
+    enabledToggle.setBoundsRelative(0.917f, 0.5f, 0.04f, 0.15f);
+    smoothingToggle.setBoundsRelative(0.0f, 0.5f, 0.5f, 0.15f);
     f1Label.setBoundsRelative(0.9f, 0.05f, 0.06f, 0.15f);
     f2Label.setBoundsRelative(0.9f, 0.80f, 0.06f, 0.15f);
+    //draw harmonics knob first
     dials[dials.size()-1]->setBoundsRelative(relLeftMargin , relTopMargin,
-                                relDialWidth, relDialHeight);
-    dials[0]->setBoundsRelative(relLeftMargin + (relDialWidth+relDialSpacing), relTopMargin,
-                                relDialWidth, relDialHeight);
-    for (int i = 1; i < ac.getParamNames().size() - 1; ++i)
+                               relDialWidth, relDialHeight);
+    //then the other ones
+    for (int i = 0; i < ac.getParamNames().size() - 1; ++i)
     {
         dials[i]->setBoundsRelative(relLeftMargin + (relDialWidth+relDialSpacing)*(i+1), relTopMargin,
                                     relDialWidth, relDialHeight);
@@ -460,40 +462,20 @@ void OscModule::buttonClicked(Button* button)
         sendSlider.setAlpha(enabledToggle.getToggleState() ? 1. : 0.5);
         
     }
-    else if (button == &pitchDialToggle || button == &steppedToggle)
+    else if (button == &steppedToggle)
     {
-        if (!pitchDialToggle.getToggleState())
-        {
-            
-            //getDial(OscPitch)->setText("Pitch", dontSendNotification);
-            //addAndMakeVisible(getDial(OscPitch));
-            getDial(OscHarm)->setValue(0.0);
-            getDial(OscPitch)->setVisible(true);
-            getDial(OscHarm)->setVisible(false);
-            pitchDialToggle.setButtonText("P");
-            getDial(OscHarm)->transferMappings(getDial(OscPitch));
-        } else
-        {
-
-            //getDial(OscPitch)->setText("Harmonics", dontSendNotification);
-            getDial(OscPitch)->setValue(0.0f);
-            getDial(OscPitch)->setVisible(false);
-            getDial(OscHarm)->setVisible(true);
-            pitchDialToggle.setButtonText("H");
-            getDial(OscPitch)->transferMappings(getDial(OscHarm));
-        }
         
         if (!steppedToggle.getToggleState())
         {
             getDial(OscPitch)->setRange(-24, 24., steppedToggle.getToggleState() ? 1 : 0.01 );
             getDial(OscHarm)->setRange(-15, 15., steppedToggle.getToggleState() ? 1 : 0.01 );
-            steppedToggle.setButtonText("SM");
+            steppedToggle.setButtonText("Smoothed");
         }
         else
         {
             getDial(OscHarm)->setRange(-15, 15., steppedToggle.getToggleState() ? 1 : 0.01 );
             getDial(OscPitch)->setRange(-24, 24., steppedToggle.getToggleState() ? 1 : 0.01 );
-            steppedToggle.setButtonText("ST");
+            steppedToggle.setButtonText("Stepped");
         }
         displayPitch();
     }
@@ -578,6 +560,7 @@ void OscModule::comboBoxChanged(ComboBox *comboBox)
             });
         }
         // Selected a loaded file
+#if 0
         else if (shapeCB.getSelectedItemIndex() >= UserOscShapeSet)
         {
             Oscillator& osc = static_cast<Oscillator&>(ac);
@@ -586,14 +569,16 @@ void OscModule::comboBoxChanged(ComboBox *comboBox)
             vts.getParameter(ac.getName() + " ShapeSet")->setValueNotifyingHost(1.);
             updateShapeCB();
         }
+        
         // Selected built ins
         else
+#endif
         {
-            float normValue = shapeCB.getSelectedItemIndex() / float(UserOscShapeSet);
+            float normValue = shapeCB.getSelectedItemIndex() / float(OscShapeSetNil);
             vts.getParameter(ac.getName() + " ShapeSet")->setValueNotifyingHost(normValue);
             updateShapeCB();
         }
-        
+#if 0
         if (shapeCB.getSelectedItemIndex() >= UserOscShapeSet)
         {
             // Maybe should check that the loaded table has more
@@ -605,7 +590,10 @@ void OscModule::comboBoxChanged(ComboBox *comboBox)
             syncType.setAlpha(0.5f);
             syncType.setInterceptsMouseClicks(false,false);
         }
-        else if (shapeCB.getSelectedItemIndex() > SineTriOscShapeSet &&
+#endif
+        //else if
+        if
+            (shapeCB.getSelectedItemIndex() > SineTriOscShapeSet &&
                  shapeCB.getSelectedItemIndex() != PulseOscShapeSet && shapeCB.getSelectedItemIndex() != TriOscShapeSet)
         {
             getDial(OscShape)->setAlpha(0.5f);
@@ -668,10 +656,10 @@ void OscModule::updateShapeCB()
     
     RangedAudioParameter* param = vts.getParameter(ac.getName() + " ShapeSet");
     int index = param->getNormalisableRange().convertFrom0to1(param->getValue());
-    if (index == UserOscShapeSet)
+    //if (index == UserOscShapeSet)
     {
-        Oscillator& osc = static_cast<Oscillator&>(ac);
-        index = editor.processor.waveTableFiles.indexOf(osc.getWaveTableFile())+UserOscShapeSet;
+        //Oscillator& osc = static_cast<Oscillator&>(ac);
+       // index = editor.processor.waveTableFiles.indexOf(osc.getWaveTableFile())+UserOscShapeSet;
     }
     shapeCB.setSelectedItemIndex(index, dontSendNotification);
 }
@@ -682,7 +670,7 @@ void OscModule::displayPitch()
    
     auto harm = getDial(OscHarm)->getSlider().getValue();
     harmonicsLabel.setColour(Label::textColourId, Colours::gold.withBrightness(0.95f));
-    String t = harm >= 0 ? String(abs(harm + 1),3) : String("1/" + String(abs(harm-1),3));
+    String t = harm >= 0 ? String(abs(harm + 1),2) : String("1/" + String(abs(harm-1),2));
    
         harmonicsLabel.setText(t, dontSendNotification);
     
@@ -690,7 +678,7 @@ void OscModule::displayPitch()
     auto fine = getDial(OscFine)->getSlider().getValue()*0.01;
     pitchLabel.setColour(Label::textColourId, Colours::gold.withBrightness(0.95f));
     String text = pitch+fine >= 0 ? "+" : "";
-    text += String(pitch+fine, 3);
+    text += String(pitch+fine, 2);
     pitchLabel.setText(text, dontSendNotification);
 
 

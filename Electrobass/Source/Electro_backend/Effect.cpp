@@ -24,9 +24,9 @@ Effect::Effect(const String& n, ElectroAudioProcessor& p,
         tHighpass_setSampleRate(&dcBlock1[i], getProcessor()->leaf.sampleRate * OVERSAMPLE);
         tHighpass_init(&dcBlock2[i], 5.0f,&getProcessor()->leaf);
         tHighpass_setSampleRate(&dcBlock2[i], getProcessor()->leaf.sampleRate * OVERSAMPLE);
-        tVZFilterLS_init(&shelf1[i],  80.0f, 1.6f, 1.0f, &getProcessor()->leaf);
+        tVZFilterLS_init(&shelf1[i],  80.0f, 0.5f, 1.0f, &getProcessor()->leaf);
         tVZFilterLS_setSampleRate(&shelf1[i], getProcessor()->leaf.sampleRate * OVERSAMPLE);
-        tVZFilterHS_init(&shelf2[i],  12000.0f, 1.6f, 1.0f,&getProcessor()->leaf);
+        tVZFilterHS_init(&shelf2[i],  12000.0f, 0.5f, 1.0f,&getProcessor()->leaf);
         tVZFilterHS_setSampleRate(&shelf2[i], getProcessor()->leaf.sampleRate * OVERSAMPLE);
         tVZFilterBell_init(&bell1[i], 1000.0f, 1.9f, 1.0f, &getProcessor()->leaf);
         tVZFilterBell_setSampleRate(&bell1[i], getProcessor()->leaf.sampleRate * OVERSAMPLE);
@@ -210,8 +210,8 @@ float Effect::delayTick(float sample, float param1, float param2, float param3, 
     float FBval = param2 * 1.1f;
     FBval = LEAF_clip(0.0f, FBval, 1.1f);
     
-    float cutoff1 = LEAF_clip(0.0f, (param3 * 127.0f-16.0f) * 35.929824561403509f, 4095.0f); //get in proper range for setFreqFast
-    float cutoff2 = LEAF_clip(0.0f, (param4 * 127.0f-16.0f) * 35.929824561403509f, 4095.0f); //get in proper range for setFreqFast
+    float cutoff1 = (param3 * 127.0f);
+    float cutoff2 = (param4 * 127.0f);
     tSVF_setFreqFast(&lowpass[v], cutoff1);
     tSVF_setFreqFast(&highpass[v], cutoff2);
 #if CHECK_NAN
@@ -495,13 +495,13 @@ float Effect::LadderLowpassTick(float sample, float cutoff, float gain, float q,
 float Effect::VZlowshelfTick(float sample, float cutoff, float gain, float q, float param4,float param5, int v)
 {
 
-    tVZFilterLS_setFreqFastAndResonanceAndGain (&VZfilterLS[v], LEAF_clip(0.0f, (cutoff * 127.0f - 16.0f) * 35.929824561403509f, 4095.0f), scaleFilterResonance(q), fasterdbtoa((gain * 50.f) - 25.0f));
+    tVZFilterLS_setFreqFastAndResonanceAndGain (&VZfilterLS[v], cutoff * 127.0f, scaleFilterResonance(q), fasterdbtoa((gain * 50.f) - 25.0f));
     return tVZFilterLS_tick(&VZfilterLS[v], sample);
 }
 
 float Effect::VZhighshelfTick(float sample, float cutoff, float gain, float q, float param4,float param5, int v)
 {
-    tVZFilterHS_setFreqFastAndResonanceAndGain(&VZfilterHS[v],LEAF_clip(0.0f, (cutoff * 127.0f - 16.0f) * 35.929824561403509f, 4095.0f), scaleFilterResonance(q), fasterdbtoa((gain * 50.0f) - 25.0f));
+    tVZFilterHS_setFreqFastAndResonanceAndGain(&VZfilterHS[v], cutoff * 127.0f, scaleFilterResonance(q), fasterdbtoa((gain * 50.0f) - 25.0f));
     return tVZFilterHS_tick(&VZfilterHS[v], sample);
 }
 

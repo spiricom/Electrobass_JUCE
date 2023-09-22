@@ -106,7 +106,7 @@ static const std::vector<std::vector<float>> vOscInit = {
     { -24.0f, 24.0f, 0.0f, 0.0f }, //Pitch
     { -100.f, 100.f, 0.0f, 0.0f }, //Fine
     { -2000.f, 2000.f, 0.0f, 0.0f }, //Freq
-    { 0.0f, 1.0f, 0.0f, 0.5f },  //Shape
+    { 0.0f, 1.0f, 0.5f, 0.5f },  //Shape
     { 0.0f, 1.0f, 1.0f, 0.5f },  //Amp
     { -15, 15, 0.0f, 0.0f} //harmonics
 };
@@ -119,7 +119,7 @@ typedef enum _OscShapeSet
     PulseOscShapeSet,
     SineOscShapeSet,
     TriOscShapeSet,
-    UserOscShapeSet,
+   // UserOscShapeSet,
     OscShapeSetNil
 } OscShapeSet;
 static const StringArray oscShapeSetNames = {
@@ -128,8 +128,8 @@ static const StringArray oscShapeSetNames = {
     "Saw",
     "Pulse",
     "Sine",
-    "Tri",
-    "Select file..."
+    "Tri"
+    //"Select file..."
 };
 
 //==============================================================================
