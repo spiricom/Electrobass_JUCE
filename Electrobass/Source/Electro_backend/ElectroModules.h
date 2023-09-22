@@ -193,7 +193,7 @@ public:
             ac.processor.streamID1 = tempId;
             //button->get
             DBG("Send: " + comboBox->getName() + " with ID"  + String(tempId) + " and value " + String(ac.processor.streamValue1)/*String(streamValue)*/);
-            ac.processor.streamSend = true;
+            ac.processor.addToMidiBuffer(tempId, (float)comboBox->getSelectedItemIndex()/ ((float) (filterTypeNames.size()-1)));
         }
     };
 private:

@@ -21,6 +21,11 @@
 #include "Electro_backend/Effect.h"
 #include "RingBuffer.h"
 
+union uintfUnion
+{
+    float f;
+    uint32_t i;
+};
 
 class StandalonePluginHolder;
 
@@ -117,6 +122,66 @@ public:
     {
         stream = !stream;
     }
+    MidiBuffer midiStream;
+    void addToMidiBuffer(int streamID, float streamValue)
+    {
+        union uintfUnion fu;
+        Array<uint8_t> data7bitInt;
+        data7bitInt.add(3);
+        data7bitInt.add(0);
+        fu.f = (float)streamID;
+        data7bitInt.add((fu.i >> 28) & 15);
+        data7bitInt.add((fu.i >> 21) & 127);
+        data7bitInt.add((fu.i >> 14) & 127);
+        data7bitInt.add((fu.i >> 7) & 127);
+        data7bitInt.add(fu.i & 127);
+        
+        fu.f = LEAF_clip(0.0f, streamValue, 1.0f);
+        data7bitInt.add((fu.i >> 28) & 15);
+        data7bitInt.add((fu.i >> 21) & 127);
+        data7bitInt.add((fu.i >> 14) & 127);
+        data7bitInt.add((fu.i >> 7) & 127);
+        data7bitInt.add(fu.i & 127);
+        
+        
+        midiStream.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+        data7bitInt.clear();
+        
+        data7bitInt.add(126);
+        midiStream.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+    }
+    
+    void addToMidiBuffer(int _streamMappingTargetId , uint8_t _streamMappingTargetSlot, uint8_t _streamMappingIdentifier,float _streamMappingValue)
+    {
+        union uintfUnion fu;
+        Array<uint8_t> data7bitInt;
+        data7bitInt.add(4);
+        data7bitInt.add(0);
+        
+        fu.f = (float)_streamMappingTargetId;
+        data7bitInt.add((fu.i >> 28) & 15);
+        data7bitInt.add((fu.i >> 21) & 127);
+        data7bitInt.add((fu.i >> 14) & 127);
+        data7bitInt.add((fu.i >> 7) & 127);
+        data7bitInt.add(fu.i & 127);
+        
+        data7bitInt.add(_streamMappingTargetSlot);
+        data7bitInt.add(_streamMappingIdentifier);
+        
+        fu.f = (float)_streamMappingValue;
+        data7bitInt.add((fu.i >> 28) & 15);
+        data7bitInt.add((fu.i >> 21) & 127);
+        data7bitInt.add((fu.i >> 14) & 127);
+        data7bitInt.add((fu.i >> 7) & 127);
+        data7bitInt.add(fu.i & 127);
+        
+        midiStream.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+        data7bitInt.clear();
+        data7bitInt.add(126);
+        midiStream.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+    }
+    
+    
     bool stream = false;
     float streamValue1 = 0.0f;
     int streamID1 = 0;
@@ -152,6 +217,10 @@ public:
         streamMappingValue = sourceIds.indexOf(source->name);
         streamMappingTargetSlot = target->name.getTrailingIntValue()-1;
         streamMappingIdentifier = 0;
+        
+        addToMidiBuffer(streamMappingTargetId ,
+                        streamMappingTargetSlot, streamMappingIdentifier,
+                        streamMappingValue);
         streamMapping = true;
     }
     
@@ -176,6 +245,9 @@ public:
         DBG("Final Range" + String(finalRange));
         streamMappingValue = finalRange;
         streamMappingIdentifier = 1;
+        addToMidiBuffer(streamMappingTargetId ,
+                        streamMappingTargetSlot, streamMappingIdentifier,
+                        streamMappingValue);
         streamMapping = true;
         
     }
@@ -187,6 +259,9 @@ public:
         streamMappingValue = 255;
         streamMappingTargetSlot = target->name.getTrailingIntValue()-1;
         streamMappingIdentifier = 0;
+        addToMidiBuffer(streamMappingTargetId ,
+                        streamMappingTargetSlot, streamMappingIdentifier,
+                        streamMappingValue);
         streamMapping = true;
     }
     
@@ -197,6 +272,9 @@ public:
         streamMappingValue = sourceIds.indexOf(source->name);
         streamMappingTargetSlot = target->name.getTrailingIntValue()-1;
         streamMappingIdentifier = 2;
+        addToMidiBuffer(streamMappingTargetId ,
+                        streamMappingTargetSlot, streamMappingIdentifier,
+                        streamMappingValue);
         streamMapping = true;
     }
     
@@ -207,6 +285,9 @@ public:
         streamMappingValue = 255;
         streamMappingTargetSlot = target->name.getTrailingIntValue()-1;
         streamMappingIdentifier = 2;
+        addToMidiBuffer(streamMappingTargetId ,
+                        streamMappingTargetSlot, streamMappingIdentifier,
+                        streamMappingValue);
         streamMapping = true;
     }
 

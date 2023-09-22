@@ -842,7 +842,8 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
             processor.streamID2 = 1;
             processor.streamValue1 = midiKeyRangeSlider.getMinValue();
             processor.streamValue2 = midiKeyRangeSlider.getMaxValue();
-            processor.streamSend = true;
+            processor.addToMidiBuffer(0, midiKeyRangeSlider.getMinValue());
+            processor.addToMidiBuffer(1, midiKeyRangeSlider.getMaxValue());
         }
     }
     else if (slider == &numVoicesSlider)
@@ -876,7 +877,7 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
             processor.streamID1 = tempId;
             DBG("Send: PitchBendRange with id" + String(tempId) +
                 " as " + String(processor.streamValue1) );
-            processor.streamSend = true;
+            processor.addToMidiBuffer(tempId, rangeSlider.getValue());
         }
     } else if (slider == &seriesParallelSlider)
     {
@@ -900,7 +901,7 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
                 processor.streamID1 = tempId;
                 //button->get
                 DBG("Send: " + slider->getName() + " with ID"  + String(tempId) + " and value " + String(processor.streamValue1)/*String(streamValue)*/);
-                processor.streamSend = true;
+                processor.addToMidiBuffer(tempId, slider->getValue());
             }
         }
     }
@@ -924,7 +925,7 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
             processor.streamID1 = tempId;
             //button->get
             DBG("Send: " + slider->getName() + " with ID"  + String(tempId) + " and value " + String(processor.streamValue1)/*String(streamValue)*/);
-            processor.streamSend = true;
+            processor.addToMidiBuffer(tempId, slider->getValue());
         }
     }else if (pitchBendSliders.contains(slider))
     {
@@ -996,7 +997,7 @@ void ElectroAudioProcessorEditor::buttonClicked(Button* button)
                 processor.streamID1 = tempId;
                 //button->get
                 DBG("Send: " + button->getName() + " with ID"  + String(tempId) + " and value " + String(processor.streamValue1));
-               processor.streamSend = true;
+                processor.addToMidiBuffer(tempId, vts.getParameter(button->getName())->getValue());
             }
         }
     }

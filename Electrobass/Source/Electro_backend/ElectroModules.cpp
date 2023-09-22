@@ -187,7 +187,7 @@ void ElectroModule::valueChangedSliderStream(Slider* slider)
     DBG("Send: " + slider->getName() +
         "with id" + String(tempId) +
         " as " + String(ac.processor.streamValue1) );
-    ac.processor.streamSend = true;
+    ac.processor.addToMidiBuffer(tempId, val);
 }
 
 void ElectroModule::buttonClicked(Button* button)
@@ -199,7 +199,7 @@ void ElectroModule::buttonClicked(Button* button)
         ac.processor.streamID1 = tempId;
         //button->get
         DBG("Send: " + button->getName() + " with ID"  + String(tempId) + " and value " + String(ac.processor.streamValue1));
-       ac.processor.streamSend = true;
+        ac.processor.addToMidiBuffer(tempId,vts.getParameter(button->getName())->getValue());
     }
 }
             
@@ -211,7 +211,7 @@ void ElectroModule::comboBoxChanged(ComboBox *comboBox){
         ac.processor.streamID1 = tempId;
         //button->get
         DBG("Send: " + comboBox->getName() + " with ID"  + String(tempId) + " and value " + String(ac.processor.streamValue1)/*String(streamValue)*/);
-        ac.processor.streamSend = true;
+        ac.processor.addToMidiBuffer(tempId, vts.getParameter(comboBox->getName())->getValue());
     }
 }
             
@@ -631,7 +631,7 @@ void OscModule::comboBoxChanged(ComboBox *comboBox)
         int tempId = comboBox->getComponentID().getIntValue() + 2;
         ac.processor.streamID1 = tempId;
         DBG("Send: " + comboBox->getName() + " with ID"  + String(tempId) + " and value " + String(ac.processor.streamValue1)/*String(streamValue)*/);
-        ac.processor.streamSend = true;
+        ac.processor.addToMidiBuffer(tempId, (float)comboBox->getSelectedItemIndex()/ ((float) (oscShapeSetNames.size()-1)));
     }
 }
 
@@ -1115,7 +1115,7 @@ void LFOModule::comboBoxChanged(ComboBox *comboBox)
         ac.processor.streamID1 = tempId;
         //button->get
         DBG("Send: " + comboBox->getName() + " with ID"  + String(tempId) + " and value " + String(ac.processor.streamValue1)/*String(streamValue)*/);
-        ac.processor.streamSend = true;
+        ac.processor.addToMidiBuffer(tempId, (float)comboBox->getSelectedItemIndex()/ ((float) (lfoShapeSetNames.size()-1)));
     }
 }
 
@@ -1246,7 +1246,7 @@ void OutputModule::updateFXOrder(Button *button)
         ac.processor.streamID1 = tempId;
         //button->get
         DBG("Send:  FXORder with ID"  + String(tempId) + " and value " + String(ac.processor.streamValue1));
-       ac.processor.streamSend = true;
+        ac.processor.addToMidiBuffer(tempId, vts.getParameter("FX Order")->getValue());
     }
 }
 void OutputModule::buttonClicked(Button* button)
@@ -1341,14 +1341,14 @@ void FXModule::comboBoxChanged(ComboBox *comboBox)
             ac.processor.streamID1 = tempId;
             //button->get
             DBG("Send: " + comboBox->getName() + " with ID"  + String(tempId) + " and value " + String(ac.processor.streamValue1)/*String(streamValue)*/);
-            ac.processor.streamSend = true;
+            ac.processor.addToMidiBuffer(tempId, (float)fxCB.getSelectedItemIndex()/ ((float) (FXTypeNames.size()-1)));
         }
-        setNamesAndDefaults((FXType)fxCB.getSelectedItemIndex());
+        //setNamesAndDefaults((FXType)fxCB.getSelectedItemIndex());
         if(fxCB.isVisible())
         {
             for (int i = 0; i < FXParam::Mix; i++)
             {
-                getDial(i)->setValueNotif(FXParamDefaults[(FXType)fxCB.getSelectedItemIndex()][i], sendNotificationAsync);
+                getDial(i)->setValueNotif(FXParamDefaults[(FXType)fxCB.getSelectedItemIndex()][i], sendNotification);
             }
         }
     }
