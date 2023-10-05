@@ -532,6 +532,7 @@ void OscModule::comboBoxChanged(ComboBox *comboBox)
     if (comboBox == &shapeCB)
     {
         // Select file... option
+#if 0
         if (shapeCB.getSelectedItemIndex() == shapeCB.getNumItems()-1)
         {
             if (chooser != nullptr)
@@ -559,6 +560,7 @@ void OscModule::comboBoxChanged(ComboBox *comboBox)
             
             });
         }
+#endif
         // Selected a loaded file
 #if 0
         else if (shapeCB.getSelectedItemIndex() >= UserOscShapeSet)
@@ -575,8 +577,8 @@ void OscModule::comboBoxChanged(ComboBox *comboBox)
 #endif
         {
             float normValue = shapeCB.getSelectedItemIndex() / float(OscShapeSetNil);
-            vts.getParameter(ac.getName() + " ShapeSet")->setValueNotifyingHost(normValue);
-            updateShapeCB();
+            //vts.getParameter(ac.getName() + " ShapeSet")->setValueNotifyingHost(normValue);
+            //updateShapeCB();
         }
 #if 0
         if (shapeCB.getSelectedItemIndex() >= UserOscShapeSet)
@@ -1331,12 +1333,17 @@ void FXModule::comboBoxChanged(ComboBox *comboBox)
             DBG("Send: " + comboBox->getName() + " with ID"  + String(tempId) + " and value " + String(ac.processor.streamValue1)/*String(streamValue)*/);
             ac.processor.addToMidiBuffer(tempId, (float)fxCB.getSelectedItemIndex()/ ((float) (FXTypeNames.size()-1)));
         }
-        //setNamesAndDefaults((FXType)fxCB.getSelectedItemIndex());
+        setNamesAndDefaults((FXType)fxCB.getSelectedItemIndex());
         if(fxCB.isVisible())
         {
             for (int i = 0; i < FXParam::Mix; i++)
             {
-                getDial(i)->setValueNotif(FXParamDefaults[(FXType)fxCB.getSelectedItemIndex()][i], sendNotification);
+                float g =  FXParamDefaults[(FXType)fxCB.getSelectedItemIndex()][i];
+                getDial(i)->setValueNotif(g, dontSendNotification);
+                if (ac.processor.stream)
+                {
+                    ac.processor.addToMidiBuffer(getDial(i)->getComponentID().getIntValue() + 2, g);
+                }
             }
         }
     }

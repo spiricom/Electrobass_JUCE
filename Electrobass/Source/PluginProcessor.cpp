@@ -781,7 +781,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
     float denormalFix = 1e-15f * denormalMult;
     for (int s = 0; s < buffer.getNumSamples(); s++)
     {
-        //tickKnobsToSmooth();
+        tickKnobsToSmooth();
 		float parallel = seriesParallelParam->tickNoHooksNoSmoothing();
 		float transp = transposeParam->tickNoHooksNoSmoothing();
 
@@ -979,7 +979,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         {
             buffer.setSample(channel, s, LEAF_clip(-1.0f, outputSamples[0], 1.0f));
         }
-        //removeKnobsToSmooth();
+        removeKnobsToSmooth();
     }
     for (int channel = 0; channel < totalNumOutputChannels; ++channel)
     {
