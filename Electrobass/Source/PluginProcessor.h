@@ -122,7 +122,9 @@ public:
     {
         stream = !stream;
     }
-    MidiBuffer midiStream;
+    bool midiBufferChanged;
+    MidiBuffer tempMidiBuffer[2];
+    bool whichMidiBuffer;
     void addToMidiBuffer(int streamID, float streamValue)
     {
         union uintfUnion fu;
@@ -143,12 +145,16 @@ public:
         data7bitInt.add((fu.i >> 7) & 127);
         data7bitInt.add(fu.i & 127);
         
-        
-        midiStream.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+        if (midiBufferChanged)
+        {
+            tempMidiBuffer[whichMidiBuffer].clear();
+            midiBufferChanged = false;
+        }
+        tempMidiBuffer[whichMidiBuffer].addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
         data7bitInt.clear();
         
         data7bitInt.add(126);
-        midiStream.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+        tempMidiBuffer[whichMidiBuffer].addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
     }
     
     void addToMidiBuffer(int _streamMappingTargetId , uint8_t _streamMappingTargetSlot, uint8_t _streamMappingIdentifier,float _streamMappingValue)
@@ -174,11 +180,15 @@ public:
         data7bitInt.add((fu.i >> 14) & 127);
         data7bitInt.add((fu.i >> 7) & 127);
         data7bitInt.add(fu.i & 127);
-        
-        midiStream.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+        if (midiBufferChanged)
+        {
+            tempMidiBuffer[!whichMidiBuffer].clear();
+            midiBufferChanged = false;
+        }
+        tempMidiBuffer[whichMidiBuffer].addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
         data7bitInt.clear();
         data7bitInt.add(126);
-        midiStream.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+        tempMidiBuffer[whichMidiBuffer].addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
     }
     
     

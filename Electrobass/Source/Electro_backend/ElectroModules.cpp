@@ -181,14 +181,16 @@ void ElectroModule::valueChangedSliderStream(Slider* slider)
         val = vts.getParameter(slider->getName())->getValue();
     }
         
-    
-    ac.processor.streamValue1 = val;
-    int tempId = sliderIndex + 2;
-    ac.processor.streamID1 = tempId;
-    DBG("Send: " + slider->getName() +
-        "with id" + String(tempId) +
-        " as " + String(ac.processor.streamValue1) );
-    ac.processor.addToMidiBuffer(tempId, val);
+    if ((sliderIndex != -1) && ((sliderIndex < 1) || (sliderIndex > 12)))
+    {
+        ac.processor.streamValue1 = val;
+        int tempId = sliderIndex + 2;
+        ac.processor.streamID1 = tempId;
+        DBG("Send: " + slider->getName() +
+            "with id" + String(tempId) +
+            " as " + String(ac.processor.streamValue1) );
+        ac.processor.addToMidiBuffer(tempId, val);
+    }
 }
 
 void ElectroModule::buttonClicked(Button* button)
@@ -576,7 +578,7 @@ void OscModule::comboBoxChanged(ComboBox *comboBox)
         else
 #endif
         {
-            float normValue = shapeCB.getSelectedItemIndex() / float(OscShapeSetNil);
+            //float normValue = shapeCB.getSelectedItemIndex() / float(OscShapeSetNil);
             //vts.getParameter(ac.getName() + " ShapeSet")->setValueNotifyingHost(normValue);
             //updateShapeCB();
         }
@@ -1342,7 +1344,7 @@ void FXModule::comboBoxChanged(ComboBox *comboBox)
                 getDial(i)->setValueNotif(g, dontSendNotification);
                 if (ac.processor.stream)
                 {
-                    ac.processor.addToMidiBuffer(getDial(i)->getComponentID().getIntValue() + 2, g);
+                    ac.processor.addToMidiBuffer(comboBox->getComponentID().getIntValue() + 3 + i, g);
                 }
             }
         }

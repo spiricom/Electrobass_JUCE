@@ -895,14 +895,13 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
                 // of K
                 index = it - paramDestOrder.begin();
             }
-            if (index != -1) // to avoid sending things not in the dest array (like foot pedals and knee levers)
-            {
-                int tempId = index + 2;
-                processor.streamID1 = tempId;
-                //button->get
-                DBG("Send: " + slider->getName() + " with ID"  + String(tempId) + " and value " + String(processor.streamValue1)/*String(streamValue)*/);
-                processor.addToMidiBuffer(tempId, slider->getValue());
-            }
+
+            int tempId = index + 2;
+            processor.streamID1 = tempId;
+            //button->get
+            DBG("Send: " + slider->getName() + " with ID"  + String(tempId) + " and value " + String(processor.streamValue1)/*String(streamValue)*/);
+            processor.addToMidiBuffer(tempId, slider->getValue());
+            
         }
     }
     else if( processor.stream)
@@ -919,7 +918,7 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
               // of K
             index = it - paramDestOrder.begin();
           }
-        if (index != -1) // to avoid sending things not in the dest array (like foot pedals and knee levers)
+        if ((index != -1) && ((index < 1) || (index > 12))) // to avoid sending things not in the dest array (like foot pedals and knee levers)
         {
             int tempId = index + 2;
             processor.streamID1 = tempId;

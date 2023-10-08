@@ -1014,12 +1014,25 @@ void ElectroAudioProcessor::processMIDIDataIfNeeded (MidiBuffer& midiMessages)
     
     if(stream)
     {
-        MidiBuffer _midiStream;
-        midiStream.swapWith(_midiStream);
-        for(auto msg : _midiStream)
+        //switch midibuffers for temp storage
+        if (midiBufferChanged)
         {
-            midiMessages.addEvent(msg.getMessage(), 0);
+            tempMidiBuffer[!whichMidiBuffer].clear();
+            midiBufferChanged = false;
         }
+        whichMidiBuffer = !whichMidiBuffer;
+        MidiBuffer _midiStream;
+        _midiStream.addEvents(tempMidiBuffer[!whichMidiBuffer], 0, -1, 0);
+        midiBufferChanged = true;
+       
+        midiMessages.swapWith(_midiStream);
+        //MidiBuffer _midiStream;
+        //midiStream.swapWith(_midiStream);
+        //for(auto msg : _midiStream)
+        //{
+            //midiMessages.addEvent(msg.getMessage(), 0);
+        //}
+        
 //        midiMessages.addEvents(midiStream, midiStream.getFirstEventTime(), midiStream.getLastEventTime(), 0);
 //        if(!midiStream.isEmpty())
 //        {
@@ -1033,7 +1046,7 @@ void ElectroAudioProcessor::processMIDIDataIfNeeded (MidiBuffer& midiMessages)
 //            }
 //        }
         
-        _midiStream.clear();
+        //midiStream.clear();
     }
      
      if (waitingToSendPreset)
