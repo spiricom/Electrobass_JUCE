@@ -29,6 +29,8 @@ resizer(new ResizableCornerComponent (this, constrain.get())),
 chooser("Select a .wav file to load...", {}, "*.wav")
 
 {
+   
+    //settings.get()->setValue("lastStateFile",String());
     addMouseListener(this, true);
     white_circle_image = Drawable::createFromImageData(BinaryData::White_Circle_svg_png,
                                                        BinaryData::White_Circle_svg_pngSize);
@@ -74,7 +76,10 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     //ElectrobassLabel.setJustificationType(Justification::topLeft);
     //ElectrobassLabel.setColour(Label::textColourId, Colours::gold.withBrightness(0.9f));
     //addAndMakeVisible(ElectrobassLabel);
+//    if (!JUCEApplicationBase::isStandaloneApp())
+//    {
     
+//    }
     setWantsKeyboardFocus(true);
     
     getTopLevelComponent()->addKeyListener(this);
@@ -477,6 +482,13 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     
     setSize(EDITOR_WIDTH * processor.editorScale, EDITOR_HEIGHT * processor.editorScale);
     
+    //saveStateButton.onClick = [this]() {DBG("fiuclk");};
+    saveStateButton.setButtonText("Save");
+    loadStateButton.setButtonText("Load");
+    saveStateButton.addListener(this);
+    loadStateButton.addListener(this);
+        addAndMakeVisible(saveStateButton);
+        addAndMakeVisible(loadStateButton);
     sendOutButton.setButtonText("Send to Device");
     sendOutButton.onClick = [this] { processor.sendPresetMidiMessage(); };
     
@@ -800,10 +812,19 @@ void ElectroAudioProcessorEditor::resized()
                              RectanglePlacement::xLeft +
                              RectanglePlacement::yTop +
                              RectanglePlacement::fillDestination);
-    synderphonicsLabel.setBounds(logoLeft+50*s, -5*s, 220*s, 34*s);
-    synderphonicsLabel.setFont(euphemia.withHeight(34*s));
-    ElectrobassLabel.setBounds(synderphonicsLabel.getRight(), -5*s, 300*s, 34*s);
-    ElectrobassLabel.setFont(euphemia.withHeight(34*s).withStyle(3));
+   
+//    synderphonicsLabel.setBounds(logoLeft+50*s, -5*s, 220*s, 34*s);
+//    synderphonicsLabel.setFont(euphemia.withHeight(34*s));
+//    if(!JUCEApplicationBase::isStandaloneApp())
+//    {
+        synderphonicsLabel.setBounds(logoLeft+50*s, -5*s, 100*s, 34*s);
+        synderphonicsLabel.setFont(euphemia.withHeight(34*s));
+        
+        saveStateButton.setBounds(synderphonicsLabel.getRight(), synderphonicsLabel.getY(), 50*s, 15*s);
+        loadStateButton.setBounds(synderphonicsLabel.getRight(), saveStateButton.getBottom(), 50*s, 15*s);
+//    }
+//    ElectrobassLabel.setBounds(synderphonicsLabel.getRight(), -5*s, 300*s, 34*s);
+//    ElectrobassLabel.setFont(euphemia.withHeight(34*s).withStyle(3));
     
     float rt = EDITOR_WIDTH / EDITOR_HEIGHT;
     constrain->setSizeLimits(200, 200/rt, 800*rt, 800);
@@ -1025,6 +1046,61 @@ void ElectroAudioProcessorEditor::buttonClicked(Button* button)
     else if (button == tabs.getTabbedButtonBar().getTabButton(4))
     {
         //tab5.addAndMakeVisible(mpeToggle);
+    } else if (button == &saveStateButton)
+    {
+        stateFileChooser = std::make_unique<FileChooser> (TRANS("Save current state"),
+                                                          getLastFile());
+        auto flags = FileBrowserComponent::saveMode
+                   | FileBrowserComponent::canSelectFiles
+                   | FileBrowserComponent::warnAboutOverwriting;
+
+        stateFileChooser->launchAsync (flags, [this] (const FileChooser& fc)
+                                       {
+            if (fc.getResult() == File{})
+                return;
+            
+            setLastFile (fc);
+            
+            MemoryBlock data;
+            processor.getStateInformation (data);
+            
+            if (! fc.getResult().replaceWithData (data.getData(), data.getSize()))
+                AlertWindow::showMessageBoxAsync (AlertWindow::WarningIcon,
+                                                  TRANS("Error whilst saving"),
+                                                  TRANS("Couldn't write to the specified file!"));
+        });
+    } else if (button == &loadStateButton)
+    {
+        stateFileChooser = std::make_unique<FileChooser> (TRANS("Load a saved state"),
+                                                          getLastFile());
+        auto flags = FileBrowserComponent::openMode
+                   | FileBrowserComponent::canSelectFiles;
+
+        stateFileChooser->launchAsync (flags, [this] (const FileChooser& fc)
+        {
+            if (fc.getResult() == File{})
+                return;
+
+            setLastFile (fc);
+
+            MemoryBlock data;
+            
+            if (fc.getResult().getFileExtension() == ".ebp")
+            {
+                
+                int presetNumber = fc.getResult().getFileName().substring(0,2).getIntValue();
+                if (fc.getResult().loadFileAsData (data))
+                    processor.setStateEBP(data.getData(), (int) data.getSize(),presetNumber);
+                
+            }
+
+            if (fc.getResult().loadFileAsData (data))
+                processor.setStateInformation (data.getData(), (int) data.getSize());
+            else
+                AlertWindow::showMessageBoxAsync (AlertWindow::WarningIcon,
+                                                  TRANS("Error whilst loading"),
+                                                  TRANS("Couldn't read from the specified file!"));
+        });
     }
 }
 

@@ -554,9 +554,9 @@ private:
                     {
                         if (auto* editor = dynamic_cast<ElectroAudioProcessorEditor*>(owner.processor->getActiveEditor()))
                         {
-                            editor->updateMPEToggle(true);
-                            editor->updateNumVoicesSlider(10);
-                            editor->updatePedalVolumeControl(true);
+//                            editor->updateMPEToggle(true);
+//                            editor->updateNumVoicesSlider(10);
+//                            editor->updatePedalVolumeControl(true);
                         }
                     }
                 }
@@ -567,9 +567,9 @@ private:
                     {
                         if (auto* editor = dynamic_cast<ElectroAudioProcessorEditor*>(owner.processor->getActiveEditor()))
                         {
-                            editor->updateMPEToggle(false);
-                            editor->updateNumVoicesSlider(1);
-                            editor->updatePedalVolumeControl(false);
+//                            editor->updateMPEToggle(false);
+//                            editor->updateNumVoicesSlider(1);
+//                            editor->updatePedalVolumeControl(false);
                         }
                     }
                 }

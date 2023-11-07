@@ -120,6 +120,24 @@ private:
     }
     
     void fadersChanged (std::vector<float> faderValues) override;
+    
+    
+    File getLastFile() const
+    {
+        File f;
+
+        f = File (settings.getValue ("lastStateFile"));
+
+        if (f == File())
+            f = File::getSpecialLocation (File::userDocumentsDirectory);
+
+        return f;
+    }
+
+    void setLastFile (const FileChooser& fc)
+    {
+            settings.setValue ("lastStateFile", fc.getResult().getFullPathName());
+    }
     sd::SoundMeter::MetersComponent meters;
     
     TextEditor presetNameEditor;
@@ -198,17 +216,19 @@ private:
     std::unique_ptr<Drawable> logo;
     Label synderphonicsLabel;
     Label ElectrobassLabel;
-    
+    TextButton saveStateButton;
+    TextButton loadStateButton;
     OwnedArray<SliderAttachment> sliderAttachments;
     OwnedArray<ButtonAttachment> buttonAttachments;
 
     std::unique_ptr<ComponentBoundsConstrainer> constrain;
     std::unique_ptr<ResizableCornerComponent> resizer;
     juce::TooltipWindow tooltipWindow;
-    
+    std::unique_ptr<FileChooser> stateFileChooser;
     Font euphemia;
     FileChooser chooser;
     OwnedArray<MappingSource> allSources;
     std::unique_ptr<Drawable> white_circle_image;
+    PropertySet settings;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ElectroAudioProcessorEditor)
 };
