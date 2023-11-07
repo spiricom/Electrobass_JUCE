@@ -341,7 +341,8 @@ ElectroAudioProcessor::ElectroAudioProcessor()
 ,
 chooser(nullptr),
 vts(*this, nullptr, juce::Identifier ("Parameters"), createParameterLayout()),
-prompt("","",AlertWindow::AlertIconType::NoIcon)
+prompt("","",AlertWindow::AlertIconType::NoIcon),
+isProcessing(true)
 
 {
     suspendProcessing(true);
@@ -737,7 +738,8 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
     buffer.clear (i, 0, buffer.getNumSamples());
     
     processMIDIDataIfNeeded(midiMessages);
-    
+   if (isProcessing)
+   {
     //Optimize this away
     for (int i = 0; i < envs.size(); ++i)
     {
@@ -782,19 +784,19 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
     for (int s = 0; s < buffer.getNumSamples(); s++)
     {
         tickKnobsToSmooth();
-		float parallel = seriesParallelParam->tickNoHooksNoSmoothing();
-		float transp = transposeParam->tickNoHooksNoSmoothing();
-
+        float parallel = seriesParallelParam->tickNoHooksNoSmoothing();
+        float transp = transposeParam->tickNoHooksNoSmoothing();
+        
         for (int i = 0; i < ccParams.size(); ++i)
         {
             ccParams[i]->tickNoHooks();
         }
-//        float pitchBends[8];
-//        for (int i = 0; i < 8; i++)
-//        {
-//            pitchBends[i] = pitchBendParams[i]->tickNoHooksNoSmoothing();
-//        }
-
+        //        float pitchBends[8];
+        //        for (int i = 0; i < 8; i++)
+        //        {
+        //            pitchBends[i] = pitchBendParams[i]->tickNoHooksNoSmoothing();
+        //        }
+        
         float globalPitchBend = pitchBendParams[0]->tickNoHooksNoSmoothing();
         
         float samples[2][MAX_NUM_VOICES];
@@ -819,7 +821,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         {
             float pitchBend = transp + globalPitchBend + pitchBendParams[v+1]->tickNoHooksNoSmoothing();
             float tempNote = (float)tSimplePoly_getPitch(&strings[v*mpe],(uint8_t) (v*impe));
-
+            
             
             //added this check because if there is no active voice "getPitch" returns -1
             if ((tempNote >= 0) && (tempNote < 128))
@@ -827,12 +829,12 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
                 //freeze pitch bend data on voices where a note off has happened and we are in the release phase
                 if (tSimplePoly_isOn(&strings[v*mpe], (uint8_t)(v*impe)))
                 {
-                     tempNote += pitchBend;
-                     voicePrevBend[v] = pitchBend;
+                    tempNote += pitchBend;
+                    voicePrevBend[v] = pitchBend;
                 }
                 else
                 {
-                      tempNote += voicePrevBend[v];
+                    tempNote += voicePrevBend[v];
                 }
                 if ((tempNote >= 0) && (tempNote < 128))
                 {
@@ -868,10 +870,10 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
             samples[1][v] = tHighpass_tick(&dcBlockPreFilt2[v],samples[1][v]) + denormalFix;
         }
         
-
+        
         //per voice inside
         filt[0]->tick(samples[0]);
-
+        
         
         for (int v = 0; v < numVoicesActive; ++v)
         {
@@ -894,7 +896,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         {
             output->tick(samples[1]);
         }
-           
+        
         
         
         
@@ -934,7 +936,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
             }
 #endif
         }
-    
+        
         if (fxPost == nullptr || *fxPost <= 0)
         {
             output->tick(samples[1]);
@@ -954,10 +956,10 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         }
         float mastergain = master->tickNoHooks();
         float pedGain = 1.f;
-    
+        
         // this is to clip the gain settings so all the way down on the pedal isn't actually
-       // off, it let's a little signal through. Would be more efficient to fix the table to
-       // span a better range.
+        // off, it let's a little signal through. Would be more efficient to fix the table to
+        // span a better range.
         if(pedalControlsMaster)
         {
             float volumeSmoothed = ccParams.getUnchecked(12)->get();
@@ -971,7 +973,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
             pedGain = volumeAmps128[volIdxInt] * omAlpha;
             pedGain += volumeAmps128[volIdxIntPlus] * alpha;
         }
-
+        
         
         outputSamples[0] = sampleOutput * mastergain * pedGain * 0.98f; //drop a little bit to avoid touching clipping
         tHighpass_tick(&dcBlockMaster, outputSamples[0]);
@@ -979,6 +981,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         {
             buffer.setSample(channel, s, LEAF_clip(-1.0f, outputSamples[0], 1.0f));
         }
+    }
         removeKnobsToSmooth();
     }
     for (int channel = 0; channel < totalNumOutputChannels; ++channel)

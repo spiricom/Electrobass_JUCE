@@ -463,6 +463,8 @@ public:
     std::unique_ptr<SmoothedParameter> master;
     float oscAmpMult;
     float oscAmpMultArr[4] = {0,1, 0.5, .3333f};
+    std::atomic<bool> isProcessing;
+    void setProcessing(bool processing) {isProcessing = processing;}
     void setMute(bool _mute) {mute = _mute;}
     
     inline float getOpenString(int i)

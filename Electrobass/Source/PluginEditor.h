@@ -220,7 +220,7 @@ private:
     TextButton loadStateButton;
     OwnedArray<SliderAttachment> sliderAttachments;
     OwnedArray<ButtonAttachment> buttonAttachments;
-
+    ToggleButton stopProcessingToggle;
     std::unique_ptr<ComponentBoundsConstrainer> constrain;
     std::unique_ptr<ResizableCornerComponent> resizer;
     juce::TooltipWindow tooltipWindow;

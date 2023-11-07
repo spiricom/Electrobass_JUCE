@@ -470,6 +470,9 @@ chooser("Select a .wav file to load...", {}, "*.wav")
 
 
     addAndMakeVisible(tab5);
+    stopProcessingToggle.setButtonText("Stop Processing");
+    stopProcessingToggle.addListener(this);
+    tab1.addAndMakeVisible(stopProcessingToggle);
     mpeToggle.setButtonText("MPE mode");
     tab5.addAndMakeVisible(copedentTable);
     mpeToggle.addListener(this);
@@ -735,7 +738,8 @@ void ElectroAudioProcessorEditor::resized()
     muteToggle.setBounds(stringActivityButtons[5]->getRight(), stringActivityButtons[5]->getY(), 1.5f * align, 18*s);
    
     pedalControlsMasterToggle.setBounds(stringActivityButtons[10]->getRight(), stringActivityButtons[10]->getY(),1.5f *align,18*s);
-    mpeToggle.setBounds(pedalControlsMasterToggle.getRight(), pedalControlsMasterToggle.getY(),1.5f* align, 18*s );
+    mpeToggle.setBounds(pedalControlsMasterToggle.getRight(), pedalControlsMasterToggle.getY(), align, 18*s );
+    stopProcessingToggle.setBounds(mpeToggle.getRight(), mpeToggle.getY(), 1.5f * align, 18*s);
     //OSCILLOSCOPE.get
     //    keyboard.setBoundsRelative(0.f, 0.86f, 1.0f, 0.14f);
     //    keyboard.setKeyWidth(width / 52.0f);
@@ -988,6 +992,10 @@ void ElectroAudioProcessorEditor::buttonClicked(Button* button)
 
     if (ToggleButton* tb = dynamic_cast<ToggleButton*>(button))
     {
+        if (tb == &stopProcessingToggle)
+        {
+            processor.setProcessing(!tb->getToggleState());
+        }
         if (tb == &mpeToggle)
         {
             updateMPEToggle(tb->getToggleState());
