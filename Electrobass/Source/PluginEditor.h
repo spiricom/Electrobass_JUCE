@@ -229,6 +229,133 @@ private:
     FileChooser chooser;
     OwnedArray<MappingSource> allSources;
     std::unique_ptr<Drawable> white_circle_image;
+    std::unique_ptr<Drawable> hamburger_menu_image;
+    //==============================================================================
+    /*
+    */
+    
+    class PopupMenuLAF : public LookAndFeel_V4, public DeletedAtShutdown
+    {
+    public:
+        PopupMenuLAF()
+        {
+            setColour(PopupMenu::backgroundColourId, Colours::black);
+            setColour(PopupMenu::textColourId, Colours::antiquewhite);
+        }
+        
+        void drawPopupMenuItem (Graphics& g, const Rectangle<int>& area,
+                                                const bool isSeparator, const bool isActive,
+                                                const bool isHighlighted, const bool isTicked,
+                                                const bool hasSubMenu, const String& text,
+                                                const String& shortcutKeyText,
+                                                const Drawable* icon, const Colour* const textColourToUse)
+        {
+            if (isSeparator)
+            {
+                auto r  = area.reduced (5, 0);
+                r.removeFromTop (roundToInt ((r.getHeight() * 0.5f) - 0.5f));
+                
+                g.setColour (findColour (PopupMenu::textColourId).withAlpha (0.3f));
+                g.fillRect (r.removeFromTop (1));
+            }
+            else
+            {
+                auto textColour = (textColourToUse == nullptr ? findColour (PopupMenu::textColourId)
+                                   : *textColourToUse);
+                
+                auto r  = area.reduced (1);
+                
+                if (isHighlighted && isActive)
+                {
+                    g.setColour (findColour (PopupMenu::highlightedBackgroundColourId));
+                    g.fillRect (r);
+                    
+                    g.setColour (findColour (PopupMenu::highlightedTextColourId));
+                }
+                else
+                {
+                    g.setColour (textColour.withMultipliedAlpha (isActive ? 1.0f : 0.5f));
+                }
+                
+                r.reduce (jmin (5, area.getWidth() / 20), 0);
+                
+                auto font = getPopupMenuFont();
+                
+                const auto maxFontHeight = r.getHeight() / 1.3f;
+                
+                if (font.getHeight() > maxFontHeight)
+                    font.setHeight (maxFontHeight);
+                
+                g.setFont (font);
+                
+                auto iconArea = r.removeFromLeft (roundToInt (maxFontHeight)).toFloat();
+                
+                if (icon != nullptr)
+                {
+                    icon->drawWithin (g, iconArea, RectanglePlacement::centred | RectanglePlacement::onlyReduceInSize, 1.0f);
+                }
+                else if (isTicked)
+                {
+                    const auto tick = getTickShape (1.0f);
+                    g.fillPath (tick, tick.getTransformToScaleToFit (iconArea.reduced (iconArea.getWidth() / 5, 0).toFloat(), true));
+                }
+                
+                if (hasSubMenu)
+                {
+                    const auto arrowH = 0.6f * getPopupMenuFont().getAscent();
+                    
+                    const auto x = (float) r.removeFromRight ((int) arrowH).getX();
+                    const auto halfH = (float) r.getCentreY();
+                    
+                    Path path;
+                    path.startNewSubPath (x, halfH - arrowH * 0.5f);
+                    path.lineTo (x + arrowH * 0.6f, halfH);
+                    path.lineTo (x, halfH + arrowH * 0.5f);
+                    
+                    g.strokePath (path, PathStrokeType (2.0f));
+                }
+                
+                r.removeFromRight (3);
+               
+                g.drawFittedText (text, r, Justification::centredLeft, 1);
+                
+                
+            }
+        }
+        Font getPopupMenuFont (void)
+        {
+            return Font (17.0f);
+        }
+    };
+    class EBassPopupMenu : public PopupMenu
+    {
+    public:
+        EBassPopupMenu()
+        {
+            setLookAndFeel(new PopupMenuLAF());
+        }
+        
+        ~EBassPopupMenu()
+        {
+            setLookAndFeel(nullptr);
+        }
+        
+    private:
+        
+        JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (EBassPopupMenu)
+    };
+    
+    PopupMenu getHamburgerMenu(void)
+    {
+        EBassPopupMenu popupMenu;
+        
+        popupMenu.addItem(1, "Load New Preset");
+        popupMenu.addItem(2, "Load Default Preset");
+        popupMenu.addItem(3, "Save Preset");
+        
+        return std::move(popupMenu);
+    }
+    DrawableButton *hamburger_button;
     PropertySet settings;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ElectroAudioProcessorEditor)
 };

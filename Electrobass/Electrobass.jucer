@@ -75,6 +75,8 @@
       <FILE id="Fh069E" name="PluginEditor.cpp" compile="1" resource="0"
             file="Source/PluginEditor.cpp"/>
     </GROUP>
+    <FILE id="RL1qyj" name="Hamburger_icon.svg.png" compile="0" resource="1"
+          file="Hamburger_icon.svg.png"/>
     <FILE id="Z4586H" name="White_Circle.svg.png" compile="0" resource="1"
           file="White_Circle.svg.png"/>
   </MAINGROUP>

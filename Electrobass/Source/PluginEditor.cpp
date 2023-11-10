@@ -34,6 +34,9 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     addMouseListener(this, true);
     white_circle_image = Drawable::createFromImageData(BinaryData::White_Circle_svg_png,
                                                        BinaryData::White_Circle_svg_pngSize);
+    hamburger_menu_image = Drawable::createFromImageData(BinaryData::Hamburger_icon_svg_png,
+                                                         BinaryData::Hamburger_icon_svg_pngSize);
+    hamburger_menu_image->replaceColour(Colours::white,  Colours::gold.withBrightness(0.9f));
     vts.state.addListener(this);
     LookAndFeel::setDefaultLookAndFeel(ElectroLookAndFeel::getInstance());
     tabs.getTabbedButtonBar().setLookAndFeel(&laf);
@@ -481,12 +484,20 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     tabs.getTabbedButtonBar().getTabButton(4)->addListener(this);
     addAndMakeVisible(&tabs);
    
+    hamburger_button = new DrawableButton("", DrawableButton::ButtonStyle::ImageFitted);
+    hamburger_button->setImages(hamburger_menu_image.get());
+    hamburger_button->setButtonText("button");
     
+    hamburger_button->addListener(this);
     
     setSize(EDITOR_WIDTH * processor.editorScale, EDITOR_HEIGHT * processor.editorScale);
     
     //saveStateButton.onClick = [this]() {DBG("fiuclk");};
+   
+
+    addAndMakeVisible(hamburger_button);
     saveStateButton.setButtonText("Save");
+    
     loadStateButton.setButtonText("Load");
     saveStateButton.addListener(this);
     loadStateButton.addListener(this);
@@ -639,13 +650,14 @@ void ElectroAudioProcessorEditor::resized()
     // Set OSCILLOSCOPE bounds
 
     //tabs.setBounds(getLocalBounds().expanded(1));
+    
     tabs.setBoundsRelative(0,0,1,1.0);
     tabs.setTabBarDepth(30*s);
     
     height -= tabs.getTabBarDepth();
     
     
-   
+    
     //==============================================================================
     // TAB1 ========================================================================
     for (int i = 0; i < NUM_OSCS; ++i)
@@ -810,22 +822,25 @@ void ElectroAudioProcessorEditor::resized()
     presetNumberlabel.setBounds(presetNumber.getX()-  width*0.05f+2, -1,width*0.05f+2, tabs.getTabBarDepth()/2);
     presetNameEditor.setBounds(presetNumberlabel.getX() - presetNumberlabel.getWidth() -10, -1, width*0.06f+2, tabs.getTabBarDepth());
     presetNamelabel.setBounds(presetNameEditor.getX() - presetNameEditor.getWidth()/2 - 10, -1,width*0.05f+2, tabs.getTabBarDepth() /2);
-    int logoLeft = tabs.getTabbedButtonBar().getTabButton(4)->getRight();
+    hamburger_button->setBounds(tabs.getTabbedButtonBar().getTabButton(4)->getRight(), tabs.getTabbedButtonBar().getTabButton(4)->getY(), 30, 30);
+    int logoLeft = hamburger_button->getRight();
     Rectangle<float> logoArea (logoLeft, 0, 98*s, tabs.getTabBarDepth());
     logo->setTransformToFit (logoArea,
                              RectanglePlacement::xLeft +
                              RectanglePlacement::yTop +
                              RectanglePlacement::fillDestination);
    
-//    synderphonicsLabel.setBounds(logoLeft+50*s, -5*s, 220*s, 34*s);
-//    synderphonicsLabel.setFont(euphemia.withHeight(34*s));
+    synderphonicsLabel.setBounds(logoLeft+50*s, -5*s, 150*s, 34*s);
+    synderphonicsLabel.setFont(euphemia.withHeight(34*s));
 //    if(!JUCEApplicationBase::isStandaloneApp())
 //    {
-        synderphonicsLabel.setBounds(logoLeft+50*s, -5*s, 100*s, 34*s);
-        synderphonicsLabel.setFont(euphemia.withHeight(34*s));
-        
-        saveStateButton.setBounds(synderphonicsLabel.getRight(), synderphonicsLabel.getY(), 50*s, 15*s);
-        loadStateButton.setBounds(synderphonicsLabel.getRight(), saveStateButton.getBottom(), 50*s, 15*s);
+//        synderphonicsLabel.setBounds(logoLeft+50*s, -5*s, 100*s, 34*s);
+//        synderphonicsLabel.setFont(euphemia.withHeight(34*s));
+    
+    
+    
+        //saveStateButton.setBounds(synderphonicsLabel.getRight(), synderphonicsLabel.getY(), 50*s, 15*s);
+        //loadStateButton.setBounds(synderphonicsLabel.getRight(), saveStateButton.getBottom(), 50*s, 15*s);
 //    }
 //    ElectrobassLabel.setBounds(synderphonicsLabel.getRight(), -5*s, 300*s, 34*s);
 //    ElectrobassLabel.setFont(euphemia.withHeight(34*s).withStyle(3));
@@ -1079,35 +1094,88 @@ void ElectroAudioProcessorEditor::buttonClicked(Button* button)
         });
     } else if (button == &loadStateButton)
     {
-        stateFileChooser = std::make_unique<FileChooser> (TRANS("Load a saved state"),
-                                                          getLastFile());
-        auto flags = FileBrowserComponent::openMode
-                   | FileBrowserComponent::canSelectFiles;
-
-        stateFileChooser->launchAsync (flags, [this] (const FileChooser& fc)
-        {
-            if (fc.getResult() == File{})
+        
+    }
+    else if (button == hamburger_button)
+    {
+        getHamburgerMenu().showMenuAsync (PopupMenu::Options().withTargetComponent (hamburger_button),
+                                          [this](int result){
+            if(this == nullptr)
+            {
+                PopupMenu::dismissAllActiveMenus();
                 return;
-
-            setLastFile (fc);
-
-            MemoryBlock data;
+            }
             
-            if (fc.getResult().getFileExtension() == ".ebp")
+            if( result == 1)
+            {
+                stateFileChooser = std::make_unique<FileChooser> (TRANS("Load a saved state"),
+                                                                  getLastFile());
+                auto flags = FileBrowserComponent::openMode
+                           | FileBrowserComponent::canSelectFiles;
+
+                stateFileChooser->launchAsync (flags, [this] (const FileChooser& fc)
+                {
+                    if (fc.getResult() == File{})
+                        return;
+
+                    setLastFile (fc);
+
+                    MemoryBlock data;
+                    
+                    if (fc.getResult().getFileExtension() == ".ebp")
+                    {
+                        
+                        int presetNumber = fc.getResult().getFileName().substring(0,2).getIntValue();
+                        if (fc.getResult().loadFileAsData (data))
+                            processor.setStateEBP(data.getData(), (int) data.getSize(),presetNumber);
+                        
+                    }
+
+                    if (fc.getResult().loadFileAsData (data))
+                        processor.setStateInformation (data.getData(), (int) data.getSize());
+                    else
+                        AlertWindow::showMessageBoxAsync (AlertWindow::WarningIcon,
+                                                          TRANS("Error whilst loading"),
+                                                          TRANS("Couldn't read from the specified file!"));
+                });
+            }
+            else if (result == 2)
             {
                 
-                int presetNumber = fc.getResult().getFileName().substring(0,2).getIntValue();
-                if (fc.getResult().loadFileAsData (data))
-                    processor.setStateEBP(data.getData(), (int) data.getSize(),presetNumber);
-                
             }
+            else if (result == 3)
+            {
+                stateFileChooser = std::make_unique<FileChooser> (TRANS("Load a saved state"),
+                                                                  getLastFile());
+                auto flags = FileBrowserComponent::openMode
+                           | FileBrowserComponent::canSelectFiles;
 
-            if (fc.getResult().loadFileAsData (data))
-                processor.setStateInformation (data.getData(), (int) data.getSize());
-            else
-                AlertWindow::showMessageBoxAsync (AlertWindow::WarningIcon,
-                                                  TRANS("Error whilst loading"),
-                                                  TRANS("Couldn't read from the specified file!"));
+                stateFileChooser->launchAsync (flags, [this] (const FileChooser& fc)
+                {
+                    if (fc.getResult() == File{})
+                        return;
+
+                    setLastFile (fc);
+
+                    MemoryBlock data;
+                    
+                    if (fc.getResult().getFileExtension() == ".ebp")
+                    {
+                        
+                        int presetNumber = fc.getResult().getFileName().substring(0,2).getIntValue();
+                        if (fc.getResult().loadFileAsData (data))
+                            processor.setStateEBP(data.getData(), (int) data.getSize(),presetNumber);
+                        
+                    }
+
+                    if (fc.getResult().loadFileAsData (data))
+                        processor.setStateInformation (data.getData(), (int) data.getSize());
+                    else
+                        AlertWindow::showMessageBoxAsync (AlertWindow::WarningIcon,
+                                                          TRANS("Error whilst loading"),
+                                                          TRANS("Couldn't read from the specified file!"));
+                });
+            }
         });
     }
 }
