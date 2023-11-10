@@ -115,7 +115,7 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
     void setStateEBP(const void* data, int sizeInBytes, int presetNumber);
-    
+    void setStateInformation (XmlElement * xml);
     void addToKnobsToSmoothArray(SmoothedParameter* param);
     
     void toggleStream()

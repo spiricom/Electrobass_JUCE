@@ -2267,6 +2267,185 @@ void ElectroAudioProcessor::setStateInformation (const void* data, int sizeInByt
     DBG("Post set state: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
 }
 
+void ElectroAudioProcessor::setStateInformation (XmlElement * xml)
+{
+    
+    suspendProcessing(true);
+    
+    
+    if (xml != nullptr)
+    {
+        /*  // what's the purpose of this, since we are going to clear it below??
+        for (int i = 0; i < knobsToSmooth.size(); i++)
+        {
+            SmoothedParameter* knob = knobsToSmooth.getUnchecked(i);
+            knob->setRemoveMe(false);
+            //knobsToSmooth.remove(i);
+        }
+         */
+        knobsToSmooth.clear();
+        // Top level settings
+        String presetPath = xml->getStringAttribute("path");
+        editorScale = xml->getDoubleAttribute("editorScale", 1.05);
+        setMPEMode(xml->getBoolAttribute("mpeMode", false));
+        setNumVoicesActive(xml->getIntAttribute("numVoices", 1));
+        midiKeyMin = xml->getIntAttribute("midiKeyMin", 21);
+        midiKeyMax = xml->getIntAttribute("midiKeyMax", 108);
+        for (int i = 0; i < NUM_MIDI_NOTES; ++i)
+        {
+            centsDeviation[i] = xml->getDoubleAttribute("CentsDev" + String(i+1));
+        }
+        for (int i = 0; i < NUM_GENERIC_MACROS; ++i)
+        {
+            macroNames.set(i, xml->getStringAttribute("M" + String(i+1) + "Name",
+                                                      "M" + String(i+1)));
+        }
+        
+        for (int i = 1; i <= 127; ++i) ccNumberToMacroMap.set(i, -1);
+        for (int i = 0; i < NUM_MACROS+1; ++i)
+        {
+            macroCCNumbers[i] = xml->getIntAttribute("M" + String(i+1) + "CC", i+1);
+            ccNumberToMacroMap.set(macroCCNumbers[i], i);
+        }
+        
+        for (int i = 1; i <= 16; ++i) channelToStringMap.set(i, -1);
+        for (int i = 0; i < MAX_NUM_VOICES+1; ++i)
+        {
+            stringChannels[i] = xml->getIntAttribute("String" + String(i) + "Ch", i+1);
+            channelToStringMap.set(stringChannels[i], i);
+        }
+        
+        for (int i = 0; i < NUM_OSCS; ++i)
+        {
+            String filePath = xml->getStringAttribute("osc" + String(i+1) + "File");
+            if(filePath.isEmpty())
+            {
+                continue;
+            }
+            File wav (filePath);
+            
+            if (wav.exists())
+            {
+                DBG("Pre osc set state: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
+                oscs[i]->setWaveTables(wav);
+                DBG("Post osc set state: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
+            } else
+            {
+                DBG(wav.getFileName());
+                File f = File::getSpecialLocation(File::globalApplicationsDirectory).getFullPathName() + "/Electrobass/" + wav.getFileName();
+                DBG(f.getFullPathName());
+                if (f.exists())
+                {
+                    DBG("fileesxist");
+                    oscs[i]->setWaveTables(f);
+                }
+            }
+        }
+        // Audio processor value tree state
+        if (XmlElement* state = xml->getChildByName(vts.state.getType()))
+            vts.replaceState (juce::ValueTree::fromXml (*state));
+        DBG("FX ORDER"  +String( vts.getRawParameterValue("FX Order")->load()));
+      
+        for (int v = 0; v < numVoicesActive; v++)
+        {
+            for (int i = 0; i < NUM_OSCS; i++)
+            {
+                oscs[i]->loadAll(v);
+            }
+            for (int i = 0; i < NUM_ENVS; i++)
+            {
+                envs[i]->loadAll(v);
+            }
+            noise->loadAll(v);
+            for (int i = 0; i < NUM_FILT; i++)
+            {
+                filt[i]->loadAll(v);
+            }
+            for (int i = 0; i < NUM_LFOS; i++)
+            {
+                lfos[i]->loadAll(v);
+            }
+            for (int i = 0; i < NUM_FX; i++)
+            {
+                fx[i]->loadAll(v);
+            }
+        }
+        
+        // Copedent
+        if (XmlElement* copedent = xml->getChildByName("Copedent"))
+        {
+            copedentNumber = copedent->getIntAttribute("number");
+            copedentName = copedent->getStringAttribute("name");
+            copedentFundamental = copedent->getDoubleAttribute("fundamental");
+            for (int c = 0; c < copedentArray.size(); ++c)
+            {
+                XmlElement* column = copedent->getChildByName("c" + String(c));
+                for (int r = 0; r < copedentArray.getReference(c).size(); ++r)
+                {
+                    float value = column->getDoubleAttribute("r" + String(r));
+                    copedentArray.getReference(c).set(r, value);
+                }
+            }
+        }
+
+        for (auto target : targetMap)
+        {
+            if (target->currentSource != nullptr)
+            {
+                target->removeMapping(true);
+            }
+        }
+        
+        // Mappings
+        initialMappings.clear();
+        if (XmlElement* mappings = xml->getChildByName("Mappings"))
+        {
+            for (auto child : mappings->getChildIterator())
+            {
+                Mapping m;
+                m.sourceName = child->getStringAttribute("s");
+                m.scalarName = child->getStringAttribute("l");
+                m.targetName = child->getStringAttribute("t");
+                m.value = child->getDoubleAttribute("v");
+                initialMappings.add(m);
+            }
+        }
+        else
+        {
+            // A couple of default mappings that will be used if nothing has been saved
+            Mapping defaultFilter1Cutoff;
+            defaultFilter1Cutoff.sourceName = "Envelope3";
+            defaultFilter1Cutoff.targetName = "Filter1 Cutoff T3";
+            defaultFilter1Cutoff.value = 24.f;
+
+            Mapping defaultOutputAmp;
+            defaultOutputAmp.sourceName = "Envelope1";
+            defaultOutputAmp.targetName = "Output Amp T3";
+            defaultOutputAmp.value = 1.f;
+
+            initialMappings.add(defaultFilter1Cutoff);
+            initialMappings.add(defaultOutputAmp);
+        }
+
+        if (!initialMappings.isEmpty()) // First prepareToPlay
+        {
+            for (Mapping m : initialMappings)
+            {
+                targetMap[m.targetName]->setMapping(sourceMap[m.sourceName], m.value, false);
+                targetMap[m.targetName]->setMappingScalar(sourceMap[m.scalarName], false);
+            }
+            initialMappings.clear();
+        }
+    }
+    
+    if (ElectroAudioProcessorEditor* editor = dynamic_cast<ElectroAudioProcessorEditor*>(getActiveEditor()))
+    {
+        editor->update();
+    }
+    suspendProcessing(false);
+    DBG("Post set state: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
+}
+
 void ElectroAudioProcessor::setStateEBP(const void *data, int sizeInBytes, int presetNumber)
 {
     suspendProcessing(true);

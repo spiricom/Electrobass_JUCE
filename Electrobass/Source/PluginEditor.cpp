@@ -484,7 +484,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     tabs.getTabbedButtonBar().getTabButton(4)->addListener(this);
     addAndMakeVisible(&tabs);
    
-    hamburger_button = new DrawableButton("", DrawableButton::ButtonStyle::ImageFitted);
+    hamburger_button = std::make_unique<DrawableButton>("", DrawableButton::ButtonStyle::ImageFitted);
     hamburger_button->setImages(hamburger_menu_image.get());
     hamburger_button->setButtonText("button");
     
@@ -495,7 +495,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     //saveStateButton.onClick = [this]() {DBG("fiuclk");};
    
 
-    addAndMakeVisible(hamburger_button);
+    addAndMakeVisible(hamburger_button.get());
     saveStateButton.setButtonText("Save");
     
     loadStateButton.setButtonText("Load");
@@ -1096,9 +1096,9 @@ void ElectroAudioProcessorEditor::buttonClicked(Button* button)
     {
         
     }
-    else if (button == hamburger_button)
+    else if (button == hamburger_button.get())
     {
-        getHamburgerMenu().showMenuAsync (PopupMenu::Options().withTargetComponent (hamburger_button),
+        getHamburgerMenu().showMenuAsync (PopupMenu::Options().withTargetComponent (hamburger_button.get()),
                                           [this](int result){
             if(this == nullptr)
             {
@@ -1141,7 +1141,9 @@ void ElectroAudioProcessorEditor::buttonClicked(Button* button)
             }
             else if (result == 2)
             {
-                
+                int size;
+                String xmlData = CharPointer_UTF8(BinaryData::getNamedResource("default_xml", size ));
+                processor.setStateInformation(XmlDocument::parse(xmlData).get());
             }
             else if (result == 3)
             {

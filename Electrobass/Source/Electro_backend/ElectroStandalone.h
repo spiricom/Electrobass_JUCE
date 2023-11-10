@@ -799,15 +799,15 @@ public:
         audioSettingsButton.addListener (this);
         audioSettingsButton.setTriggeredOnMouseDown (true);
         
-        Component::addAndMakeVisible (saveStateButton);
+        //Component::addAndMakeVisible (saveStateButton);
         saveStateButton.addListener (this);
         saveStateButton.setTriggeredOnMouseDown (true);
         
-        Component::addAndMakeVisible (loadStateButton);
+        //Component::addAndMakeVisible (loadStateButton);
         loadStateButton.addListener (this);
         loadStateButton.setTriggeredOnMouseDown (true);
         
-        Component::addAndMakeVisible (resetStateButton);
+        //Component::addAndMakeVisible (resetStateButton);
         resetStateButton.addListener (this);
         resetStateButton.setTriggeredOnMouseDown (true);
        #endif

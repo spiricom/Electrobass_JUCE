@@ -355,7 +355,7 @@ private:
         
         return std::move(popupMenu);
     }
-    DrawableButton *hamburger_button;
+    std::unique_ptr<DrawableButton> hamburger_button;
     PropertySet settings;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ElectroAudioProcessorEditor)
 };
