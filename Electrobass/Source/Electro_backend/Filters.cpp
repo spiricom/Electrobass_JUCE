@@ -194,7 +194,7 @@ void Filter::diodeLowpassTick(float& sample, int v, float cutoff, float q, float
 {
     tDiodeFilter_setFreqFast(&diodeFilters[v], cutoff);
     
-    sample = tDiodeFilter_tick(&diodeFilters[v], sample);
+    sample = tDiodeFilter_tickEfficient(&diodeFilters[v], sample);
     sample *= G;
 }
 
