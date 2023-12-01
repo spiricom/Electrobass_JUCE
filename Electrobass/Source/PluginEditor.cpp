@@ -1147,35 +1147,26 @@ void ElectroAudioProcessorEditor::buttonClicked(Button* button)
             }
             else if (result == 3)
             {
-                stateFileChooser = std::make_unique<FileChooser> (TRANS("Load a saved state"),
+                stateFileChooser = std::make_unique<FileChooser> (TRANS("Save current state"),
                                                                   getLastFile());
-                auto flags = FileBrowserComponent::openMode
-                           | FileBrowserComponent::canSelectFiles;
+                auto flags = FileBrowserComponent::saveMode
+                           | FileBrowserComponent::canSelectFiles
+                           | FileBrowserComponent::warnAboutOverwriting;
 
                 stateFileChooser->launchAsync (flags, [this] (const FileChooser& fc)
-                {
+                                               {
                     if (fc.getResult() == File{})
                         return;
-
-                    setLastFile (fc);
-
-                    MemoryBlock data;
                     
-                    if (fc.getResult().getFileExtension() == ".ebp")
-                    {
-                        
-                        int presetNumber = fc.getResult().getFileName().substring(0,2).getIntValue();
-                        if (fc.getResult().loadFileAsData (data))
-                            processor.setStateEBP(data.getData(), (int) data.getSize(),presetNumber);
-                        
-                    }
-
-                    if (fc.getResult().loadFileAsData (data))
-                        processor.setStateInformation (data.getData(), (int) data.getSize());
-                    else
+                    setLastFile (fc);
+                    
+                    MemoryBlock data;
+                    processor.getStateInformation (data);
+                    
+                    if (! fc.getResult().replaceWithData (data.getData(), data.getSize()))
                         AlertWindow::showMessageBoxAsync (AlertWindow::WarningIcon,
-                                                          TRANS("Error whilst loading"),
-                                                          TRANS("Couldn't read from the specified file!"));
+                                                          TRANS("Error whilst saving"),
+                                                          TRANS("Couldn't write to the specified file!"));
                 });
             }
         });
