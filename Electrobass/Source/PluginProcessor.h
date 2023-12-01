@@ -125,6 +125,8 @@ public:
     bool midiBufferChanged;
     MidiBuffer tempMidiBuffer[2];
     bool whichMidiBuffer;
+    
+    LockFreeQueue* myMappingQueue;
     void addToMidiBuffer(int streamID, float streamValue)
     {
         
@@ -229,10 +231,8 @@ public:
         streamMappingValue = sourceIds.indexOf(source->name);
         streamMappingTargetSlot = target->name.getTrailingIntValue()-1;
         streamMappingIdentifier = 0;
-        
-        addToMidiBuffer(streamMappingTargetId ,
-                        streamMappingTargetSlot, streamMappingIdentifier,
-                        streamMappingValue);
+        float arr[4] = {streamMappingTargetId,(float)streamMappingTargetSlot,(float)streamMappingIdentifier,streamMappingValue};
+        myMappingQueue->writeTo( arr, 4);
         streamMapping = true;
     }
     
@@ -257,9 +257,8 @@ public:
         DBG("Final Range" + String(finalRange));
         streamMappingValue = finalRange;
         streamMappingIdentifier = 1;
-        addToMidiBuffer(streamMappingTargetId ,
-                        streamMappingTargetSlot, streamMappingIdentifier,
-                        streamMappingValue);
+        float arr[4] = {streamMappingTargetId,(float)streamMappingTargetSlot,(float)streamMappingIdentifier,streamMappingValue};
+        myMappingQueue->writeTo( arr, 4);
         streamMapping = true;
         
     }
@@ -271,9 +270,8 @@ public:
         streamMappingValue = 255;
         streamMappingTargetSlot = target->name.getTrailingIntValue()-1;
         streamMappingIdentifier = 0;
-        addToMidiBuffer(streamMappingTargetId ,
-                        streamMappingTargetSlot, streamMappingIdentifier,
-                        streamMappingValue);
+        float arr[4] = {streamMappingTargetId,(float)streamMappingTargetSlot,(float)streamMappingIdentifier,streamMappingValue};
+        myMappingQueue->writeTo( arr, 4);
         streamMapping = true;
     }
     
@@ -284,9 +282,8 @@ public:
         streamMappingValue = sourceIds.indexOf(source->name);
         streamMappingTargetSlot = target->name.getTrailingIntValue()-1;
         streamMappingIdentifier = 2;
-        addToMidiBuffer(streamMappingTargetId ,
-                        streamMappingTargetSlot, streamMappingIdentifier,
-                        streamMappingValue);
+        float arr[4] = {streamMappingTargetId,(float)streamMappingTargetSlot,(float)streamMappingIdentifier,streamMappingValue};
+        myMappingQueue->writeTo( arr, 4);
         streamMapping = true;
     }
     
@@ -297,9 +294,8 @@ public:
         streamMappingValue = 255;
         streamMappingTargetSlot = target->name.getTrailingIntValue()-1;
         streamMappingIdentifier = 2;
-        addToMidiBuffer(streamMappingTargetId ,
-                        streamMappingTargetSlot, streamMappingIdentifier,
-                        streamMappingValue);
+        float arr[4] = {streamMappingTargetId,(float)streamMappingTargetSlot,(float)streamMappingIdentifier,streamMappingValue};
+        myMappingQueue->writeTo( arr, 4);
         streamMapping = true;
     }
 

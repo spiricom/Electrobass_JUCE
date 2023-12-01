@@ -1114,7 +1114,6 @@ void LFOModule::comboBoxChanged(ComboBox *comboBox)
         ac.processor.streamID1 = tempId;
         //button->get
         DBG("Send: " + comboBox->getName() + " with ID"  + String(tempId) + " and value " + String(ac.processor.streamValue1)/*String(streamValue)*/);
-        ac.processor.addToMidiBuffer(tempId, (float)comboBox->getSelectedItemIndex()/ ((float) (lfoShapeSetNames.size()-1)));
         float arr[2] = {(float)tempId, (float)comboBox->getSelectedItemIndex()/ ((float) (lfoShapeSetNames.size()-1))};
         editor.knobQueue.writeTo( arr, 2);
     }
@@ -1344,7 +1343,6 @@ void FXModule::comboBoxChanged(ComboBox *comboBox)
             ac.processor.streamID1 = tempId;
             //button->get
             DBG("Send: " + comboBox->getName() + " with ID"  + String(tempId) + " and value " + String(ac.processor.streamValue1)/*String(streamValue)*/);
-            ac.processor.addToMidiBuffer(tempId, (float)fxCB.getSelectedItemIndex()/ ((float) (FXTypeNames.size()-1)));
             float arr[2] = {(float)tempId, (float)fxCB.getSelectedItemIndex()/ ((float) (FXTypeNames.size()-1))};
             editor.knobQueue.writeTo( arr, 2);
         }

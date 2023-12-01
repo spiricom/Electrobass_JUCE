@@ -1162,8 +1162,8 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
             processor.streamID2 = 1;
             processor.streamValue1 = midiKeyRangeSlider.getMinValue();
             processor.streamValue2 = midiKeyRangeSlider.getMaxValue();
-            processor.addToMidiBuffer(0, midiKeyRangeSlider.getMinValue());
-            processor.addToMidiBuffer(1, midiKeyRangeSlider.getMaxValue());
+            float arr[4] = {0, (float)midiKeyRangeSlider.getMinValue(), 1, (float)midiKeyRangeSlider.getMaxValue()};
+            knobQueue.writeTo( arr, 4);
         }
     }
     else if (slider == &numVoicesSlider)
@@ -1197,7 +1197,10 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
             processor.streamID1 = tempId;
             DBG("Send: PitchBendRange with id" + String(tempId) +
                 " as " + String(processor.streamValue1) );
-            processor.addToMidiBuffer(tempId, rangeSlider.getValue());
+            
+            float arr[2] = {(float)tempId, (float)rangeSlider.getValue()};
+            knobQueue.writeTo( arr, 2);
+            
         }
     } else if (slider == &seriesParallelSlider)
     {
@@ -1220,8 +1223,9 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
             processor.streamID1 = tempId;
             //button->get
             DBG("Send: " + slider->getName() + " with ID"  + String(tempId) + " and value " + String(processor.streamValue1)/*String(streamValue)*/);
-            processor.addToMidiBuffer(tempId, slider->getValue());
-            
+            float arr[2] = {(float)tempId, (float)slider->getValue()};
+            knobQueue.writeTo( arr, 2);
+        
         }
     }
     else if( processor.stream)
@@ -1244,7 +1248,8 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
             processor.streamID1 = tempId;
             //button->get
             DBG("Send: " + slider->getName() + " with ID"  + String(tempId) + " and value " + String(processor.streamValue1)/*String(streamValue)*/);
-            processor.addToMidiBuffer(tempId, slider->getValue());
+            float arr[2] = {(float)tempId, (float)slider->getValue()};
+            knobQueue.writeTo( arr, 2);
         }
     }else if (pitchBendSliders.contains(slider))
     {
@@ -1320,7 +1325,8 @@ void ElectroAudioProcessorEditor::buttonClicked(Button* button)
                 processor.streamID1 = tempId;
                 //button->get
                 DBG("Send: " + button->getName() + " with ID"  + String(tempId) + " and value " + String(processor.streamValue1));
-                processor.addToMidiBuffer(tempId, vts.getParameter(button->getName())->getValue());
+                float arr[2] = {(float)tempId, vts.getParameter(button->getName())->getValue()};
+                knobQueue.writeTo( arr, 2);
             }
         }
     }
@@ -1527,43 +1533,75 @@ void ElectroAudioProcessorEditor::timerCallback()
     
     for(int i = 0; i < size; i+=2)
     {
-//        if(i == 0)
-//        {
-//            for (int j = 0; j < 512 ; j++)
-//            {
-//                outString += String( knobMidiArray[j]) + " ";
-//            }
-//            DBG(outString);
-//        }
-                union uintfUnion fu;
-                Array<uint8_t> data7bitInt;
-                data7bitInt.add(3);
-                data7bitInt.add(0);
-                fu.f = knobMidiArray[i];
-                data7bitInt.add((fu.i >> 28) & 15);
-                data7bitInt.add((fu.i >> 21) & 127);
-                data7bitInt.add((fu.i >> 14) & 127);
-                data7bitInt.add((fu.i >> 7) & 127);
-                data7bitInt.add(fu.i & 127);
-        
-                fu.f = LEAF_clip(0.0f, knobMidiArray[i+1], 1.0f);
-                data7bitInt.add((fu.i >> 28) & 15);
-                data7bitInt.add((fu.i >> 21) & 127);
-                data7bitInt.add((fu.i >> 14) & 127);
-                data7bitInt.add((fu.i >> 7) & 127);
-                data7bitInt.add(fu.i & 127);
-        
-         
-                sysexMidi.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
-                data7bitInt.clear();
-        
-                data7bitInt.add(126);
-                sysexMidi.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+        union uintfUnion fu;
+        Array<uint8_t> data7bitInt;
+        data7bitInt.add(3);
+        data7bitInt.add(0);
+        fu.f = knobMidiArray[i];
+        data7bitInt.add((fu.i >> 28) & 15);
+        data7bitInt.add((fu.i >> 21) & 127);
+        data7bitInt.add((fu.i >> 14) & 127);
+        data7bitInt.add((fu.i >> 7) & 127);
+        data7bitInt.add(fu.i & 127);
+
+        fu.f = LEAF_clip(0.0f, knobMidiArray[i+1], 1.0f);
+        data7bitInt.add((fu.i >> 28) & 15);
+        data7bitInt.add((fu.i >> 21) & 127);
+        data7bitInt.add((fu.i >> 14) & 127);
+        data7bitInt.add((fu.i >> 7) & 127);
+        data7bitInt.add(fu.i & 127);
+
+
+        sysexMidi.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+        data7bitInt.clear();
+
+        data7bitInt.add(126);
+        sysexMidi.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
         DBG("MIDI SEND: Add Id" + String(knobMidiArray[i]) + "with value" + String(knobMidiArray[i+1]));
         
     }
+    
+    size = mappingQueue.writeToArray(knobMidiArray);
+    
+    for(int i = 0; i < size; i+=4)
+    {
+        union uintfUnion fu;
+        Array<uint8_t> data7bitInt;
+        data7bitInt.add(4);
+        data7bitInt.add(0);
+        
+        fu.f = (float)knobMidiArray[0];
+        data7bitInt.add((fu.i >> 28) & 15);
+        data7bitInt.add((fu.i >> 21) & 127);
+        data7bitInt.add((fu.i >> 14) & 127);
+        data7bitInt.add((fu.i >> 7) & 127);
+        data7bitInt.add(fu.i & 127);
+        
+        data7bitInt.add(knobMidiArray[1]);
+        data7bitInt.add(knobMidiArray[2]);
+        
+        fu.f = (float)knobMidiArray[3];
+        data7bitInt.add((fu.i >> 28) & 15);
+        data7bitInt.add((fu.i >> 21) & 127);
+        data7bitInt.add((fu.i >> 14) & 127);
+        data7bitInt.add((fu.i >> 7) & 127);
+        data7bitInt.add(fu.i & 127);
+        
+        sysexMidi.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+        data7bitInt.clear();
+        data7bitInt.add(126);
+        sysexMidi.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+        
+        DBG("MIDI SEND: Add Id" + String(knobMidiArray[i]) + "with slot" + String(knobMidiArray[i+1]) + "with changetype" + String(knobMidiArray[i+2])+ "with value" + String(knobMidiArray[i+3]));
+    }
     if (sysexOut)
+    {
         sysexOut->sendBlockOfMessagesNow(sysexMidi);
+    }
+    else
+    {
+        sysexMidi.clear();
+    }
 
 }
 

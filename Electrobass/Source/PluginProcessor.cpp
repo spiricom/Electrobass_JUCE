@@ -1326,7 +1326,9 @@ bool ElectroAudioProcessor::hasEditor() const
 
 juce::AudioProcessorEditor* ElectroAudioProcessor::createEditor()
 {
-    return new ElectroAudioProcessorEditor (*this, vts);
+    ElectroAudioProcessorEditor* myEditor = new ElectroAudioProcessorEditor (*this, vts);
+    myMappingQueue = &myEditor->mappingQueue;
+    return myEditor;
 }
 
 //==============================================================================
