@@ -33,33 +33,28 @@ public:
 //    }
     
     void writeTo(const float* writeData, int numToWrite){
-        int start1, start2, blockSize1, blockSize2;
+        auto writeHandle = lockFreeFifo->write(numToWrite);
+        if (writeHandle.blockSize1 > 0) FloatVectorOperations::copy(data.getRawDataPointer() + writeHandle.startIndex1, writeData, writeHandle.blockSize1);
+        if (writeHandle.blockSize2 > 0) FloatVectorOperations::copy(data.getRawDataPointer() + writeHandle.startIndex2, writeData + writeHandle.blockSize1, writeHandle.blockSize2);
         
-        lockFreeFifo->prepareToWrite(numToWrite, start1, blockSize1, start2, blockSize2);
-        
-        if (blockSize1 > 0) FloatVectorOperations::copy(data.getRawDataPointer() + start1, writeData, blockSize1);
-        if (blockSize2 > 0) FloatVectorOperations::copy(data.getRawDataPointer() + start2, writeData + blockSize1, blockSize2);
-        
-        // move fif write head
-        lockFreeFifo->finishedWrite(numToWrite);
     }
     
     void readFrom (float* readData, int numToRead) {
-        int start1, blockSize1, start2, blockSize2;
-        lockFreeFifo->prepareToRead(numToRead, start1, blockSize1, start2, blockSize2);
-        if(blockSize1 > 0)
+        
+        auto readHandle = lockFreeFifo->read(numToRead);
+
+        if(readHandle.blockSize1 > 0)
         {
-            FloatVectorOperations::copy(readData, data.getRawDataPointer() + start1, blockSize1);
-            lastReadPos = start1 + blockSize1;
+            FloatVectorOperations::copy(readData, data.getRawDataPointer() + readHandle.startIndex1, readHandle.blockSize1);
+            lastReadPos = readHandle.startIndex1 + readHandle.blockSize1;
         }
         
-        if (blockSize2 > 0)
+        if (readHandle.blockSize2 > 0)
         {
-            FloatVectorOperations::copy(readData + blockSize1, data.getRawDataPointer() + start2, blockSize2);
-            lastReadPos = start2 + blockSize2;
+            FloatVectorOperations::copy(readData + readHandle.blockSize1, data.getRawDataPointer() + readHandle.startIndex2, readHandle.blockSize2);
+            lastReadPos = readHandle.startIndex2 + readHandle.blockSize2;
         }
         
-        lockFreeFifo->finishedRead(blockSize1 + blockSize2);
     }
     
     void readMostRecent(float * readData, int numToRead) 
@@ -67,30 +62,25 @@ public:
         
     }
     
-    int writeToArray(Array<float>* dest, int destPos)
+    int writeToArray(float *dest)
     {
-        //drain the excess
-        while (getNumReady() > dest->size())
-        {
-            lockFreeFifo->finishedRead(getNumReady() - dest->size());
-        }
+//        //drain the excess
+//        while (getNumReady() > dest->size())
+//        {
+//            lockFreeFifo->finishedRead(getNumReady() - dest->size());
+//        }
         
         //read latest data from queue
         const int numToAppend = getNumReady();
         
         // add the tail to the output
         
-        if(destPos + numToAppend < dest->size())
+        if(numToAppend)
         {
-            readFrom(&dest->getRawDataPointer()[destPos], numToAppend);
-        }
-        else
-        {
-            int toTheEnd = dest->size() - destPos;
-            readFrom(&dest->getRawDataPointer()[destPos], toTheEnd);
-            readFrom(&dest->getRawDataPointer()[0], numToAppend - toTheEnd);
+            readFrom(dest, numToAppend);
         }
         
+        return numToAppend;
     }
     
     int getNumReady()

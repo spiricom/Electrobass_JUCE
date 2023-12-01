@@ -20,7 +20,7 @@
 #include "Electro_backend/TuningControl.hpp"
 #include "Electro_backend/Effect.h"
 #include "RingBuffer.h"
-
+#include "LockFreeQueue.h"
 union uintfUnion
 {
     float f;
@@ -127,34 +127,36 @@ public:
     bool whichMidiBuffer;
     void addToMidiBuffer(int streamID, float streamValue)
     {
-        union uintfUnion fu;
-        Array<uint8_t> data7bitInt;
-        data7bitInt.add(3);
-        data7bitInt.add(0);
-        fu.f = (float)streamID;
-        data7bitInt.add((fu.i >> 28) & 15);
-        data7bitInt.add((fu.i >> 21) & 127);
-        data7bitInt.add((fu.i >> 14) & 127);
-        data7bitInt.add((fu.i >> 7) & 127);
-        data7bitInt.add(fu.i & 127);
         
-        fu.f = LEAF_clip(0.0f, streamValue, 1.0f);
-        data7bitInt.add((fu.i >> 28) & 15);
-        data7bitInt.add((fu.i >> 21) & 127);
-        data7bitInt.add((fu.i >> 14) & 127);
-        data7bitInt.add((fu.i >> 7) & 127);
-        data7bitInt.add(fu.i & 127);
         
-        if (midiBufferChanged)
-        {
-            tempMidiBuffer[whichMidiBuffer].clear();
-            midiBufferChanged = false;
-        }
-        tempMidiBuffer[whichMidiBuffer].addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
-        data7bitInt.clear();
-        
-        data7bitInt.add(126);
-        tempMidiBuffer[whichMidiBuffer].addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+//        union uintfUnion fu;
+//        Array<uint8_t> data7bitInt;
+//        data7bitInt.add(3);
+//        data7bitInt.add(0);
+//        fu.f = (float)streamID;
+//        data7bitInt.add((fu.i >> 28) & 15);
+//        data7bitInt.add((fu.i >> 21) & 127);
+//        data7bitInt.add((fu.i >> 14) & 127);
+//        data7bitInt.add((fu.i >> 7) & 127);
+//        data7bitInt.add(fu.i & 127);
+//        
+//        fu.f = LEAF_clip(0.0f, streamValue, 1.0f);
+//        data7bitInt.add((fu.i >> 28) & 15);
+//        data7bitInt.add((fu.i >> 21) & 127);
+//        data7bitInt.add((fu.i >> 14) & 127);
+//        data7bitInt.add((fu.i >> 7) & 127);
+//        data7bitInt.add(fu.i & 127);
+//        
+//        if (midiBufferChanged)
+//        {
+//            tempMidiBuffer[whichMidiBuffer].clear();
+//            midiBufferChanged = false;
+//        }
+//        tempMidiBuffer[whichMidiBuffer].addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+//        data7bitInt.clear();
+//        
+//        data7bitInt.add(126);
+//        tempMidiBuffer[whichMidiBuffer].addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
     }
     
     void addToMidiBuffer(int _streamMappingTargetId , uint8_t _streamMappingTargetSlot, uint8_t _streamMappingIdentifier,float _streamMappingValue)
@@ -477,12 +479,17 @@ public:
     }
     void sendOpenStringMidiMessage();
     std::atomic<float>* fxPost;
+    HashMap<String, MappingTargetModel*> targetMap;
+    StringArray paramIds;
+    StringArray sourceIds;
+    String presetName;
+    int presetNumber = 0;
 private:
     
     void processMIDIDataIfNeeded (MidiBuffer& midiMessages);
     
     
-    HashMap<String, MappingTargetModel*> targetMap;
+    
     float openStrings[4] = {28, 33, 38, 43};
     String tuningName;
     int tuningNumber;
@@ -490,8 +497,7 @@ private:
     
     std::mutex m;
     MTSClient *client;
-    StringArray paramIds;
-    StringArray sourceIds;
+    
     AudioProcessorValueTreeState vts;
     tHighpass dcBlockMaster;
     float denormalMult = 1.0f;
@@ -509,8 +515,7 @@ private:
     int stringActivity[MAX_NUM_VOICES+1];
     int stringActivityTimeout;
     
-    String presetName;
-    int presetNumber = 0;
+
     tOversampler os[MAX_NUM_VOICES];
     tHighpass dcBlockPreFilt1[MAX_NUM_VOICES];
     tHighpass dcBlockPreFilt2[MAX_NUM_VOICES];

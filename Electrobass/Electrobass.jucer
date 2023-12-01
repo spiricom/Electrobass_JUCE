@@ -8,6 +8,9 @@
               pluginVST3Category="Instrument" pluginFormats="buildAAX,buildAU,buildStandalone,buildVST3">
   <MAINGROUP id="zr98AB" name="Electrobass">
     <GROUP id="{B8EA8B88-4125-0A91-2EA2-1CD3B3374012}" name="Source">
+      <FILE id="lzZEsD" name="LockFreeQueue.cpp" compile="1" resource="0"
+            file="Source/LockFreeQueue.cpp"/>
+      <FILE id="Lvlnwt" name="LockFreeQueue.h" compile="0" resource="0" file="Source/LockFreeQueue.h"/>
       <FILE id="rkeubL" name="RingBuffer.h" compile="0" resource="0" file="Source/RingBuffer.h"/>
       <GROUP id="{D0B7E845-9BE2-75A7-1934-4DD44C496485}" name="Electro_backend">
         <FILE id="cQhSnf" name="Effect.cpp" compile="1" resource="0" file="Source/Electro_backend/Effect.cpp"/>

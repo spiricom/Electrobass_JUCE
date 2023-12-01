@@ -66,6 +66,7 @@ class ElectroAudioProcessorEditor : public AudioProcessorEditor,
                                public DragAndDropContainer,
                                public sd::SoundMeter::MetersComponent::FadersChangeListener,
                                public ValueTree::Listener
+                            
                               
 
 {
@@ -92,6 +93,11 @@ public:
     void updateMPEToggle(bool state);
     void updatePedalVolumeControl(bool state);
     void updateNumVoicesSlider(int numVoices);
+    LockFreeQueue knobQueue;
+    LockFreeQueue mappingQueue;
+    std::unique_ptr<MidiOutput> sysexOut; 
+    MidiBuffer sysexMidi;
+    float knobMidiArray[512];
 private:
     LookAndFeel_V4 laf;
     // Updating things that don't have attachments to the vts
@@ -99,6 +105,7 @@ private:
     void updateStringChannel(int string, int ch);
     void updateMacroControl(int macro, int ctrl);
     void updateMacroNames(int macro, String name);
+    
     void updateMidiKeyRangeSlider(int min, int max);
     void updateFXOrder(bool order)
     {
@@ -355,6 +362,7 @@ private:
         
         return std::move(popupMenu);
     }
+    
     std::unique_ptr<DrawableButton> hamburger_button;
     PropertySet settings;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (ElectroAudioProcessorEditor)
