@@ -557,6 +557,7 @@ private:
 //                            editor->updateMPEToggle(true);
 //                            editor->updateNumVoicesSlider(10);
 //                            editor->updatePedalVolumeControl(true);
+                            editor->sysexOut = MidiOutput::openDevice(inputs.identifier);
                         }
                     }
                 }

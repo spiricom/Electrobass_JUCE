@@ -110,7 +110,11 @@
     </VS2019>
     <XCODE_MAC targetFolder="Builds/MacOSX" smallIcon="GruRzA" bigIcon="GruRzA"
                appSandboxOptions="com.apple.security.device.usb,com.apple.security.files.user-selected.read-only,com.apple.security.files.user-selected.read-write"
+<<<<<<< HEAD
                applicationCategory="public.app-category.music" extraDefs="JUCE_SILENCE_XCODE_15_LINKER_WARNING">
+=======
+               applicationCategory="public.app-category.music" extraDefs="NAN_CHECK&#10;SAFE_FILTER">
+>>>>>>> c90217237ac38b49a13d265653574272f2de8abc
       <CONFIGURATIONS>
         <CONFIGURATION isDebug="1" name="Debug" targetName="Electrobass" recommendedWarnings="LLVM"
                        defines="SAFE_FILTER"/>

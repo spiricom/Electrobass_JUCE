@@ -174,28 +174,8 @@ public:
 
     void mouseEnter(const MouseEvent &) override;
     void mouseExit(const MouseEvent &) override;
-    void comboBoxChanged(ComboBox *comboBox) override
-    {
-        if (ac.processor.stream)
-        {
-            ac.processor.streamValue1 = (float)comboBox->getSelectedItemIndex()/ ((float) (filterTypeNames.size()-1));
-            auto it = find(paramDestOrder.begin(), paramDestOrder.end(),comboBox->getName() );
-            int index = 0;
-              // If element was found
-              if (it != paramDestOrder.end())
-              {
-                  
-                  // calculating the index
-                  // of K
-                index = it - paramDestOrder.begin();
-              }
-            int tempId = index + 2;
-            ac.processor.streamID1 = tempId;
-            //button->get
-            DBG("Send: " + comboBox->getName() + " with ID"  + String(tempId) + " and value " + String(ac.processor.streamValue1)/*String(streamValue)*/);
-            ac.processor.addToMidiBuffer(tempId, (float)comboBox->getSelectedItemIndex()/ ((float) (filterTypeNames.size()-1)));
-        }
-    };
+    void comboBoxChanged(ComboBox *comboBox) override;
+  
 private:
     
     ComboBox typeCB;
