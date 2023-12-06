@@ -96,9 +96,7 @@ public:
     void setNumVoicesActive(int numVoices);
     
     //==============================================================================
-    void sendCopedentMidiMessage();
-    void sendPresetMidiMessage();
-    void sendTuningMidiMessage(String name, int number);
+
     //==============================================================================
     void addMappingSource(MappingSourceModel* source);
     void addMappingTarget(MappingTargetModel* source);
@@ -479,14 +477,14 @@ public:
     StringArray paramIds;
     StringArray sourceIds;
     String presetName;
+    float openStrings[4] = {28, 33, 38, 43};
     int presetNumber = 0;
 private:
     
-    void processMIDIDataIfNeeded (MidiBuffer& midiMessages);
+
     
     
     
-    float openStrings[4] = {28, 33, 38, 43};
     String tuningName;
     int tuningNumber;
     bool mute = false;
@@ -502,10 +500,7 @@ private:
     int currentTuning;
     int keyCenter = 0;
     
-    bool waitingToSendCopedent = false;
-    bool waitingToSendPreset = false;
-    bool waitingToSendTuning = false;
-    bool waitingToSendOpenString = false;
+  
     bool mpeMode = false;
     
     int stringActivity[MAX_NUM_VOICES+1];

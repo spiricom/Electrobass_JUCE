@@ -199,8 +199,9 @@ public:
 class TuningTab : public Component, public TextEditor::Listener, public TextButton::Listener, public Label::Listener
 {
 public:
-    TuningTab(ElectroAudioProcessor& p, AudioProcessorValueTreeState& vts) :
+    TuningTab(ElectroAudioProcessorEditor &e, ElectroAudioProcessor& p, AudioProcessorValueTreeState& vts) :
     processor(p),
+    editor(e),
     importChooser("Import Scala Tuning",
                   File::getSpecialLocation(File::userDocumentsDirectory)
                   )
@@ -482,6 +483,7 @@ private:
     String currentScalaString;
     String currentKBMString;
     ElectroAudioProcessor& processor;
+    ElectroAudioProcessorEditor& editor;
     TextButton importButton;
     ToggleButton MTSButton;
     FileChooser importChooser;
@@ -508,113 +510,7 @@ class CopedentTable : public Component,
                       public ComboBox::Listener
 {
 public:
-    CopedentTable(ElectroAudioProcessor& p, AudioProcessorValueTreeState& vts) :
-    processor(p),
-    copedentArray(processor.copedentArray),
-    fundamental(processor.copedentFundamental),
-    fundamentalField(*this),
-    numberField(*this),
-    nameField(*this),
-    exportChooser("Export copedent to .xml...",
-                  File::getSpecialLocation(File::userDocumentsDirectory),
-                  "*.xml"),
-    importChooser("Import copedent .xml...",
-                  File::getSpecialLocation(File::userDocumentsDirectory),
-                  "*.xml")
-    {
-        for (int i = 0; i < CopedentColumnNil; ++i)
-        {
-            columnList.add(cCopedentColumnNames[i]);
-        }
-        
-        stringTable.setModel (this);
-        stringTable.setColour (ListBox::outlineColourId, Colours::grey);
-        stringTable.setOutlineThickness (1);
-        
-        leftTable.setModel (this);
-        leftTable.setColour (ListBox::outlineColourId, Colours::grey);
-        leftTable.setOutlineThickness (1);
-        
-        pedalTable.setModel (this);
-        pedalTable.setColour (ListBox::outlineColourId, Colours::grey);
-        pedalTable.setOutlineThickness (1);
-        
-        rightTable.setModel (this);
-        rightTable.setColour (ListBox::outlineColourId, Colours::grey);
-        rightTable.setOutlineThickness (1);
-        
-        int i = 0;
-        int columnId = 1;
-        TableHeaderComponent::ColumnPropertyFlags flags =
-        TableHeaderComponent::ColumnPropertyFlags::notResizableOrSortable;
-        stringTable.getHeader().addColumn(columnList[i++], columnId++, 20, 1, 1000, flags);
-        
-        leftTable.getHeader().addColumn(columnList[i++], columnId++, 20, 1, 1000, flags);
-        leftTable.getHeader().addColumn(columnList[i++], columnId++, 20, 1, 1000, flags);
-        leftTable.getHeader().addColumn(columnList[i++], columnId++, 20, 1, 1000, flags);
-        
-        pedalTable.getHeader().addColumn(columnList[i++], columnId++, 20, 1, 1000, flags);
-        pedalTable.getHeader().addColumn(columnList[i++], columnId++, 20, 1, 1000, flags);
-        pedalTable.getHeader().addColumn(columnList[i++], columnId++, 20, 1, 1000, flags);
-        pedalTable.getHeader().addColumn(columnList[i++], columnId++, 20, 1, 1000, flags);
-        pedalTable.getHeader().addColumn(columnList[i++], columnId++, 20, 1, 1000, flags);
-        
-        rightTable.getHeader().addColumn(columnList[i++], columnId++, 20, 1, 1000, flags);
-        rightTable.getHeader().addColumn(columnList[i++], columnId++, 20, 1, 1000, flags);
-
-        addAndMakeVisible (stringTable);
-        addAndMakeVisible (leftTable);
-        addAndMakeVisible (pedalTable);
-        addAndMakeVisible (rightTable);
-        
-        fundamentalField.setRowAndColumn(0, 0);
-        addAndMakeVisible (fundamentalField);
-        
-        fundamentalLabel.setText("Fundamental", dontSendNotification);
-        fundamentalLabel.setJustificationType(Justification::centred);
-        addAndMakeVisible (fundamentalLabel);
-        
-        exportButton.setButtonText("Export .xml");
-        exportButton.onClick = [this] { exportXml(); };
-        addAndMakeVisible(exportButton);
-        
-        importButton.setButtonText("Import .xml");
-        importButton.onClick = [this] { importXml(); };
-        addAndMakeVisible(importButton);
-        
-        numberLabel.setText("#", dontSendNotification);
-        numberLabel.setJustificationType(Justification::centred);
-        addAndMakeVisible (numberLabel);
-        
-        numberField.setRowAndColumn(0, -1);
-        addAndMakeVisible (numberField);
-        
-        nameLabel.setText("Name", dontSendNotification);
-        nameLabel.setJustificationType(Justification::centred);
-        addAndMakeVisible (nameLabel);
-        
-        nameField.setRowAndColumn(0, -2);
-        addAndMakeVisible (nameField);
-        
-        sendOutButton.setButtonText("Send copedent via MIDI");
-        sendOutButton.onClick = [this] { processor.sendCopedentMidiMessage(); };
-        addAndMakeVisible(sendOutButton);
-        addAndMakeVisible(clearButton);
-        clearButton.setButtonText("Clear");
-        clearButton.onClick = [this] {
-            for (int i = 0; i < CopedentColumnNil; ++i)
-            {
-                for (int v = 0; v < MAX_NUM_VOICES; ++v)
-                {
-                    copedentArray.getReference(i).set(v, cCopedentArrayInit[i][v]);
-                    //refreshComponentForCell(i,v, false, nullptr);
-                }
-            }
-            fundamental = 21.f;
-            resized();
-            
-        };
-    }
+    CopedentTable(ElectroAudioProcessorEditor& e, ElectroAudioProcessor& p, AudioProcessorValueTreeState& vts);
     TextButton clearButton;
     ~CopedentTable()
     {
@@ -1052,7 +948,7 @@ public:
     };
     
 private:
-    
+    ElectroAudioProcessorEditor& editor;
     ElectroAudioProcessor& processor;
     
     static const int numColumns = CopedentColumnNil;
