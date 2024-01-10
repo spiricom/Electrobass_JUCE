@@ -998,9 +998,9 @@ CopedentTable::CopedentTable(ElectroAudioProcessorEditor& e, ElectroAudioProcess
                         
                     }
                     currentDataPointer = currentDataPointer + toSendInThisChunk;
-                    MidiMessage presetMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
+                    MidiMessage copedentMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
                     
-                    midiMessages.addEvent(presetMessage, 0);
+                    midiMessages.addEvent(copedentMessage, 0);
                     
                     currentChunk++;
                 }
@@ -1009,7 +1009,7 @@ CopedentTable::CopedentTable(ElectroAudioProcessorEditor& e, ElectroAudioProcess
                 data7bitInt.add(processor.copedentNumber); // which copedent did we just finish
                 MidiMessage copedentMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
                 midiMessages.addEvent(copedentMessage, 0);
-                editor.sysexOut->sendMessageNow(copedentMessage);
+                editor.sysexOut->sendBlockOfMessagesNow(midiMessages);
             }};
         addAndMakeVisible(sendOutButton);
         addAndMakeVisible(clearButton);
