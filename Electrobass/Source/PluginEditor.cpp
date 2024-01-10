@@ -1228,34 +1228,38 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
         
         }
     }
-    else if( processor.stream)
-    {
-        processor.streamValue1 = slider->getValue();
-       String tempString = slider->getName();
-        auto it = find(paramDestOrder.begin(), paramDestOrder.end(), slider->getName());
-        int index = -1;
-          // If element was found
-          if (it != paramDestOrder.end())
-          {
-              
-              // calculating the index
-              // of K
-            index = it - paramDestOrder.begin();
-          }
-        if ((index != -1) && ((index < 1) || (index > 12))) // to avoid sending things not in the dest array (like foot pedals and knee levers)
-        {
-            int tempId = index + 2;
-            processor.streamID1 = tempId;
-            //button->get
-            DBG("Send: " + slider->getName() + " with ID"  + String(tempId) + " and value " + String(processor.streamValue1)/*String(streamValue)*/);
-            float arr[2] = {(float)tempId, (float)slider->getValue()};
-            knobQueue.writeTo( arr, 2);
-        }
-    }else if (pitchBendSliders.contains(slider))
+    else if (pitchBendSliders.contains(slider))
     {
         
-    }else
+    }
+//    if ( processor.stream)
+//    {
+//        processor.streamValue1 = slider->getValue();
+//       String tempString = slider->getName();
+//        auto it = find(paramDestOrder.begin(), paramDestOrder.end(), slider->getName());
+//        int index = -1;
+//          // If element was found
+//          if (it != paramDestOrder.end())
+//          {
+//              
+//              // calculating the index
+//              // of K
+//            index = it - paramDestOrder.begin();
+//          }
+//        if ((index != -1) && ((index < 1) || (index > 12))) // to avoid sending things not in the dest array (like foot pedals and knee levers)
+//        {
+//            int tempId = index + 2;
+//            processor.streamID1 = tempId;
+//            //button->get
+//            DBG("Send: " + slider->getName() + " with ID"  + String(tempId) + " and value " + String(processor.streamValue1)/*String(streamValue)*/);
+//            float arr[2] = {(float)tempId, (float)slider->getValue()};
+//            knobQueue.writeTo( arr, 2);
+//        }
+    else if (slider == &transposeSlider)
     {
+    
+    }
+    else { //macros
         //DBG(String(vts.getParameter(slider->getName())->getValue()));
         if(std::count(cUniqueMacroNames.begin(), cUniqueMacroNames.end(),slider->getName()))
         {
@@ -1273,6 +1277,7 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
             processor.ccSources.getUnchecked(index + (NUM_GENERIC_MACROS ))->setValue(slider->getValue());
         } else
         {
+            
             processor.ccSources.getUnchecked(slider->getName().substring(1).getIntValue() - 1)->setValue(slider->getValue());
         }
         
