@@ -737,6 +737,12 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
     buffer.clear (i, 0, buffer.getNumSamples());
     
+    MidiMessage m;
+    for (MidiMessageMetadata metadata : midiMessages) {
+        m = metadata.getMessage();
+        handleMidiMessage(m);
+    }
+    midiMessages.clear();
 
    if (isProcessing)
    {

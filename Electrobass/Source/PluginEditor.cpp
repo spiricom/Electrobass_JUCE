@@ -1531,73 +1531,77 @@ void ElectroAudioProcessorEditor::timerCallback()
     }
 
     meters.refresh(true);
-    sysexMidi.clear();
-    //knobMidiArray.clearQuick();
-    int size = knobQueue.writeToArray(knobMidiArray);
-    String outString;
     
-    for(int i = 0; i < size; i+=2)
+    if (processor.stream)
     {
-        union uintfUnion fu;
-        Array<uint8_t> data7bitInt;
-        data7bitInt.add(3);
-        data7bitInt.add(0);
-        fu.f = knobMidiArray[i];
-        data7bitInt.add((fu.i >> 28) & 15);
-        data7bitInt.add((fu.i >> 21) & 127);
-        data7bitInt.add((fu.i >> 14) & 127);
-        data7bitInt.add((fu.i >> 7) & 127);
-        data7bitInt.add(fu.i & 127);
-
-        fu.f = LEAF_clip(0.0f, knobMidiArray[i+1], 1.0f);
-        data7bitInt.add((fu.i >> 28) & 15);
-        data7bitInt.add((fu.i >> 21) & 127);
-        data7bitInt.add((fu.i >> 14) & 127);
-        data7bitInt.add((fu.i >> 7) & 127);
-        data7bitInt.add(fu.i & 127);
-
-
-        sysexMidi.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
-        data7bitInt.clear();
-
-        data7bitInt.add(126);
-        sysexMidi.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
-        DBG("MIDI SEND: Add Id" + String(knobMidiArray[i]) + "with value" + String(knobMidiArray[i+1]));
+        sysexMidi.clear();
+        //knobMidiArray.clearQuick();
+        int size = knobQueue.writeToArray(knobMidiArray);
+        String outString;
+        for(int i = 0; i < size; i+=2)
+        {
+            union uintfUnion fu;
+            Array<uint8_t> data7bitInt;
+            data7bitInt.add(3);
+            data7bitInt.add(0);
+            fu.f = knobMidiArray[i];
+            data7bitInt.add((fu.i >> 28) & 15);
+            data7bitInt.add((fu.i >> 21) & 127);
+            data7bitInt.add((fu.i >> 14) & 127);
+            data7bitInt.add((fu.i >> 7) & 127);
+            data7bitInt.add(fu.i & 127);
+            
+            fu.f = LEAF_clip(0.0f, knobMidiArray[i+1], 1.0f);
+            data7bitInt.add((fu.i >> 28) & 15);
+            data7bitInt.add((fu.i >> 21) & 127);
+            data7bitInt.add((fu.i >> 14) & 127);
+            data7bitInt.add((fu.i >> 7) & 127);
+            data7bitInt.add(fu.i & 127);
+            
+            
+            sysexMidi.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+            data7bitInt.clear();
+            
+            data7bitInt.add(126);
+            sysexMidi.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+            DBG("MIDI SEND: Add Id" + String(knobMidiArray[i]) + "with value" + String(knobMidiArray[i+1]));
+            
+        }
         
-    }
-    
-    size = mappingQueue.writeToArray(knobMidiArray);
-    
-    for(int i = 0; i < size; i+=4)
-    {
-        union uintfUnion fu;
-        Array<uint8_t> data7bitInt;
-        data7bitInt.add(4);
-        data7bitInt.add(0);
         
-        fu.f = (float)knobMidiArray[0];
-        data7bitInt.add((fu.i >> 28) & 15);
-        data7bitInt.add((fu.i >> 21) & 127);
-        data7bitInt.add((fu.i >> 14) & 127);
-        data7bitInt.add((fu.i >> 7) & 127);
-        data7bitInt.add(fu.i & 127);
+        size = mappingQueue.writeToArray(knobMidiArray);
         
-        data7bitInt.add(knobMidiArray[1]);
-        data7bitInt.add(knobMidiArray[2]);
-        
-        fu.f = (float)knobMidiArray[3];
-        data7bitInt.add((fu.i >> 28) & 15);
-        data7bitInt.add((fu.i >> 21) & 127);
-        data7bitInt.add((fu.i >> 14) & 127);
-        data7bitInt.add((fu.i >> 7) & 127);
-        data7bitInt.add(fu.i & 127);
-        
-        sysexMidi.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
-        data7bitInt.clear();
-        data7bitInt.add(126);
-        sysexMidi.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
-        
-        DBG("MIDI SEND: Add Id" + String(knobMidiArray[i]) + "with slot" + String(knobMidiArray[i+1]) + "with changetype" + String(knobMidiArray[i+2])+ "with value" + String(knobMidiArray[i+3]));
+        for(int i = 0; i < size; i+=4)
+        {
+            union uintfUnion fu;
+            Array<uint8_t> data7bitInt;
+            data7bitInt.add(4);
+            data7bitInt.add(0);
+            
+            fu.f = (float)knobMidiArray[0];
+            data7bitInt.add((fu.i >> 28) & 15);
+            data7bitInt.add((fu.i >> 21) & 127);
+            data7bitInt.add((fu.i >> 14) & 127);
+            data7bitInt.add((fu.i >> 7) & 127);
+            data7bitInt.add(fu.i & 127);
+            
+            data7bitInt.add(knobMidiArray[1]);
+            data7bitInt.add(knobMidiArray[2]);
+            
+            fu.f = (float)knobMidiArray[3];
+            data7bitInt.add((fu.i >> 28) & 15);
+            data7bitInt.add((fu.i >> 21) & 127);
+            data7bitInt.add((fu.i >> 14) & 127);
+            data7bitInt.add((fu.i >> 7) & 127);
+            data7bitInt.add(fu.i & 127);
+            
+            sysexMidi.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+            data7bitInt.clear();
+            data7bitInt.add(126);
+            sysexMidi.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+            
+            DBG("MIDI SEND: Add Id" + String(knobMidiArray[i]) + "with slot" + String(knobMidiArray[i+1]) + "with changetype" + String(knobMidiArray[i+2])+ "with value" + String(knobMidiArray[i+3]));
+        }
     }
     if (sysexOut)
     {
