@@ -268,7 +268,7 @@ float Effect::chorusTick(float sample, float param1, float param2, float param3,
 
 float Effect::shaperTick(float sample, float param1, float param2, float param3, float param4, float param5, int v)
 {
-    float gain = fasterdbtoa(param1 * 24.0f);
+    float gain = param1 + 1.0f;
     float offset = (param2 * 2.0f) - 1.0f;
     sample = sample * gain;
     float temp = LEAF_shaper(sample + (offset * gain),param3);
@@ -326,7 +326,7 @@ float Effect::tanhTick(float sample, float param1, float param2, float param3, f
 
 float Effect::softClipTick(float sample, float param1, float param2, float param3, float param4, float param5, int v)
 {
-    float gain = fasterdbtoa(param1 * 24.0f);
+    float gain = fasterdbtoa(param1 * 24.0f); //this is a lookup in the hardware
     sample = sample * gain;
     float offset = (param2 * 2.0f) - 1.0f;
     sample = sample + (offset);
@@ -417,10 +417,10 @@ float Effect::satTick(float sample, float param1, float param2, float param3, fl
     float gain = fasterdbtoa(param1 * 24.0f);
     sample = sample * gain;
     float offset = (param2 * 2.0f) - 1.0f;
-    float temp = (sample + (param2 * gain)) / (1.0f + fabs(sample + offset));
+    float temp = (sample + (param2 * gain)) / (1.0f + fabsf(sample + offset));
     temp = tHighpass_tick(&dcBlock1[v], temp);
     temp = tHighpass_tick(&dcBlock2[v], temp);
-    temp = tanhf(temp);
+    temp = fast_tanh5(temp);
     return temp;
 }
 

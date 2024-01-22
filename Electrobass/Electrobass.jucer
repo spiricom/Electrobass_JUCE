@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<JUCERPROJECT id="k0d1wn" name="Electrobass" projectType="audioplug" displaySplashScreen="1"
-              jucerFormatVersion="1" version="0.5.0" companyName="Snyderphonics"
+<JUCERPROJECT id="k0d1wn" name="Electrosynth" projectType="audioplug" displaySplashScreen="1"
+              jucerFormatVersion="1" version="1.0.1" companyName="Snyderphonics"
               companyCopyright="Snyderphonics" companyWebsite="http://snyderphonics.com/"
               pluginCharacteristicsValue="pluginIsSynth,pluginProducesMidiOut,pluginWantsMidiIn"
               defines="JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP=1&#10;BOOST_ALL_NO_LIB=1&#10;"
-              pluginVST3Category="Instrument" pluginFormats="buildAAX,buildAU,buildStandalone,buildVST3">
-  <MAINGROUP id="zr98AB" name="Electrobass">
+              pluginVST3Category="Instrument" pluginFormats="buildAAX,buildAU,buildStandalone,buildVST3"
+              maxBinaryFileSize="20971520">
+  <MAINGROUP id="zr98AB" name="Electrosynth">
     <GROUP id="{B8EA8B88-4125-0A91-2EA2-1CD3B3374012}" name="Source">
       <FILE id="lzZEsD" name="LockFreeQueue.cpp" compile="1" resource="0"
             file="Source/LockFreeQueue.cpp"/>
@@ -110,14 +111,14 @@
     </VS2019>
     <XCODE_MAC targetFolder="Builds/MacOSX" smallIcon="GruRzA" bigIcon="GruRzA"
                appSandboxOptions="com.apple.security.device.usb,com.apple.security.files.user-selected.read-only,com.apple.security.files.user-selected.read-write"
-               applicationCategory="public.app-category.music" extraLinkerFlags="-Wl, -ld_classic"
+               applicationCategory="public.app-category.music" extraLinkerFlags="-Wl, "
                extraDefs="SAFE_FILTER=1">
       <CONFIGURATIONS>
         <CONFIGURATION isDebug="1" name="Debug" targetName="Electrobass" recommendedWarnings="LLVM"
-                       defines="SAFE_FILTER" macOSDeploymentTarget="13" osxCompatibility="13 SDK"/>
+                       defines="SAFE_FILTER" macOSDeploymentTarget="12" osxCompatibility="12 SDK"/>
         <CONFIGURATION isDebug="0" name="Release" targetName="Electrobass" optimisation="6"
-                       defines="SAFE_FILTER" fastMath="1" macOSDeploymentTarget="13"
-                       osxCompatibility="13 SDK"/>
+                       defines="SAFE_FILTER" fastMath="1" macOSDeploymentTarget="12"
+                       osxCompatibility="12 SDK"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_audio_basics" path="../../../../JUCE/modules"/>

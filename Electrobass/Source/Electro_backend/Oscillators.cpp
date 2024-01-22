@@ -210,7 +210,7 @@ void Oscillator::tick(float output[][MAX_NUM_VOICES])
         
         //DBG(ftom(processor.tuner.mtof(note) / (harm - 1)));
         //DBG(processor.tuner.mtof(note) / (harm - 1));
-        float finalFreq = (processor.tuner.mtof(LEAF_clip(0.0f, note + midiAdd + (fine * 0.01f), 127.0f), processor.mtofTable) * harmFreq) + freq;
+        float finalFreq = (processor.tuner.mtof(LEAF_clip(-163.00f, note + midiAdd + (fine * 0.01f), 163.00f), processor.mtofTable) * harmFreq) + freq;
         //DBG(note);
         //freq = freq < 10.f ? 0.f : freq
         

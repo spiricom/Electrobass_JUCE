@@ -24,7 +24,7 @@
 #define NUM_MACROS (NUM_GENERIC_MACROS + NUM_UNIQUE_MACROS)
 #define PEDAL_MACRO_ID (NUM_MACROS)
 
-#define MAX_NUM_VOICES 12
+#define MAX_NUM_VOICES 10
 #define NUM_CHANNELS (MAX_NUM_VOICES+1)
 
 #define NUM_OSCS 3
@@ -212,7 +212,7 @@ static const StringArray cFilterParams = {
 static const std::vector<std::vector<float>> vFilterInit = {
     { 0.0f, 127.f, 72.f, 63.5f },   //Cutoff
     { 0.0f, 1.f, 0.5f, 0.5f }, //Gain
-    { 0.00000f, 10.f, 0.5000f, 0.50000f },   //Resonance
+    { 0.00000f, 0.95f, 0.5000f, 0.50000f },   //Resonance
     { 0.0f, 1.f, 0.5f, 0.5f }  //KeyFollow
     
 };

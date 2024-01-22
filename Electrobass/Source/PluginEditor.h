@@ -356,9 +356,9 @@ private:
     {
         EBassPopupMenu popupMenu;
         
-        popupMenu.addItem(1, "Load New Preset");
-        popupMenu.addItem(2, "Load Default Preset");
-        popupMenu.addItem(3, "Save Preset");
+        popupMenu.addItem(1, "Load Preset");
+        popupMenu.addItem(2, "Save Preset");
+        popupMenu.addItem(3, "Clear Preset");
         
         return std::move(popupMenu);
     }

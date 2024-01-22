@@ -46,8 +46,8 @@ float SmoothedParameter::tick()
     {
         target += hooks[smoothedHooks[i]].getValue();
     }
-    //smoothed.setTargetValue(target);
-    //value = smoothed.getNextValue();
+    smoothed.setTargetValue(target);
+    value = smoothed.getNextValue();
     value = target;
     for (int i = 0; i < numNonSmoothedHooks; ++i)
     {

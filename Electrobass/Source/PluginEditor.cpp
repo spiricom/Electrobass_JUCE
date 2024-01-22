@@ -1432,12 +1432,6 @@ void ElectroAudioProcessorEditor::buttonClicked(Button* button)
             }
             else if (result == 2)
             {
-                int size;
-                String xmlData = CharPointer_UTF8(BinaryData::getNamedResource("default_xml", size ));
-                processor.setStateInformation(XmlDocument::parse(xmlData).get());
-            }
-            else if (result == 3)
-            {
                 stateFileChooser = std::make_unique<FileChooser> (TRANS("Save current state"),
                                                                   getLastFile());
                 auto flags = FileBrowserComponent::saveMode
@@ -1460,6 +1454,13 @@ void ElectroAudioProcessorEditor::buttonClicked(Button* button)
                                                           TRANS("Couldn't write to the specified file!"));
                 });
             }
+            else if (result == 3)
+            {
+                int size;
+                String xmlData = CharPointer_UTF8(BinaryData::getNamedResource("default_xml", size ));
+                processor.setStateInformation(XmlDocument::parse(xmlData).get());
+            }
+
         });
     }
 }

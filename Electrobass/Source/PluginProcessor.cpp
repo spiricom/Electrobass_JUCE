@@ -363,6 +363,7 @@ isProcessing(true)
         tSimplePoly_init(&strings[i], 1, &leaf);
         voiceNote[i] = 0;
         voiceIsSounding[i] = false;
+        voicePrevBend[i] = 0.0f;
 
     }
     for (int i = 0; i < MAX_NUM_VOICES; ++i)
@@ -542,6 +543,8 @@ isProcessing(true)
     
     tHighpass_init(&dcBlockMaster, 10.0f, &leaf);
     
+    
+    
     DBG("SOURCE//");
     
     for (int i = 0; i < sourceIds.size(); ++i)
@@ -644,7 +647,7 @@ void ElectroAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBloc
     DBG("Pre prepare: " + String(leaf.allocCount) + " " + String(leaf.freeCount));
     
 
-    
+
     
     for (auto waveTableSet : waveTables)
     {
@@ -830,7 +833,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
             
             
             //added this check because if there is no active voice "getPitch" returns -1
-            if ((tempNote >= 0) && (tempNote < 128))
+            if (tempNote >= 0.0f)
             {
                 //freeze pitch bend data on voices where a note off has happened and we are in the release phase
                 if (tSimplePoly_isOn(&strings[v*mpe], (uint8_t)(v*impe)))
@@ -842,7 +845,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
                 {
                     tempNote += voicePrevBend[v];
                 }
-                if ((tempNote >= 0) && (tempNote < 128))
+                if ((tempNote >= 0.0f) && (tempNote < 127.0f))
                 {
                     int tempNoteIntPart = (int)tempNote;
                     float tempNoteFloatPart = tempNote - (float)tempNoteIntPart;
@@ -851,6 +854,34 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
                     float dev2 =  (centsDeviation[(tempNoteIntPart+1)] * tempNoteFloatPart);
                     float tunedNote = ( dev1  + dev2);
                     voiceNote[v] = tunedNote;
+                }
+                else //otherwise, assume octave equivalency and get offsets, then get midinote back
+                    //not going to work for non-octave tunings
+                {
+                    if (!isnan(tempNote) && !isinf(tempNote))
+                    {
+                        int octaveUp = 0;
+                        int octaveDown = 0;
+                        
+
+                        while(tempNote >= 127.0f)
+                        {
+                            tempNote -= 12.0f;
+                            octaveDown++;
+                        }
+                        while(tempNote < 0.0f)
+                        {
+                            tempNote += 12.0f;
+                            octaveUp++;
+                        }
+                        
+                        int tempNoteIntPart = (int)tempNote;
+                        float tempNoteFloatPart = tempNote - (float)tempNoteIntPart;
+                        float dev1 = (centsDeviation[tempNoteIntPart] * (1.0f - tempNoteFloatPart));
+                        float dev2 =  (centsDeviation[(tempNoteIntPart+1)] * tempNoteFloatPart);
+                        float tunedNote = ( dev1  + dev2);
+                        voiceNote[v] = tunedNote + (octaveDown*12) - (octaveUp*12);
+                    }
                 }
                 //DBG("Tuned note" + String(tunedNote));
             }
@@ -906,7 +937,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         
         
         
-        for (int v = 0; v < numVoicesActive; ++v)
+        for (int v = 0; v< numVoicesActive; ++v)
         {
 #ifdef NAN_CHECK
             if (isnan(samples[1][v]))
