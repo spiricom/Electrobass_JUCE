@@ -24,7 +24,7 @@
 #define NUM_MACROS (NUM_GENERIC_MACROS + NUM_UNIQUE_MACROS)
 #define PEDAL_MACRO_ID (NUM_MACROS)
 
-#define MAX_NUM_VOICES 10
+#define MAX_NUM_VOICES 12
 #define NUM_CHANNELS (MAX_NUM_VOICES+1)
 
 #define NUM_OSCS 3
@@ -320,7 +320,7 @@ static const std::vector<std::string> cCopedentColumnNames = {
 };
 
 static const std::vector<std::vector<float>> cCopedentArrayInit = {
-    { 66.f, 63.f, 56.f, 52.f, 47.f, 44.f, 42.f, 40.f, 38.f, 35.f, 28.f, 23.f },
+    { 66.f, 63.f, 68.f, 64.f, 59.f, 56.f, 54.f, 52.f, 50.f, 47.f, 40.f, 35.f },
     
     { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f },
     { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f },

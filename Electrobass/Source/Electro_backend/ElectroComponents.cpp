@@ -174,7 +174,14 @@ void MappingTarget::update(bool directChange, bool sendListenerNotif)
         // as opposed to by the parent dial, which require additional handling
         if (directChange)
         {
+            DBG("min" + String(min));
+            DBG("max" + String(max));
+            DBG("value" + String(value));
+            DBG("newmin" + String(min-value));
+            DBG("newmax" + String(max-value));
+            DBG("interval" + String(interval));
             setRange(min-value, max-value, interval);
+            
             setValue(model.end, dontSendNotification);
             lastProportionalValue = valueToProportionOfLength(getValue());
             lastProportionalParentValue = main.valueToProportionOfLength(main.getValue());
@@ -187,7 +194,13 @@ void MappingTarget::update(bool directChange, bool sendListenerNotif)
             
             lastProportionalValue = overflowValue;
             lastProportionalParentValue = main.valueToProportionOfLength(main.getValue());
-            
+            DBG("min" + String(min));
+            DBG("max" + String(max));
+            DBG("value" + String(value));
+            DBG("newmin" + String(min-value));
+            DBG("newmax" + String(max-value));
+            DBG("interval" + String(interval));
+
             setRange(min-value, max-value, interval);
             
             model.setMappingRange(proportionOfLengthToValue(jlimit(0., 1., overflowValue)),

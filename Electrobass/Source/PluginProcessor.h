@@ -234,7 +234,7 @@ public:
         streamMapping = true;
     }
     
-    void setStreamMappingValuesAddRange(MappingTargetModel *target)
+    void setStreamMappingValuesAddRange(MappingTargetModel *target, float amount)
     {
         DBG("Stream target " + target->name.substring(0, target->name.length() - 3));
         streamMappingTargetId = idFromName(target->name.substring(0, target->name.length() - 3));
@@ -251,9 +251,11 @@ public:
         }
         DBG("Stream target " + target->name.substring(0, target->name.length() - 3));
         tempRange = ((tempRange) / (range.end - range.start));
-        float finalRange = tempRange * multiplier;
+        float finalRange = tempRange * multiplier * (1.0f/range.skew);
+        DBG("invSkew" + String(1.0f/range.skew));
+        DBG("Skew" + String(range.skew));
         DBG("Final Range" + String(finalRange));
-        streamMappingValue = finalRange;
+        streamMappingValue = amount;
         streamMappingIdentifier = 1;
         float arr[4] = {streamMappingTargetId,(float)streamMappingTargetSlot,(float)streamMappingIdentifier,streamMappingValue};
         myMappingQueue->writeTo( arr, 4);

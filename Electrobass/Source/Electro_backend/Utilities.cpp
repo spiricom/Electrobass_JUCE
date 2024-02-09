@@ -113,7 +113,7 @@ void SmoothedParameter::setHook(const String& sourceName, int index,
     }
 }
 
-void SmoothedParameter::setHookRange(int index, float min, float max, bool isBipolar)
+float SmoothedParameter::setHookRange(int index, float min, float max, bool isBipolar)
 {
     hooks[index].min = min;
     float difference = max-min;
@@ -163,7 +163,7 @@ void SmoothedParameter::setHookRange(int index, float min, float max, bool isBip
     }
     DBG("Sethook range:   " + String(hooks[index].length));
     DBG("Sethook min:   " + String(hooks[index].min));
-    
+    return hooks[index].length;
 }
 
 void SmoothedParameter::setHookScalar(const String& scalarName, int index, float* scalar)
@@ -355,14 +355,14 @@ void MappingTargetModel::setMappingRange(float e, bool sendChangeEvent,
         float pOffset = range.convertTo0to1(range.getRange().clipValue(center+end)) - pCenter;
         start = range.convertFrom0to1(jlimit(0.f, 1.f, pCenter-pOffset)) - center;
     }
-    
+    float amount;
     for (auto param : targetParameters)
     {
-        param->setHookRange(index, start, end, bipolar);
+        amount = param->setHookRange(index, start, end, bipolar);
     }
     DBG(String(start) + " " + String(end));
     if(processor.stream)
-        processor.setStreamMappingValuesAddRange(this);
+        processor.setStreamMappingValuesAddRange(this, amount);
     if (onMappingChange != nullptr && sendChangeEvent) onMappingChange(directChange, sendListenerNotif);
 }
 

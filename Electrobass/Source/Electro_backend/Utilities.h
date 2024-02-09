@@ -71,7 +71,7 @@ public:
     ParameterHook& getHook(int index);
     void setHook(const String& sourceName, int index,
                  const float* hook, float min, float max);
-    void setHookRange(int index, float min, float max, bool isBipolar);
+    float setHookRange(int index, float min, float max, bool isBipolar);
     void setHookScalar(const String& scalarName, int index, float* scalar);
     void resetHook(int index);
     void resetHookScalar(int index);
