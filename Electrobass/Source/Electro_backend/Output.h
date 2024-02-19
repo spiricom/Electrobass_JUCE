@@ -32,7 +32,7 @@ public:
 
 private:
     void lowpassTick(float& sample, int v, float cutoff);
-    tSVF lowpass[MAX_NUM_VOICES];
+    tSVF_LP lowpass[MAX_NUM_VOICES];
     
     
 };

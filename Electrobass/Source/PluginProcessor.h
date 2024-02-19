@@ -103,6 +103,13 @@ public:
     
     void tickKnobsToSmooth();
     void removeKnobsToSmooth();
+    float scaleQ(float input);
+    float scaleADSRTimes(float input);
+    float scaleLFORates(float input);
+    
+    float skewTableQ[2048];
+    float skewTableADSRTimes[2048];
+    float skewTableLFORate[2048];
     MappingSourceModel* getMappingSource(const String& name);
     MappingTargetModel* getMappingTarget(const String& name);
     
@@ -252,10 +259,7 @@ public:
         DBG("Stream target " + target->name.substring(0, target->name.length() - 3));
         tempRange = ((tempRange) / (range.end - range.start));
         float finalRange = tempRange * multiplier * (1.0f/range.skew);
-        DBG("invSkew" + String(1.0f/range.skew));
-        DBG("Skew" + String(range.skew));
-        DBG("Final Range" + String(finalRange));
-        streamMappingValue = amount;
+        streamMappingValue = finalRange;
         streamMappingIdentifier = 1;
         float arr[4] = {streamMappingTargetId,(float)streamMappingTargetSlot,(float)streamMappingIdentifier,streamMappingValue};
         myMappingQueue->writeTo( arr, 4);

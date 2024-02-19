@@ -132,21 +132,24 @@ void Envelope::tick()
 #if 1
         float attack = quickParams[EnvelopeAttack][v]->read();
         attack = attack < 0.f ? 0.f : attack;
+        attack = processor.scaleADSRTimes(attack);
         tADSRT_setAttack(&envs[v], attack);
         float decay = quickParams[EnvelopeDecay][v]->read();
         decay = decay < 0.f ? 0.f : decay;
+        decay = processor.scaleADSRTimes(decay);
         tADSRT_setDecay(&envs[v], decay);
         float sustain = quickParams[EnvelopeSustain][v]->read();
         sustain = sustain < 0.f ? 0.f : sustain;
         tADSRT_setSustain(&envs[v], sustain);
         float release = quickParams[EnvelopeRelease][v]->read();
         release = release < 0.f ? 0.f : release;
+        release = processor.scaleADSRTimes(release);
         tADSRT_setRelease(&envs[v], release);
         float leak = quickParams[EnvelopeLeak][v]->read();
         leak = leak < 0.f ? 0.f : leak;
         tADSRT_setLeakFactor(&envs[v], 0.99995f + 0.00005f*(1.f-leak));
 #endif
-        float value = tADSRT_tickNoInterp(&envs[v]);
+        float value = tADSRT_tick(&envs[v]);
         
         source[v] = value;
         if (isAmpEnv)
@@ -190,7 +193,7 @@ void Envelope::setParams()
         for (int v = 0; v < MAX_NUM_VOICES; ++v)
         {
             
-            params[i]->add(new SkewedParameter(processor, vts, pn, 0.0f, 20000.0f, 4000.0f));
+            params[i]->add(new SmoothedParameter(processor, vts, pn));// 0.0f, 20000.0f, 4000.0f));
             quickParams[i][v] = params[i]->getUnchecked(v);
         }
         for (int t = 0; t < 3; ++t)
@@ -221,7 +224,7 @@ void Envelope::setParams()
     for (int v = 0; v < MAX_NUM_VOICES; ++v)
     {
         
-        params[3]->add(new SkewedParameter(processor, vts, pn,  0.0f, 20000.0f, 4000.0f));
+        params[3]->add(new SmoothedParameter(processor, vts, pn));// 0.0f, 20000.0f, 4000.0f));
         quickParams[3][v] = params[3]->getUnchecked(v);
     }
     for (int t = 0; t < 3; ++t)

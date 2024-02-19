@@ -500,6 +500,9 @@ void LowFreqOscillator::setShape(int v, float shape)
 void LowFreqOscillator::setRate(int v, float rate)
 {
     currentShapeSet = LFOShapeSet(int(*afpShapeSet));
+    
+    rate = processor.scaleLFORates(rate);
+    
     switch (currentShapeSet) {
         case SineTriLFOShapeSet:
             tSineTriLFO_setFreq(&sineTri[v], rate);
@@ -630,7 +633,7 @@ void LowFreqOscillator::setParams()
     for (int v = 0; v < MAX_NUM_VOICES; ++v)
     {
        
-        params[0]->add(new SkewedParameter(processor, vts, pn, 0.0f, 30.0f, 2.0f));
+        params[0]->add(new SmoothedParameter(processor, vts, pn));// 0.0f, 30.0f, 2.0f));
         quickParams[0][v] = params[0]->getUnchecked(v);
     }
     for (int t = 0; t < 3; ++t)
@@ -667,9 +670,8 @@ MappingSourceModel(p, n, true, true, Colours::darkorange)
     setParams();
     for (int i = 0; i < MAX_NUM_VOICES; i++)
     {
-        tVZFilterLS_init(&shelf1[i], 80.0f, 0.5f,   1.0f, &processor.leaf);
-        tVZFilterHS_init(&shelf2[i], 12000.0f, 0.5f, 1.0f,  &processor.leaf);
         tVZFilterBell_init(&bell1[i], 1000.0f, 1.9f,  1.0f, &processor.leaf);
+        tTiltFilter_init(&tiltF[i], 1000.0f, &processor.leaf);
         tNoise_init(&noise[i], WhiteNoise, &processor.leaf);
     }
     
@@ -683,9 +685,8 @@ NoiseGenerator::~NoiseGenerator()
     for (int i = 0; i < MAX_NUM_VOICES; i++)
     {
         tNoise_free(&noise[i]);
+        tTiltFilter_free(&tiltF[i]);
         tVZFilterBell_free(&bell1[i]);
-        tVZFilterLS_free(&shelf1[i]);
-        tVZFilterHS_free(&shelf2[i]);
     }
 }
 
@@ -695,8 +696,7 @@ void NoiseGenerator::prepareToPlay (double sampleRate, int samplesPerBlock)
     for (int i = 0; i < MAX_NUM_VOICES; i++)
     {
         tVZFilterBell_setSampleRate(&bell1[i], sampleRate);
-        tVZFilterLS_setSampleRate(&shelf1[i], sampleRate);
-        tVZFilterHS_setSampleRate(&shelf2[i], sampleRate);
+        tTiltFilter_setSampleRate(&tiltF[i], sampleRate);
     }
 }
 
@@ -713,16 +713,14 @@ void NoiseGenerator::loadAll(int v)
     quickParams[NoiseAmp][v]->setValueToRaw();
     quickParams[NoiseFreq][v]->setValueToRaw();
     quickParams[NoiseTilt][v]->setValueToRaw();
-    tVZFilterLS_setGain(&shelf1[v], fasterdbtoa(-1.0f * ((quickParams[NoiseTilt][v]->read() * 30.0f) - 15.0f)));
-    tVZFilterHS_setGain(&shelf2[v], fasterdbtoa((quickParams[NoiseTilt][v]->read() * 30.0f) - 15.0f));
     tVZFilterBell_setFrequencyAndGain(&bell1[v], faster_mtof(quickParams[NoiseFreq][v]->read() * 77.0f + 26.0f), fasterdbtoa((quickParams[NoiseGain][v]->read() * 34.0f) - 17.0f));
+    tTiltFilter_setTilt(&tiltF[v], quickParams[NoiseTilt][v]->read()*10.0f - 5.0f);
 
 }
 
 void NoiseGenerator::tick(float output[][MAX_NUM_VOICES])
 {
     if (!enabled) return;
-    //    float a = sampleInBlock * invBlockSize;
     
     for (int v = 0; v < processor.numVoicesActive; v++)
     {
@@ -731,36 +729,19 @@ void NoiseGenerator::tick(float output[][MAX_NUM_VOICES])
         float freq = quickParams[NoiseFreq][v]->read();
         float amp = quickParams[NoiseAmp][v]->read();
         amp = amp < 0.f ? 0.f : amp;
-
-        tVZFilterLS_setGain (&shelf1[v], fasterdbtoa(-1.0f * ((tilt * 30.0f) - 15.0f)));
-        tVZFilterHS_setGain (&shelf2[v], fasterdbtoa((tilt * 30.0f) - 15.0f));
         tVZFilterBell_setFrequencyAndGain (&bell1[v], faster_mtof(freq * 77.0f + 26.0f), fasterdbtoa((gain* 34.0f) - 17.0f));
-            
-        
-        //float sample = tSVF_tick(&bandpass[v], tNoise_tick(&noise[v])) * amp;
+        tTiltFilter_setTilt(&tiltF[v], tilt*10.0f - 5.0f);
         float sample = tNoise_tick(&noise[v]) ;
-        sample = tVZFilterLS_tick(&shelf1[v], sample);
-        sample = tVZFilterHS_tick(&shelf2[v], sample);
+        sample = tTiltFilter_tick(&tiltF[v], sample);
         sample = tVZFilterBell_tick(&bell1[v], sample);
-        sample = sample * amp; 
+        sample = sample * amp;
         float normSample = (sample + 1.f) * 0.5f;
-        //float normSample = sample;
         source[v] = normSample;
         
         float f = filterSend->tickNoHooks();
         
         output[0][v] += sample*f * *afpEnabled;
         output[1][v] += sample*(1.f-f) * *afpEnabled ;
-#if CHECK_NAN
-        if (isnan(output[0][v]))
-        {
-            output[0][v] = 0.0f;
-        }
-        if (isnan(output[0][v]))
-        {
-            output[1][v] = 0.0f;
-        }
-#endif
     }
     sampleInBlock++;
 }

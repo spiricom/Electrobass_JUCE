@@ -165,8 +165,8 @@ void MappingTarget::update(bool directChange, bool sendListenerNotif)
     auto min = main.getMinimum();
     auto max = main.getMaximum();
     auto interval = main.getInterval();
-    auto skew = main.getSkewFactor();
-    setSkewFactor(skew);
+    //auto skew = main.getSkewFactor();
+    //setSkewFactor(skew);
     
     if (model.currentSource != nullptr)
     {
@@ -174,14 +174,7 @@ void MappingTarget::update(bool directChange, bool sendListenerNotif)
         // as opposed to by the parent dial, which require additional handling
         if (directChange)
         {
-            DBG("min" + String(min));
-            DBG("max" + String(max));
-            DBG("value" + String(value));
-            DBG("newmin" + String(min-value));
-            DBG("newmax" + String(max-value));
-            DBG("interval" + String(interval));
             setRange(min-value, max-value, interval);
-            
             setValue(model.end, dontSendNotification);
             lastProportionalValue = valueToProportionOfLength(getValue());
             lastProportionalParentValue = main.valueToProportionOfLength(main.getValue());
@@ -194,15 +187,7 @@ void MappingTarget::update(bool directChange, bool sendListenerNotif)
             
             lastProportionalValue = overflowValue;
             lastProportionalParentValue = main.valueToProportionOfLength(main.getValue());
-            DBG("min" + String(min));
-            DBG("max" + String(max));
-            DBG("value" + String(value));
-            DBG("newmin" + String(min-value));
-            DBG("newmax" + String(max-value));
-            DBG("interval" + String(interval));
-
             setRange(min-value, max-value, interval);
-            
             model.setMappingRange(proportionOfLengthToValue(jlimit(0., 1., overflowValue)),
                                   false, false, false);
         }
@@ -552,27 +537,7 @@ void ElectroDial::sliderValueChanged(Slider* s)
     {
         if (lastSliderValue != DBL_MAX)
         {
-            if (slider.getSkewFactor() != 1.)
-            {
-                // Get the proportional change of the main slider
-                auto pd = slider.valueToProportionOfLength(slider.getValue()) -
-                slider.valueToProportionOfLength(lastSliderValue);
-                for (auto mt : t)
-                {
-                    if (!mt->isActive()) continue;
-                    // Add it to the proportional value of the targets
-                    auto mtp = mt->valueToProportionOfLength(mt->getValue()) + pd;
-                    if (0. <= mtp && mtp <= 1.)
-                    {
-                        // Take the real value of the new proportional value and subtract the real change of the main slider
-                        mt->setMappingRange(mt->proportionOfLengthToValue(mtp)-(slider.getValue()-lastSliderValue), false, false);
-                    }
-                }
-            }
-            else
-            {
-                for (auto mt : t) mt->setMappingRange(mt->getValue(), false, false);
-            }
+            for (auto mt : t) mt->setMappingRange(mt->getValue(), false, false);
         }
         lastSliderValue = slider.getValue();
     }

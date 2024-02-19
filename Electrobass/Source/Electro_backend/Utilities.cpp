@@ -20,8 +20,7 @@ raw(vts.getRawParameterValue(paramId)),
 parameter(vts.getParameter(paramId)),
 range(parameter->getNormalisableRange()),
 value(raw->load(std::memory_order_relaxed)),
-smoothed(value),
-isSkewed(false)
+smoothed(value)
 {
     //DBG(paramId+" " + String(value));
     for (int i = 0; i < 3; ++i)
@@ -32,7 +31,6 @@ isSkewed(false)
         
     }
     processor.params.add(this);
-    
 }
 
 float SmoothedParameter::tick()
@@ -116,7 +114,7 @@ void SmoothedParameter::setHook(const String& sourceName, int index,
 float SmoothedParameter::setHookRange(int index, float min, float max, bool isBipolar)
 {
     hooks[index].min = min;
-    float difference = max-min;
+    //float difference = max-min;
     hooks[index].length = max-min;
     //float multiplier = 1.0f;
     DBG("Sethook max:start   " + String(max));
@@ -133,34 +131,6 @@ float SmoothedParameter::setHookRange(int index, float min, float max, bool isBi
     }
      */
     //DBG("Difference " + String(difference));
-
-    if(isSkewed)
-    {
-        float newMin = min;
-//        DBG("value max " + String(max));
-//        DBG("value min " + String(min));
-//        DBG("slider at " + String(parameter->getValue()));
-        float val = parameter->getValue();
-        if (max < 0.f)
-        {
-            max = getRange().convertFrom0to1(parameter->getValue()) + max;
-        }
-        if(min != 0.f)
-        {
-            newMin = getRange().convertFrom0to1(parameter->getValue()) + min;
-
-            val = 0;
-        }
-       
-        float a = getRange().convertTo0to1(LEAF_clip(getRange().start, max, getRange().end));
-        float b = getRange().convertTo0to1(LEAF_clip(getRange().start, newMin, getRange().end));
-        hooks[index].length = (a - b - val);
-        DBG("b   " + String(b));
-        DBG("paramval " + String(parameter->getValue()));
-        if (isBipolar)
-            b = b -  parameter->getValue();
-        hooks[index].min = b;
-    }
     DBG("Sethook range:   " + String(hooks[index].length));
     DBG("Sethook min:   " + String(hooks[index].min));
     return hooks[index].length;

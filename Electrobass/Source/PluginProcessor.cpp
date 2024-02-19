@@ -357,6 +357,12 @@ isProcessing(true)
     tSimplePoly_init(&strings[0], MAX_NUM_VOICES, &leaf);
     tSimplePoly_setNumVoices(&strings[0], (uint8_t)numVoicesActive);
     
+    
+    LEAF_generate_table_skew_non_sym(skewTableQ, 0.0f, 10.0f, 0.5f, 2048);
+    LEAF_generate_table_skew_non_sym(skewTableADSRTimes, 0.0f, 20000.0f, 4000.0f, 2048);
+    LEAF_generate_table_skew_non_sym(skewTableLFORate, 0.0f, 30.0f, 2.0f, 2048);
+    
+    
     voiceNote[0] = 0;
     for (int i = 1; i < MAX_NUM_VOICES; ++i)
     {
@@ -554,7 +560,7 @@ isProcessing(true)
     }
     suspendProcessing(false);
     
-    LEAF_generate_mtof(mtofTable, -163.825, 163.825 ,32768 );
+    LEAF_generate_mtof(mtofTable, -163.825f, 163.825f ,32768 );
     if (ElectroAudioProcessorEditor* editor = dynamic_cast<ElectroAudioProcessorEditor*>(getActiveEditor()))
     {
         editor->update();
@@ -1000,15 +1006,7 @@ void ElectroAudioProcessor::processBlock (AudioBuffer<float>& buffer, MidiBuffer
         if(pedalControlsMaster)
         {
             float volumeSmoothed = ccParams.getUnchecked(12)->get();
-            //float volIdx = LEAF_clip(0.0f, (volumeSmoothed * 127.0f), 127.0f);
-            float volIdx = volumeSmoothed * 127.0f;
-            //then interpolate the value
-            int volIdxInt = (int) volIdx;
-            float alpha = volIdx-volIdxInt;
-            int volIdxIntPlus = (volIdxInt + 1) & 127;
-            float omAlpha = 1.0f - alpha;
-            pedGain = volumeAmps128[volIdxInt] * omAlpha;
-            pedGain += volumeAmps128[volIdxIntPlus] * alpha;
+            pedGain = 0.006721744f + 0.4720157f*volumeSmoothed - 2.542849f*volumeSmoothed*volumeSmoothed + 6.332339f*volumeSmoothed*volumeSmoothed*volumeSmoothed - 3.271672f*volumeSmoothed*volumeSmoothed*volumeSmoothed*volumeSmoothed;
         }
         
         
@@ -1049,8 +1047,15 @@ void ElectroAudioProcessor::tickKnobsToSmooth()
     for (int i = 0; i < knobsToSmooth.size(); i++)
     {
         SmoothedParameter* knob = knobsToSmooth[i];
-        knob->tick();
-        
+        if (knob->getRemoveMe())
+        {
+            knob->setRemoveMe(false);
+            knobsToSmooth.remove(i);
+        }
+        else
+        {
+            knob->tick();
+        }
     }
 }
 
@@ -1067,6 +1072,57 @@ void  ElectroAudioProcessor::removeKnobsToSmooth()
         }
     }
 }
+
+
+float ElectroAudioProcessor::scaleQ(float input)
+{
+    //lookup table for q
+    if (isnan(input))
+    {
+        input = 0.0f;
+    }
+    input = LEAF_clip(0.0f, input, 1.0f);
+    //scale to lookup range
+    input *= 2047.0f;
+    int inputInt = (int)input;
+    float inputFloat = (float)inputInt - input;
+    int nextPos = LEAF_clipInt(0, inputInt + 1, 2047);
+    return (skewTableQ[inputInt] * (1.0f - inputFloat)) + (skewTableQ[nextPos] * inputFloat);
+}
+
+float ElectroAudioProcessor::scaleADSRTimes(float input)
+{
+    //lookup table for q
+    if (isnan(input))
+    {
+        input = 0.0f;
+    }
+    input = LEAF_clip(0.0f, input, 1.0f);
+    //scale to lookup range
+    input *= 2047.0f;
+    int inputInt = (int)input;
+    float inputFloat = (float)inputInt - input;
+    int nextPos = LEAF_clipInt(0, inputInt + 1, 2047);
+    return (skewTableADSRTimes[inputInt] * (1.0f - inputFloat)) + (skewTableADSRTimes[nextPos] * inputFloat);
+}
+
+float ElectroAudioProcessor::scaleLFORates(float input)
+{
+    //lookup table for q
+    if (isnan(input))
+    {
+        input = 0.0f;
+    }
+    input = LEAF_clip(0.0f, input, 1.0f);
+    //scale to lookup range
+    input *= 2047.0f;
+    int inputInt = (int)input;
+    float inputFloat = (float)inputInt - input;
+    int nextPos = LEAF_clipInt(0, inputInt + 1, 2047);
+    return (skewTableLFORate[inputInt] * (1.0f - inputFloat)) + (skewTableLFORate[nextPos] * inputFloat);
+}
+
+
 //==============================================================================
 bool ElectroAudioProcessor::hasEditor() const
 {
@@ -1895,7 +1951,7 @@ void ElectroAudioProcessor::setStateEBP(const void *data, int sizeInBytes, int p
     //ElectroAudioProcessorEditor* editor = dynamic_cast<ElectroAudioProcessorEditor*>(getActiveEditor());
     setPresetNumber(presetNumber);
     uint16_t bufferIndex = 0;
-    char presetName[14];
+    char presetName[15];
     const char* newData = static_cast<const char*>(data);
     if (newData[bufferIndex] == 17)
     {
@@ -1914,20 +1970,38 @@ void ElectroAudioProcessor::setStateEBP(const void *data, int sizeInBytes, int p
         presetName[i] = newData[bufferIndex];
         bufferIndex++;
     }
+    presetName[14] = 0;
     setPresetName(CharPointer_UTF8(presetName));
     
     
+    //9-byte macros
+    char macroName[10];
+    macroName[9] = 0;
     for (int j = 0; j < 8; j++)
     {
-        for (int k = 0; k < 14; k++)
+        for (int k = 0; k < 9; k++)
         {
-
-                presetName[k] = newData[bufferIndex];
-                bufferIndex++;
+            macroName[k] = newData[bufferIndex];
+            bufferIndex++;
         }
-            macroNames.set(j, String(CharPointer_UTF8(presetName)));
-        DBG(String(CharPointer_UTF8(presetName)));
+        macroNames.set(j, String(CharPointer_UTF8(macroName)));
+        DBG(String(CharPointer_UTF8(macroName)));
     }
+    //10-byte macros
+    char macroNameTen[11];
+    macroNameTen[10] = 0;
+    for (int j = 0; j < 4; j++)
+    {
+        for (int k = 0; k < 10; k++)
+        {
+            macroNameTen[k] = newData[bufferIndex];
+            bufferIndex++;
+        }
+        macroNames.set(j+8, String(CharPointer_UTF8(macroNameTen)));
+        DBG(String(CharPointer_UTF8(macroNameTen)));
+    }
+    
+    
     //bufferIndex = bufferIndex + 1;
     uint8_t y =newData[bufferIndex];
     DBG(String(y));
@@ -1984,7 +2058,8 @@ void ElectroAudioProcessor::setStateEBP(const void *data, int sizeInBytes, int p
         a = newData[bufferIndex+1];
         b = (newData[bufferIndex]);
         bufferIndex += 2;
-        float amount = (INV_TWO_TO_15 * ((b << 8) + a));
+        int16_t amountInt =(((b << 8) + a));
+        float amount = amountInt * INV_TWO_TO_15;
         if (presetVersionNumber != 0)
         {
             slotIndex = newData[bufferIndex++];
@@ -1994,19 +2069,24 @@ void ElectroAudioProcessor::setStateEBP(const void *data, int sizeInBytes, int p
         DBG("mapping destination" + paramDestOrder.at(destNumber));
         DBG("mapping source" + paramSourceOrder.at(sourceNumber));
         DBG("destination T" + String(destNumberToT[destNumber]));
-        DBG("scalar" + paramSourceOrder.at(scalarNumber));
+        //DBG("scalar" + paramSourceOrder.at(scalarNumber));
         DBG(" slotindex" + String(slotIndex));
         MappingSourceModel* source = sourceMap[paramSourceOrder.at(sourceNumber)];
         MappingTargetModel* target;
         if (presetVersionNumber != 0)
         {
-             target = targetMap[paramDestOrder.at(destNumber) + " T" + String(slotIndex)];
+             target = targetMap[paramDestOrder.at(destNumber) + " T" + String(slotIndex + 1)];
         }
         else
         {
              target = targetMap[paramDestOrder.at(destNumber) + " T" + String(destNumberToT[destNumber]++ +1)];
         }
-        target->setMapping(source, amount, false);
+        
+        NormalisableRange<float>& range = target->targetParameters[0]->getRange();
+        DBG("range e " + String(range.end));
+        DBG("range s " + String(range.start));
+        DBG("amount " + String(amount));
+        target->setMapping(source, amount * (range.end-range.start), false);
         
         if (scalarNumber != 255)
         {

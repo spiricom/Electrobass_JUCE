@@ -114,72 +114,11 @@ protected:
     int smoothedHooks[3];
     int nonSmoothedHooks[3];
     SmoothedValue<float, ValueSmoothingTypes::Linear> smoothed;
-    bool isSkewed;
     float value0 = 0.0f;
     float value1 = 1.0f;
 };
 
-class SkewedParameter : public SmoothedParameter
-{
-public:
-    SkewedParameter(ElectroAudioProcessor& processor, AudioProcessorValueTreeState& vts,
-                 String paramId, float start, float end, float center)
-    : SmoothedParameter(processor, vts, paramId)
-    {
-        isSkewed = true;
-         LEAF_generate_table_skew_non_sym(skewTable, start, end, center, 2048);
-    }
-    
-    float tick() override
-    {
-        
-        // Well defined inter-thread behavior PROBABLY shouldn't be an issue here, so
-        // the atomic is just slowing us down. memory_order_relaxed seems fastest, marginally
-        removeMe = false;
-        float target = parameter->getValue();
-        //bool isSmoothed = false;
-        for (int i = 0; i < numSmoothedHooks; ++i)
-        {
-            target += hooks[smoothedHooks[i]].getValue();
-        }
-        //DBG("Target" + String(target));
-        smoothed.setTargetValue(scale(target) );
-        value = smoothed.getNextValue();
-        for (int i = 0; i < numNonSmoothedHooks; ++i)
-        {
-            value += scale(hooks[nonSmoothedHooks[i]].getValue());
-        }
-        if ((numSmoothedHooks == 0) && (numNonSmoothedHooks == 0))
-        {
-            if ((value >= (target - 0.0001f)) && (value <= (target + 0.0001f)))
-            {
-                removeMe = true;
-            }
-        }
-        return value;
-        
-    }
-    
-private:
-    float skewTable[2048];
-    float scale(float input)
-    {
-        //lookup table for env times
-        if (isnan(input))
-        {
-            input = 0.0f;
-        }
-        input = LEAF_clip(0.0f, input, 1.0f);
-        //scale to lookup range
-        input *= 2047.0f;
-        int inputInt = (int)input;
-        float inputFloat = (float)inputInt - input;
-        int nextPos = LEAF_clipInt(0, inputInt + 1, 2047);
-        return (skewTable[inputInt] * (1.0f - inputFloat)) + (skewTable[nextPos] * inputFloat);
 
-        //return input;
-    }
-};
 //==============================================================================
 //==============================================================================
 

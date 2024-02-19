@@ -244,6 +244,7 @@ public:
     void buttonClicked(Button* button) override;
     void resized() override;
     void updateFXOrder(float);
+    void sliderValueChanged(Slider* slider) override;
 private:
     
     

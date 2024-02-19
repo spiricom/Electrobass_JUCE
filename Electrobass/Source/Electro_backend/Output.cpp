@@ -20,7 +20,7 @@ AudioComponent(n, p, vts, cOutputParams, false)
     master = std::make_unique<SmoothedParameter>(processor, vts, "Master");
     for (int i = 0; i < MAX_NUM_VOICES; i++)
     {
-        tSVF_init(&lowpass[i], SVFTypeLowpass, 19000.f, 0.3f, &processor.leaf);
+        tSVF_LP_init(&lowpass[i], 19000.f, 0.2f, &processor.leaf);
     }
     
 }
@@ -29,7 +29,7 @@ Output::~Output()
 {
     for (int i = 0; i < MAX_NUM_VOICES; i++)
     {
-        tSVF_free(&lowpass[i]);
+        tSVF_LP_free(&lowpass[i]);
     }
 }
 
@@ -78,6 +78,6 @@ void Output::tickLowpass(float input [MAX_NUM_VOICES])
 void Output::lowpassTick(float& sample, int v, float cutoff)
 {
     float in = (cutoff* 70.0f) + 58.0f;
-    tSVF_setFreqFast(&lowpass[v], in);
-    sample = tSVF_tick(&lowpass[v], sample);
+    tSVF_LP_setFreqFast(&lowpass[v], in);
+    sample = tSVF_LP_tick(&lowpass[v], sample);
 }

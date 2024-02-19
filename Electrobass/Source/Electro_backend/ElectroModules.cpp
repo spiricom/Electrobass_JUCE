@@ -161,26 +161,9 @@ void ElectroModule::valueChangedSliderStream(Slider* slider)
 {
     float val;
     int sliderIndex =(slider->getComponentID().getIntValue());
-    /*
-     if (sliderIndex != "Decay" && sliderIndex != "Rate" && sliderIndex != "Attack" && sliderIndex != "Release" && sliderIndex != "Resonance")
-     */
-    //there's gotta be a better way, we should store a little boolean that says whether the slider is scaled with a slider and check that instead -JS
-    if ((sliderIndex != 97) && (sliderIndex != 103) && (sliderIndex != 106) && (sliderIndex != 107) && (sliderIndex != 109)&& (sliderIndex != 112)&& (sliderIndex != 113)&& (sliderIndex != 115)&& (sliderIndex != 118)&& (sliderIndex != 119)&& (sliderIndex != 121)&& (sliderIndex != 124)&& (sliderIndex != 125)&& (sliderIndex != 127)&& (sliderIndex != 130)&& (sliderIndex != 135)&& (sliderIndex != 140)&& (sliderIndex != 145))
-    {
-        float end = slider->getRange().getEnd();
-        float start = slider->getRange().getStart();
-        val = (slider->getValue() / ( end - start));
-        if ( start < 0.f )
-        {
-            val += 0.5f;
-        }
-    }
-    else
-    {
-        DBG("unsym");
-        val = vts.getParameter(slider->getName())->getValue();
-    }
-        
+
+    val = vts.getParameter(slider->getName())->getValue();
+    
     if ((sliderIndex != -1) && ((sliderIndex < 1) || (sliderIndex > 12)))
     {
         ac.processor.streamValue1 = val;
@@ -715,7 +698,7 @@ void OscModule::displayPitchMapping(MappingTarget* mt)
         String text;
         if (mt->isBipolar())
         {
-            if (mt->getSkewFactor() != 1. && start != end)
+            if (start != end)
             {
                 text = (start >= 0 ? "+" : "");
                 text += String(start, 3) + "/";
@@ -743,7 +726,7 @@ void OscModule::displayPitchMapping(MappingTarget* mt)
         end *= 0.01f;
         if (mt->isBipolar())
         {
-            if (mt->getSkewFactor() != 1. && start != end)
+            if (start != end)
             {
                 text = (start >= 0 ? "+" : "");
                 text += String(start, 3) + "/";
@@ -769,7 +752,7 @@ void OscModule::displayPitchMapping(MappingTarget* mt)
         String text;
         if (mt->isBipolar())
         {
-            if (mt->getSkewFactor() != 1. && start != end)
+            if (start != end)
             {
                 text = (start >= 0 ? "+" : "");
                 text += String(int(start)) + "/";
@@ -999,6 +982,7 @@ chooser("Select wavetable file or folder...",
         File::getSpecialLocation(File::userDocumentsDirectory))
 {
     double rate = getDial(LowFreqRate)->getSlider().getValue();
+    rate = editor.processor.scaleLFORates(rate);
     rateLabel.setText(String(rate, 2) + " Hz", dontSendNotification);
     rateLabel.setEditable(true);
     rateLabel.setJustificationType(Justification::centred);
@@ -1068,7 +1052,6 @@ void LFOModule::resized()
 
 void LFOModule::sliderValueChanged(Slider* slider)
 {
-    DBG(slider->getSkewFactor());
     if (slider == &getDial(LowFreqRate)->getSlider())
     {
         displayRate();
@@ -1136,7 +1119,9 @@ void LFOModule::mouseExit(const MouseEvent& e)
 
 void LFOModule::displayRate()
 {
+    
     double rate = getDial(LowFreqRate)->getSlider().getValue();
+    rate = editor.processor.scaleLFORates(rate);
     rateLabel.setColour(Label::textColourId, Colours::gold.withBrightness(0.95f));
     rateLabel.setText(String(rate, 3) + " Hz", dontSendNotification);
 }
@@ -1152,7 +1137,7 @@ void LFOModule::displayRateMapping(MappingTarget* mt)
         String text;
         if (mt->isBipolar())
         {
-            if (mt->getSkewFactor() != 1. && start != end)
+            if (start != end)
             {
                 text = (start >= 0 ? "+" : "-");
                 text += String(fabs(start), 2) + "/";
@@ -1276,6 +1261,12 @@ void OutputModule::resized()
    // meters.setBoundsRelative(.2f, relTopMargin - 0.08f, 0.2f, relDialHeight*1.6f);
     //meters.setAlwaysOnTop(true);
     //setVerticalRotatedWithBounds(meters, true, Rectangle<int>(masterDial->getX(), masterDial->getY(), masterDial->getHeight(), masterDial->getWidth()));
+}
+
+void OutputModule::sliderValueChanged(Slider* slider)
+{
+    
+    ElectroModule::sliderValueChanged(slider);
 }
 
 //==============================================================================

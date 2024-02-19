@@ -81,7 +81,8 @@ private:
     tVZFilterBell VZfilterPeak[MAX_NUM_VOICES];
     tVZFilterLS VZfilterLS[MAX_NUM_VOICES];
     tVZFilterHS VZfilterHS[MAX_NUM_VOICES];
-    tVZFilter VZfilterBR[MAX_NUM_VOICES];
+    tVZFilterBR VZfilterBR[MAX_NUM_VOICES];
+    tTiltFilter tiltEffect[MAX_NUM_VOICES];
     tSVF lowpass[MAX_NUM_VOICES];
     tSVF delayLowpass[MAX_NUM_VOICES];
     tTapeDelay tapeDelay[MAX_NUM_VOICES];

@@ -198,6 +198,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     sliderAttachments.add(new SliderAttachment(vts, "Master", masterSlider));
     masterSlider.setTextBoxStyle(Slider::TextEntryBoxPosition::NoTextBox, true, 10, 10);
     masterSlider.setName("Master");
+    masterSlider.addListener(this);
     tab1.addAndMakeVisible(masterSlider);
     for (int i = 0; i < NUM_CHANNELS; ++i)
     {
@@ -1207,6 +1208,7 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
         if(processor.stream)
         {
             processor.streamValue1 = slider->getValue();
+            
             String tempString = slider->getName();
             auto it = find(paramDestOrder.begin(), paramDestOrder.end(), slider->getName());
             int index = -1;
@@ -1257,7 +1259,54 @@ void ElectroAudioProcessorEditor::sliderValueChanged(Slider* slider)
 //        }
     else if (slider == &transposeSlider)
     {
-    
+        if(processor.stream)
+        {
+            processor.streamValue1 = (slider->getValue() + 48.0f) * 0.010416666666667;
+            /*String tempString = slider->getName();
+            auto it = find(paramDestOrder.begin(), paramDestOrder.end(), slider->getName());
+            int index = -1;
+            // If element was found
+            if (it != paramDestOrder.end())
+            {
+                
+                // calculating the index
+                // of K
+                index = it - paramDestOrder.begin();
+            }
+             */
+            int index =(slider->getComponentID().getIntValue());
+            int tempId = 14 + 2;
+            processor.streamID1 = tempId;
+            //button->get
+            DBG("Send: " + slider->getName() + " with ID"  + String(tempId) + " and value " + String(processor.streamValue1)/*String(streamValue)*/);
+            float arr[2] = {(float)tempId, (float)processor.streamValue1};
+            knobQueue.writeTo( arr, 2);
+        }
+    }
+    else if (slider == &masterSlider)
+    {
+        if(processor.stream)
+        {
+            processor.streamValue1 = slider->getValue();
+            String tempString = slider->getName();
+            auto it = find(paramDestOrder.begin(), paramDestOrder.end(), slider->getName());
+            int index = -1;
+            // If element was found
+            if (it != paramDestOrder.end())
+            {
+                
+                // calculating the index
+                // of K
+                index = it - paramDestOrder.begin();
+            }
+
+            int tempId = index + 2;
+            processor.streamID1 = tempId;
+            //button->get
+            DBG("Send: " + slider->getName() + " with ID"  + String(tempId) + " and value " + String(processor.streamValue1)/*String(streamValue)*/);
+            float arr[2] = {(float)tempId, (float)slider->getValue()};
+            knobQueue.writeTo( arr, 2);
+        }
     }
     else { //macros
         //DBG(String(vts.getParameter(slider->getName())->getValue()));

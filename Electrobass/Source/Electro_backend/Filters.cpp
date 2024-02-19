@@ -26,8 +26,9 @@ AudioComponent(n, p, vts, cFilterParams, true)
         tVZFilterBell_init(&VZfilterPeak[i], 2000.f, 1.9f, 1.0f, &processor.leaf);
         tVZFilterLS_init(&VZfilterLS[i], 2000.f,  0.6f, 1.0f, &processor.leaf);
         tVZFilterHS_init(&VZfilterHS[i], 2000.f, 0.6f, 1.0f, &processor.leaf);
-        tVZFilter_init(&VZfilterBR[i], BandReject, 2000.f, 1.0f, &processor.leaf);
+        tVZFilterBR_init(&VZfilterBR[i],  2000.f, 1.0f, &processor.leaf);
         tLadderFilter_init(&Ladderfilter[i], 2000.f, 1.0f, &processor.leaf);
+        tLadderFilter_setOversampling(&Ladderfilter[i], 2);
     }
     
     afpFilterType = vts.getRawParameterValue(n + " Type");
@@ -44,7 +45,7 @@ Filter::~Filter()
         tVZFilterBell_free(&VZfilterPeak[i]);
         tVZFilterLS_free(&VZfilterLS[i]);
         tVZFilterHS_free(&VZfilterHS[i]);
-        tVZFilter_free(&VZfilterBR[i]);
+        tVZFilterBR_free(&VZfilterBR[i]);
         tLadderFilter_free(&Ladderfilter[i]);
     }
 }
@@ -154,10 +155,10 @@ void Filter::tick(float* samples)
 }
 void Filter::loadAll(int v)
 {
-    quickParams[FilterGain][v]->setValueToRaw();
     quickParams[FilterCutoff][v]->setValueToRaw();
-    quickParams[FilterResonance][v]->setValueToRaw();
     quickParams[FilterGain][v]->setValueToRaw();
+    quickParams[FilterResonance][v]->setValueToRaw();
+    quickParams[FilterKeyFollow][v]->setValueToRaw();
     setQ(quickParams[FilterResonance][v]->read(),v);
     setGain(quickParams[FilterGain][v]->read(),v);
 }
@@ -171,38 +172,29 @@ void Filter::lowpassTick(float& sample, int v, float cutoff, float q, float morp
 
 void Filter::highpassTick(float& sample, int v, float cutoff, float q, float morph, float gain)
 {
-    //tVZFilter_setMorphOnly(&filters[v], morph);
-    //tVZFilter_setFreqAndBandwidth(&filters[v], cutoff + 200.0f, q + 0.01f);
-    //sample = tVZFilter_tick(&filters[v], sample);
     tSVF_setFreqFast(&highpass[v], cutoff);
-    sample = tSVF_tick(&highpass[v], sample);
+    sample = tSVF_tickHP(&highpass[v], sample);
     sample *= G;
 }
 
 void Filter::bandpassTick(float& sample, int v, float cutoff, float q, float morph, float gain)
 {
-    //tVZFilter_setMorphOnly(&filters[v], morph);
-    //tVZFilter_setFreqAndBandwidth(&filters[v], cutoff + 200.0f, q + 0.01f);
-    //sample = tVZFilter_tick(&filters[v], sample);
     tSVF_setFreqFast(&bandpass[v], cutoff);
-    
-    sample = tSVF_tick(&bandpass[v], sample);
+    sample = tSVF_tickBP(&bandpass[v], sample);
     sample *= G;
 }
 
 void Filter::diodeLowpassTick(float& sample, int v, float cutoff, float q, float morph, float gain)
 {
     tDiodeFilter_setFreqFast(&diodeFilters[v], cutoff);
-    
-    sample = tDiodeFilter_tick(&diodeFilters[v], sample);
+    sample = tDiodeFilter_tickEfficient(&diodeFilters[v], sample);
     sample *= G;
 }
 
 void Filter::VZpeakTick(float& sample, int v, float cutoff, float q, float morph, float gain)
 {
-    tVZFilterBell_setFreq(&VZfilterPeak[v], cutoff);
+    tVZFilterBell_setFreqFast (&VZfilterPeak[v], cutoff);
     sample = tVZFilterBell_tick(&VZfilterPeak[v], sample);
-    //fasterdbtoa((gain * 50.f) - 25.f)
 }
 
 void Filter::VZlowshelfTick(float& sample, int v, float cutoff, float q, float morph, float gain)
@@ -217,14 +209,14 @@ void Filter::VZhighshelfTick(float& sample, int v, float cutoff, float q, float 
 }
 void Filter:: VZbandrejectTick(float& sample, int v, float cutoff, float q, float morph, float gain)
 {
-    tVZFilter_setFreqFast(&VZfilterBR[v], cutoff);//, q, fasterdbtoa((gain * 50.f) - 25.f));
-    sample = tVZFilter_tickEfficient(&VZfilterBR[v], sample);
+    tVZFilterBR_setFreqFast(&VZfilterBR[v], cutoff);//, q, fasterdbtoa((gain * 50.f) - 25.f));
+    sample = tVZFilterBR_tick(&VZfilterBR[v], sample);
     sample *= G;
 }
 
 void Filter:: LadderLowpassTick(float& sample, int v, float cutoff, float q, float morph, float gain)
 {
-    tLadderFilter_setFreqFast(&Ladderfilter[v], cutoff);
+    tLadderFilter_setFreqFast(&Ladderfilter[v],cutoff);
     
     sample = tLadderFilter_tick(&Ladderfilter[v], sample);
     sample *= G;
@@ -232,6 +224,7 @@ void Filter:: LadderLowpassTick(float& sample, int v, float cutoff, float q, flo
 
 void Filter::setQ(float q, int v)
 {
+    q = processor.scaleQ(q);
     q = LEAF_clip(0.01f, q, 10.0f);
     switch (currentFilterType) {
         case LowpassFilter:
@@ -247,11 +240,11 @@ void Filter::setQ(float q, int v)
             break;
             
         case DiodeLowpassFilter:
-            tDiodeFilter_setQ(&diodeFilters[v], q);
+            tDiodeFilter_setQ(&diodeFilters[v], q* 0.8f);
             break;
             
         case VZPeakFilter:
-            tVZFilterBell_setBandwidth(&VZfilterPeak[v], q);
+            tVZFilterBell_setBandwidth(&VZfilterPeak[v], q*20.0f);
             break;
             
         case VZLowshelfFilter:
@@ -263,7 +256,7 @@ void Filter::setQ(float q, int v)
             break;
             
         case VZBandrejectFilter:
-            tVZFilter_setResonance(&VZfilterBR[v], q);
+            tVZFilterBR_setResonance(&VZfilterBR[v], q);
             break;
             
         case LadderLowpassFilter:
@@ -307,7 +300,6 @@ void Filter::setGain(float gain, int v)
             break;
             
         case VZBandrejectFilter:
-            //tVZFilter_setGain(&VZfilterBR[v], fasterdbtoa((gain * 50.f) - 25.f));
             G = fasterdbtoa((gain * 24.0f) - 12.0f);
             break;
             
@@ -348,8 +340,7 @@ void Filter::setParams()
     params.add(new OwnedArray<SmoothedParameter>());
     for (int v = 0; v < MAX_NUM_VOICES; ++v)
     {
-       
-        params[2]->add(new SkewedParameter(processor, vts, pn, 0.01f, 10.0f, 0.5f));
+        params[2]->add(new SmoothedParameter(processor, vts, pn));//, 0.01f, 10.0f, 0.5f));
         quickParams[2][v] = params[2]->getUnchecked(v);
     }
     for (int t = 0; t < 3; ++t)
