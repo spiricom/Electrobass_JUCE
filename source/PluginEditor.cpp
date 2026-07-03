@@ -515,7 +515,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
 
         for(auto inputs : MidiOutput::getAvailableDevices())
         {
-            if ((inputs.name == "Electrosteel")||(inputs.name == "Electrobass"));//||(inputs.name == "USB MIDI Device Port 2"))
+            if ((inputs.name == "Electrosteel")||(inputs.name == "Electrobass")||(inputs.name == "Onyx Producer 2-2"))
             {
                 
                 
@@ -526,8 +526,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
         }
 
         //sysexOut = MidiOutput::openDevice(MidiOutput::openDevice(2));
-        if (sysexOut )
-        {
+        if (sysexOut ) {
             MidiBuffer midiMessages; 
             Array<float> data;
             
@@ -641,7 +640,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
             //        }
             Array<uint8_t> data7bitInt;
             union uintfUnion fu;
-            
+            double millisecondCounterToStartAt = 0.0;
             uint16_t sizeOfSysexChunk = (64 / 5) - 3;
             int dataToSend = data.size();
             uint16_t currentChunk = 0;
@@ -665,7 +664,15 @@ chooser("Select a .wav file to load...", {}, "*.wav")
             //MidiMessage presetMessage = ;
             
             midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
-            
+            millisecondCounterToStartAt = Time::getMillisecondCounter() + 100.0;
+            //while (millisecondCounterToStartAt != Time::getMillisecondCounter())
+            {
+                ;
+            }
+            sysexOut->sendBlockOfMessagesNow(midiMessages);
+            midiMessages.clear();
+
+//#if 0
             currentChunk++;
             
             //now send the macro names (9 characters each)
@@ -693,6 +700,13 @@ chooser("Select a .wav file to load...", {}, "*.wav")
                 //MidiMessage presetMessage = ;
                 
                 midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+                millisecondCounterToStartAt = Time::getMillisecondCounter() + 10.0;
+                //while (millisecondCounterToStartAt != Time::getMillisecondCounter())
+                {
+                    ;
+                }
+                sysexOut->sendBlockOfMessagesNow(midiMessages);
+                midiMessages.clear();
                 currentChunk++;
             }
             //now send the knob/joystick names (10 characters each)
@@ -720,6 +734,13 @@ chooser("Select a .wav file to load...", {}, "*.wav")
                 //MidiMessage presetMessage = ;
                 
                 midiMessages.addEvent(MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size()), 0);
+                millisecondCounterToStartAt = Time::getMillisecondCounter() + 10.0;
+                //while (millisecondCounterToStartAt != Time::getMillisecondCounter())
+                {
+                    ;
+                }
+                sysexOut->sendBlockOfMessagesNow(midiMessages);
+                midiMessages.clear();
                 currentChunk++;
             }
             while(currentDataPointer < dataToSend)
@@ -755,7 +776,13 @@ chooser("Select a .wav file to load...", {}, "*.wav")
                 MidiMessage presetMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
                 
                 midiMessages.addEvent(presetMessage, 0);
-                
+                millisecondCounterToStartAt = Time::getMillisecondCounter() + 10.0;
+                //while (millisecondCounterToStartAt != Time::getMillisecondCounter())
+                {
+                    ;
+                }
+                sysexOut->sendBlockOfMessagesNow(midiMessages);
+                midiMessages.clear();
                 currentChunk++;
             }
             data7bitInt.clear();
@@ -764,10 +791,18 @@ chooser("Select a .wav file to load...", {}, "*.wav")
             MidiMessage presetMessage = MidiMessage::createSysExMessage(data7bitInt.getRawDataPointer(), sizeof(uint8_t) * data7bitInt.size());
             midiMessages.addEvent(presetMessage, 0);
             
+            //sysexOut->sendBlockOfMessagesNow(midiMessages);
+            millisecondCounterToStartAt = Time::getMillisecondCounter() + 10.0;
+            //while (millisecondCounterToStartAt != Time::getMillisecondCounter())
+            {
+                ;
+            }
             sysexOut->sendBlockOfMessagesNow(midiMessages);
+            midiMessages.clear();
+//#endif
         }
-            
-        
+
+
  
         
     };
