@@ -816,7 +816,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     streamChangesButton.onClick = [this] {
         for(auto inputs : MidiOutput::getAvailableDevices())
         {
-            if ((inputs.name == "Electrosteel")||(inputs.name == "Electrobass"))
+            if ((inputs.name == "Electrosteel")||(inputs.name == "Electrobass")||(inputs.name == "Onyx Producer 2-2"))
             {
                 
                 
