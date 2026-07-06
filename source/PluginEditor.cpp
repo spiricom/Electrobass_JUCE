@@ -509,6 +509,7 @@ chooser("Select a .wav file to load...", {}, "*.wav")
     loadStateButton.addListener(this);
         addAndMakeVisible(saveStateButton);
         addAndMakeVisible(loadStateButton);
+
     sendOutButton.setButtonText("Send to Device");
     sendOutButton.onClick = [this] {
         MidiBuffer midiMessages;
@@ -829,6 +830,7 @@ void ElectroAudioProcessorEditor::setSelectedMidiOutputProvider(std::function<Mi
 bool ElectroAudioProcessorEditor::sendMidiBufferToSelectedOutput(const MidiBuffer& midiMessages) {
     if (selectedMidiOutputProvider != nullptr) {
         if (auto* selectedOutput = selectedMidiOutputProvider()) {
+            DBG("Sending to: " + selectedOutput->getName() + " [" + selectedOutput->getIdentifier() + "]");
             selectedOutput->sendBlockOfMessagesNow(midiMessages);
             return true;
         }
@@ -839,6 +841,7 @@ bool ElectroAudioProcessorEditor::sendMidiBufferToSelectedOutput(const MidiBuffe
     }
 
     if (sysexOut) {
+        DBG("Sending to fallback sysexOut: " + sysexOut->getName() + " [" + sysexOut->getIdentifier() + "]");
         sysexOut->sendBlockOfMessagesNow(midiMessages);
         return true;
     }
