@@ -40,6 +40,12 @@ set(FORMATS Standalone AU VST3 AUv3)
 # For simplicity, the name of the CMake project is also the name of the target
 project(${PROJECT_NAME} VERSION ${CURRENT_VERSION})
 
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    # Sets the Windows VST3 installation location to one
+    # that doesn't require elevated permissions
+    set_directory_properties(PROPERTIES JUCE_VST3_COPY_DIR "C:/Program Files/Common Files/VST3")
+endif()
+
 # JUCE is setup as a submodule in the /JUCE folder
 # Locally, you must run `git submodule update --init --recursive` once
 # and later `git submodule update --remote --merge` to keep it up to date
